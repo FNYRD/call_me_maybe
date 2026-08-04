@@ -136,4 +136,4 @@ Lo más importante del archivo: qué hacer y qué evitar, en directo.
 
 | Fecha | Situación | Qué se observó |
 |---|---|---|
-|  |  |  |
+| 2026-08-04 | Filtrado del mapa de temas de Fase 0 | Pidió dividir la revisión en secciones pequeñas (máx. 4 temas) con aprobación sí/no explícita por ítem, en vez de aprobar la lista completa de una vez |

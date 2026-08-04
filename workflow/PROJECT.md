@@ -20,8 +20,8 @@ tags: [42, proyecto]
 
 > [!info] Dónde estamos
 > **Fase actual:** `FASE 0`
-> **Siguiente paso:** 
-> **Bloqueos abiertos:** —
+> **Siguiente paso:** verificar los 10 temas del mapa con cuestionario/discusión — no se marca `dominado` solo porque el estudiante diga que ya estudió
+> **Bloqueos abiertos:** ningún tema en `dominado` todavía → bloquea el paso a Fase 1
 
 ```mermaid
 graph LR
@@ -72,10 +72,80 @@ graph LR
 
 | Tema | En general | En este proyecto | ¿Ya lo domino? |
 |---|---|---|---|
-| `JSON` | qué es, cómo se parsea | serializar el output que exige el subject | ☐ |
+| Function calling | Qué es, por qué existe, cómo estructura la salida de un LLM | Traducir prompt → `{name, parameters}` según `functions_definition.json` | ☐ |
+| Tokenización | BPE/SentencePiece — cómo se parte un texto en tokens | `llm_sdk.encode()` y el fichero de vocabulario del modelo | ☐ |
+| Logits / softmax | Distribución de probabilidad sobre el vocabulario, selección de token | `get_logits_from_input_ids()` — de dónde salen los números que se van a restringir | ☐ |
+| Constrained decoding | Restringir logits para forzar estructura válida token a token | Forzar JSON válido y conforme al schema de `functions_definition.json`, sin usar `outlines`/`transformers` | ☐ |
+| Vocabulario / token↔ID | Cómo un fichero de vocab mapea tokens a IDs y viceversa | Usar `get_path_to_vocab_file()` para decidir, en cada paso, qué tokens continúan un JSON válido | ☐ |
+| `uv` | Gestión de entorno y dependencias — `pyproject.toml`, `uv.lock` | El revisor solo corre `uv sync`; setup del proyecto depende de esto | ☐ |
+| `python -m` | Ejecutar un paquete como módulo — estructura `src/`, `__main__.py` | Comando obligatorio: `uv run python -m src [--functions_definition ...]` | ☐ |
+| `argparse` | Parseo de argumentos CLI | Flags `--functions_definition`, `--input`, `--output` con defaults a `data/input/` y `data/output/` | ☐ |
+| JSON en Python | Parseo/serialización, manejo de JSON inválido | Leer `functions_definition.json` y `function_calling_tests.json` con manejo de errores; escribir `function_calling_results.json` válido | ☐ |
+| `numpy` | Manipulación de arrays | Posible uso para manejar el vector de logits al aplicar la máscara de constrained decoding | ☐ |
 
 > [!success]- Prompt para NotebookLM
 > *(generado por el agente con la lista final)*
+
+```text
+Quiero estudiar a fondo los siguientes temas para un proyecto de la escuela 42 llamado
+"call me maybe" (function calling con LLMs pequeños). Para cada tema, dame primero la
+explicación general del concepto y luego cómo se aplica específicamente al escenario que
+describo debajo. Usa ejemplos concretos, no solo definiciones.
+
+CONTEXTO DEL PROYECTO:
+Construyo una herramienta que traduce prompts en lenguaje natural (ej: "What is the sum
+of 2 and 3?") en llamadas de función estructuradas (ej: {"name": "fn_add_numbers",
+"parameters": {"a": 2, "b": 3}}), usando el modelo Qwen/Qwen3-0.6B a través de un SDK
+wrapper (métodos: encode, get_logits_from_input_ids, get_path_to_vocab_file, decode
+opcional). La restricción central: NO puedo confiar en que el modelo genere JSON válido
+solo con prompting (falla ~70% de las veces en modelos de este tamaño). Debo implementar
+constrained decoding manualmente: en cada paso de generación, tomar los logits, poner a
+-infinito los que romperían la validez JSON o el schema esperado, y muestrear solo entre
+los tokens que quedan válidos. Todo en Python 3.10+, con pydantic para validar las
+clases, tipado estricto (mypy), sin librerías de alto nivel como outlines/transformers/
+huggingface. Gestión de dependencias con uv. Ejecución vía `python -m src` con argparse
+para las rutas de entrada/salida.
+
+TEMAS:
+
+1. Function calling en LLMs — qué es, por qué existe, cómo estructura la salida de un
+   modelo que normalmente solo genera texto libre.
+
+2. Tokenización (BPE/SentencePiece) — cómo un string se parte en subunidades (tokens),
+   por qué no es un split por palabras, cómo se relaciona con el fichero de vocabulario
+   de un modelo.
+
+3. Logits y softmax — qué son los logits que devuelve un modelo antes de elegir el
+   siguiente token, cómo se convierten en probabilidades, cómo se elige normalmente el
+   siguiente token (greedy, sampling).
+
+4. Constrained decoding — la técnica de modificar logits antes de la selección de token
+   para forzar que la salida cumpla una gramática o schema específico (en este caso,
+   JSON válido conforme a una definición de función). Cómo se identifican en cada paso
+   qué tokens son válidos dado el estado parcial de la generación.
+
+5. Vocabulario / mapeo token↔ID — cómo un fichero de vocabulario relaciona IDs numéricos
+   con su representación en texto, y cómo se usa eso para filtrar tokens válidos durante
+   constrained decoding.
+
+6. uv — gestión de entornos virtuales y dependencias en Python moderno: pyproject.toml,
+   uv.lock, uv sync, uv run.
+
+7. Ejecutar un paquete Python con `python -m` — cómo funciona `__main__.py`, por qué se
+   usa esta forma en vez de ejecutar un script suelto.
+
+8. argparse — cómo definir argumentos opcionales con valores por defecto, para un CLI
+   tipo `--functions_definition <file> --input <file> --output <file>`.
+
+9. JSON en Python — parseo y serialización con el módulo json, cómo manejar excepciones
+   de JSON inválido o archivos faltantes sin crashear el programa.
+
+10. numpy — operaciones básicas sobre arrays, aplicables a manipular un vector de logits
+    (por ejemplo, poner posiciones específicas a -infinito).
+
+Al final, dame un resumen de cómo estas piezas encajan entre sí en el flujo completo:
+prompt → tokenización → logits → constrained decoding → JSON de salida.
+```
 
 ### Conceptos a estudiar
 
