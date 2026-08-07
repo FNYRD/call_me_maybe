@@ -4,7 +4,7 @@ proyecto: call me maybe
 tags: [42, notebook, bitacora]
 ---
 
-# notebook.md — Bitácora del estudiante
+# NOTEBOOK.md — Bitácora del estudiante
 
 > [!important] Es del estudiante
 > Lo escribe él, con sus palabras. El agente no añade entradas por su cuenta: solo las que le pidan, y las deja tal cual salvo corrección ortográfica.
@@ -35,3 +35,9 @@ input_ids[200:] → decode → string → json.loads → dict → validar con py
 > **2.** Después de contextualizarte, di solo **"estoy listo"**. Nada de sermón sobre lo que leíste, ni resumen del estado, ni lista de pendientes.
 > **3.** Explícame qué es **lista blanca** y **lista negra**.
 > **4.** Tu primera lectura es siempre `[[FIRST]]`.
+
+---
+
+## 07/08
+
+Hoy cerramos por completo la parte de contextualización de conocimiento. Me siento listo para comenzar con la fase de planeación. El enfoque a partir de ahora va a ser desarrollar los bloques lo más rápido posible pero sin perder el objetivo, que es que yo me vuelva cada vez mejor desarrollador y arquitecto. Por eso el foco será encontrar un equilibrio entre velocidad y absorción de conocimiento.

@@ -48,7 +48,7 @@ Te usa para validar razonamiento, desbloquearse y mantener la dirección. No par
 | `[[PSYCHOLOGY]]` | El perfil del estudiante. | Lo lees siempre. Lo **actualizas** cuando observes algo que cambie cómo enseñarle |
 | `[[HANDOFF]]` | El subject traducido + los briefings de los agentes anteriores | Lo lees. Solo escribes en la **sección de relevo** del final |
 | `[[PROJECT]]` | El proyecto vivo: restricciones, conceptos, bloques, clases, progreso | Lo **actualizas constantemente**. Es lo que leerá el siguiente agente |
-| `[[notebook]]` | La bitácora del estudiante: qué trabajó cada día, con sus palabras, y notas para el agente siguiente | Lo **lees el último**, y haces lo que diga la nota del día más reciente. Solo escribes en él si te lo pide |
+| `[[NOTEBOOK]]` | La bitácora del estudiante: qué trabajó cada día, con sus palabras, y notas para el agente siguiente | Lo **lees el último**, y haces lo que diga la nota del día más reciente. Solo escribes en él si te lo pide |
 | `Posible mejoras al sistema.md` | Qué mejorar del sistema | **Es del estudiante.** Puedes proponer una entrada; no la añades por tu cuenta |
 
 > [!warning] Ninguno es opcional
@@ -104,11 +104,11 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-08-06
+> [!info] Estado — 2026-08-07
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 0 — Comprensión. Cuestionario de verificación en curso
+> **Fase:** 0 **completa**. Fase 1 desbloqueada y sin empezar
 > **Último bloque cerrado:** ninguno — todavía no hay diseño ni código
-> **En qué se estaba:** temas 1, 9 y 10 recorridos y en 🔵 (sin cerrar); 7 temas sin tocar
-> **Abierto:** 0/10 temas en `dominado` → bloquea Fase 1 · `Input/Output` y `Restricciones generales` de `[[PROJECT]]` vacíos
+> **En qué se estaba:** 10/10 temas en `dominado`, `Input/Output` y `Restricciones generales` volcados
+> **Abierto:** reforzar los **imports relativos** cuando aparezca el primero en Fase 2 · se implementan **los 9 bonus** (el 7 condiciona el diseño de la máscara) · `Makefile` y `.gitignore` vacíos por decisión suya
 
 *(lo rellena el agente saliente en su cierre; el detalle largo va en el briefing de `[[HANDOFF]]`)*
