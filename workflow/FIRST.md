@@ -48,6 +48,7 @@ Te usa para validar razonamiento, desbloquearse y mantener la dirección. No par
 | `[[PSYCHOLOGY]]` | El perfil del estudiante. | Lo lees siempre. Lo **actualizas** cuando observes algo que cambie cómo enseñarle |
 | `[[HANDOFF]]` | El subject traducido + los briefings de los agentes anteriores | Lo lees. Solo escribes en la **sección de relevo** del final |
 | `[[PROJECT]]` | El proyecto vivo: restricciones, conceptos, bloques, clases, progreso | Lo **actualizas constantemente**. Es lo que leerá el siguiente agente |
+| `[[notebook]]` | La bitácora del estudiante: qué trabajó cada día, con sus palabras, y notas para el agente siguiente | Lo **lees el último**, y haces lo que diga la nota del día más reciente. Solo escribes en él si te lo pide |
 | `Posible mejoras al sistema.md` | Qué mejorar del sistema | **Es del estudiante.** Puedes proponer una entrada; no la añades por tu cuenta |
 
 > [!warning] Ninguno es opcional
@@ -81,6 +82,11 @@ En `[[HANDOFF]]`, el final importa tanto como el principio: ahí está el **brie
 > 4. **Explicas con escenas reales**, sacadas del dominio del proyecto — no de cajas ni de cocinas.
 > 5. **Propone él, discutes tú.** Nunca al revés.
 
+> [!important] Resumido, no verborrágico
+> Respuestas **cortas**. Una idea por mensaje, una pregunta por mensaje.
+> Nada de repasos largos, ni listas de contexto que él ya tiene, ni tres párrafos para preguntar una cosa.
+> **Al terminar de contextualizarte, di solo "estoy listo".** Sin resumen de lo que leíste ni lista de pendientes — ya los conoce.
+
 El detalle completo de cada una está en `[[SYSTEM]]`. Aquí solo están para que no las rompas antes de haberlo leído.
 
 ---
@@ -98,11 +104,11 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado
-> **Proyecto:** 
-> **Fase:** 
-> **Último bloque cerrado:** 
-> **En qué se estaba:** 
-> **Abierto:** 
+> [!info] Estado — 2026-08-06
+> **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
+> **Fase:** 0 — Comprensión. Cuestionario de verificación en curso
+> **Último bloque cerrado:** ninguno — todavía no hay diseño ni código
+> **En qué se estaba:** temas 1, 9 y 10 recorridos y en 🔵 (sin cerrar); 7 temas sin tocar
+> **Abierto:** 0/10 temas en `dominado` → bloquea Fase 1 · `Input/Output` y `Restricciones generales` de `[[PROJECT]]` vacíos
 
 *(lo rellena el agente saliente en su cierre; el detalle largo va en el briefing de `[[HANDOFF]]`)*

@@ -2,8 +2,8 @@
 tipo: perfil
 estudiante: 
 skill: psychologist-analyst
-creado: 
-ultima_actualizacion: 
+creado: 2026-08-04
+ultima_actualizacion: 2026-08-05
 tags: [42, psicologia, desempeno, motivacion]
 ---
 
@@ -121,11 +121,19 @@ Lo más importante del archivo: qué hacer y qué evitar, en directo.
 
 ### Hacer
 
-- 
+- **Respuestas cortas.** Pidió explícitamente menos verborrea (2026-08-06). Una idea y una pregunta por mensaje. Nada de repasos largos ni de recontextualizar lo que ya sabe. Anotado también en `[[FIRST]]`.
+- **Dejarle explicar el flujo entero en voz alta, por pasos**, con la tabla de referencia delante y confirmación tras cada paso. Es su método y lo pide él: *"dame la tabla y voy a intentar explicarlo de nuevo"*, *"lo hacemos por pasos"*.
+- **Cuando su diseño es ineficiente, darle el peor caso concreto** en vez de explicarle por qué está mal. Con el caso límite delante corrige solo.
+- **Una pregunta a la vez.** Lo ha pedido dos veces (2026-08-04, 2026-08-05). Con una sola pregunta aislada responde bien.
+- **Explicar y preguntar con escenas del propio proyecto**, congelando un momento concreto ("la generación está parada justo aquí, ¿qué puede venir ahora?"). Es lo único que lo desbloqueó cuando dijo estar perdido.
+- **Recorrer las cosas en orden de ejecución**, desde el punto 0, sin saltarse pasos intermedios.
+- **Preguntarle si da un tema por cerrado**, aunque las respuestas hayan sido correctas.
 
 ### Evitar
 
-- 
+- **Amontonar corrección + varias preguntas en un mismo mensaje.** Corta y pide ir por partes.
+- **Preguntas abstractas sin anclaje** ("¿de dónde sale esa información?" en el aire). Ahí se pierde.
+- **Cerrar un tema por tu cuenta** porque las respuestas fueron correctas.
 
 ---
 
@@ -137,3 +145,12 @@ Lo más importante del archivo: qué hacer y qué evitar, en directo.
 | Fecha | Situación | Qué se observó |
 |---|---|---|
 | 2026-08-04 | Filtrado del mapa de temas de Fase 0 | Pidió dividir la revisión en secciones pequeñas (máx. 4 temas) con aprobación sí/no explícita por ítem, en vez de aprobar la lista completa de una vez |
+| 2026-08-05 | Cuestionario, Tema 1 (function calling) | Al recibir corrección + 3 preguntas de golpe, cortó y dijo *"vamos por partes"*, aislando una sola pregunta. Segunda vez que pide trocear (ver 2026-08-04) — con una sola pregunta a la vez, responde bien |
+| 2026-08-05 | Cuestionario, Tema 1 — pregunta sobre el constrained decoder | Dijo *"no sé, me estoy perdiendo un poco"* ante una pregunta abstracta. Con una escena concreta (la generación congelada en `{"name": "` y qué puede ir ahí) llegó solo a la respuesta en dos turnos. Las preguntas abstractas lo bloquean; las escenas del propio dominio lo desbloquean |
+| 2026-08-05 | Cierre de Tema 1 | Con las respuestas ya correctas, **rechazó cerrar el tema**: pidió profundizar en flujo y mecánica antes de avanzar. No busca aprobar el check, busca internalizar. No dar un tema por cerrado solo porque las respuestas sean correctas — preguntarle a él |
+| 2026-08-06 | Retomar el Tema 1 tras días sin sesión | No pudo reconstruir dónde se había quedado: pidió las preguntas exactas del agente anterior y no estaban registradas. Al retomar, **"punto 0"** significaba para él el flujo **teórico**, no el arranque técnico del programa (`uv run`) — *"los comandos aún ni los he visto"*. Los conceptos van antes que las herramientas |
+| 2026-08-06 | Explicaciones largas del agente | Pidió explícitamente **menos verborrea**: respuestas cortas, una idea y una pregunta por mensaje. Se anotó en `[[FIRST]]`. Tercera señal de trocear (2026-08-04, 2026-08-05) — ya es patrón |
+| 2026-08-06 | Tema 9 (`numpy`) | Partiendo de un `for` con `if in forbidden`, llegó **solo** a la lista blanca en 3 turnos, sin que se le diera la respuesta. Lo que funcionó: ponerle el **peor caso concreto** (en `{"name": ` solo vale `"` y el modelo quiere escribir `Sure`) en vez de explicarle el coste. Con un caso límite real, corrige su propio diseño |
+| 2026-08-06 | Cuando el agente saca un tema que no toca | Preguntó *"no entiendo por qué lo traes"* ante el formato del prompt — que es decisión de Fase 1, no de comprensión. Detecta cuándo algo está fuera de fase; si el agente arrastra un pendiente heredado sin justificar por qué, lo corta |
+| 2026-08-06 | Recorrido del flujo completo | Su método propio: *"dame la tabla y voy a intentar explicarlo de nuevo"* y *"lo hacemos por pasos"*. Reconstruye explicando en voz alta paso a paso, con la referencia delante y validación tras cada paso. Con ese formato encadenó el flujo entero y absorbió 7 correcciones sin bloquearse. Cuando llega al límite lo dice claro (*"no sé nada más"*) en vez de improvisar |
+| 2026-08-05 | Orden del cuestionario | Pidió recorrer los temas en **orden de ejecución del programa**, no por importancia: *"primero tengo que entender cómo funciona la puerta y cómo se abre antes de entrar a entender la sala"*. Necesita la secuencia real completa, sin saltos, para construir el modelo mental |
