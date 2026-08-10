@@ -3,7 +3,7 @@ tipo: proyecto
 proyecto: call me maybe
 fecha_inicio: 2026-08-04
 fecha_cierre: 
-fase_actual: FASE 0 — completa, Fase 1 desbloqueada
+fase_actual: FASE 1 — diseño
 estado: en_progreso
 tags: [42, proyecto]
 ---
@@ -19,28 +19,76 @@ tags: [42, proyecto]
 ## 🗺️ Mapa de flujo
 
 > [!info] Dónde estamos
-> **Fase actual:** `FASE 0` — **completa**. Los 10 temas en `dominado`, `Input/Output` y `Restricciones generales` volcados el 2026-08-07
-> **Progreso del cuestionario:** **10/10 en `dominado`**, todos cerrados por el estudiante
-> **Siguiente paso:** Fase 1 — el mapa de responsabilidades sueltas, antes de agrupar en bloques
-> **Bloqueos abiertos:** ninguno de Fase 0
+> **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
+> **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
+> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia, sin responsabilidades sueltas
+> **Siguiente paso:** abrir el diseño del **Bloque 1 — Tokenizer**: clases, atributos y firmas
+> **Bloqueos abiertos:** ninguno
+> **Al abrir sesión:** cuestionario de repaso obligatorio — ver `[[PROJECT#🔁 Cuestionarios de repaso de sesión]]`
 > **Alcance:** se van a implementar **los 9 bonus** (decisión del estudiante, 2026-08-07) — ver `[[PROJECT#Alcance — bonus]]`
 > **Arrastrado a Fase 2:** reforzar los **imports relativos** del Tema 3 en el momento en que aparezca el primero, sin esperar a que él lo pida
+> **A reforzar la próxima sesión:** los 3 fallos del repaso del 2026-08-10 — ver `[[PROJECT#Repaso de sesión 2026-08-10 — a reforzar]]`
 
 ```mermaid
 graph LR
-    B1["Bloque 1<br/>—"]
-    B2["Bloque 2<br/>—"]
-    B1 -->|"qué le entrega"| B2
+    B1["Bloque 1<br/>Tokenizer"] -->|"texto ↔ ids<br/>+ dict del vocabulario"| B5
+    B2["Bloque 2<br/>I/O de archivos"] -->|"catálogo + prompts<br/>ya validados"| B3
+    B3["Bloque 3<br/>Construcción<br/>del prompt"] -->|"string listo<br/>para tokenizar"| B5
+    B4["Bloque 4<br/>Validez<br/>de tokens"] -->|"ids permitidos<br/>en cada estado"| B5
+    B5["Bloque 5<br/>Bucle de<br/>generación"] -->|"un resultado<br/>por prompt"| B6
+    B6["Bloque 6<br/>Chat<br/>orquestador"] -->|"N resultados<br/>+ log de fallos"| B2
 ```
 
 | Bloque | Descripción | Estado | Qué recibe | Qué entrega |
 |---|---|---|---|---|
-|  |  | ⚪ |  |  |
+| 1 — Tokenizer | `encode`/`decode` propios desde `vocab.json` y `merges.txt` | ⚪ | Rutas del SDK | Texto ↔ ids, y el `dict` string → id |
+| 2 — I/O de archivos | Leer y validar los JSON de entrada, escribir salida y log | ⚪ | Rutas de los argumentos | Catálogo y prompts validados |
+| 3 — Construcción del prompt | Plantilla de chat y tokens especiales del modelo | ⚪ | Catálogo + prompt del usuario | Un string listo para tokenizar |
+| 4 — Validez de tokens | FSM/PDA + schema + cache de lista blanca | ⚪ | Estado del JSON y schema | Ids permitidos en ese estado |
+| 5 — Bucle de generación | Logits, máscara, `argmax`, parada, validación `pydantic` | ⚪ | Todo lo anterior | Un resultado por prompt |
+| 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | ⚪ | Los bloques ya construidos | N resultados + registro de fallos |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
 > [!note] Se actualiza al cerrar cada bloque
 > Las flechas del diagrama llevan **qué le entrega un bloque al siguiente**. Sin eso el diagrama solo muestra orden; con eso muestra el contrato entre bloques.
+
+---
+
+## 🔁 Cuestionarios de repaso de sesión
+
+> [!important] Obligatorio al abrir sesión — petición del estudiante, 2026-08-10
+> Nada más contextualizarse, **antes de abrir tema nuevo**, el agente lanza un cuestionario corto sobre lo aprendido y lo hecho en la sesión anterior.
+> · 4–6 preguntas · **una por mensaje** · en **orden de ejecución** del programa
+> · Las preguntas salen del registro de la sesión anterior y del `[[NOTEBOOK]]`
+> · Un fallo **no se corrige dando la respuesta**: se le pone el caso límite concreto y llega solo. Solo si dice *"no sé"* se responde directo
+> · Al terminar, el agente **añade aquí una entrada nueva** con los fallos y sus correcciones. Todos los repasos se acumulan, no se sobrescriben
+
+> [!warning] Para qué sirve el histórico
+> El foco de cada repaso es doble: **lo último visto** y **lo que ya falló antes y todavía no está controlado**. Un fallo que aparece en dos repasos seguidos vuelve a preguntarse hasta que resista; si aparece tres veces, el tema baja de ✅ a 🟡 en el `[[PROJECT#Cuestionario de verificación]]`.
+
+### Repaso 2026-08-10 — Fase 0 completa, entrada a Fase 1
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | Sabía que se manda **un prompt por llamada**, pero no la razón: la atribuyó al procesamiento de la respuesta. Ante el caso de 5 objetos con uno repetido y otro sin responder, dijo *"no sé"* | La razón no es el formato — es la **correspondencia prompt↔resultado**. La máscara garantiza estructura (JSON válido, nombres y tipos del schema); que el objeto 3 responda al prompt 3 es **semántica** y no se puede enmascarar. Con un prompt por llamada la correspondencia la garantiza el bucle: un prompt, un resultado, mismo índice | 1, 10 |
+| 2 | Dijo **"carácter"** en vez de **token**, dos veces seguidas | Un logit por **entrada del vocabulario**, no por letra. Hay entradas multicarácter (`name`, `{"`, `dd_numbers`): un solo token puede añadir 10 caracteres de golpe. Confundirlos rompe el diseño de la máscara, que compara **strings de token** | 6, 8 |
+| 3 | Del bucle al archivo saltó de `decode` directo a `json.dump`. No recordaba qué hace `json.loads` | `decode` devuelve un **string**; pydantic valida un **dict**. Orden real: `decode` → `json.loads` → `dict` → pydantic → guardar en la lista de los N → **un solo** `json.dump` del array al final. Un `dump` sobre el string escribe el JSON escapado entre comillas | 5 |
+| 4 | `while deep_counter > 0` con el contador a 0 antes de generar — el bucle no entra nunca | Lo resolvió él: primera llamada **fuera** del `while`, el resto dentro. Antes había propuesto inicializar el contador al número de llaves esperado por función; se descartó al ver que el nombre de la función aún no está escrito cuando toca inicializar | — |
+| 5 | Creía que las rutas de los archivos de entrada eran fijas | Salen de `argparse`, con `data/input/` y `data/output/` como defaults. El corrector puede pasar cualquier ruta | 4 |
+| 6 | No sabía quién convierte `functions_definition.json` (dict) en el texto que recibe `encode` | Lo hace **tu programa**: es una responsabilidad propia. El SDK solo tokeniza lo que le des. El formato exacto sigue abierto en `[[PROJECT#A analizar en esta fase]]` | 1 |
+
+> [!success] Correcto sin ayuda
+> El texto que entra a `encode` (prompt + funciones, después ids acumulados sin re-encodear) · los ~150.000 logits y qué puntúan · la lista blanca por **prefijo** en `{"name": "fn_a` · el contador de profundidad y su valor exacto (1) en `..."b": 2}` · el corte `input_ids[len(prompt_ids):]` antes de `decode` · el bonus 7 necesita **pila (PDA)**, no basta un FSM.
+
+> [!bug] A volver a preguntar en el próximo repaso
+> · **Token vs carácter** — falló dos veces en la misma sesión, es el que más riesgo tiene de volver
+> · **`loads` / `dumps`** — cuál convierte en qué dirección
+> · **Por qué un prompt por llamada** — la razón, no la regla
+> · **Determinismo de greedy** — dijo *"puede salir lo mismo o otra cosa"*; sale siempre lo mismo
+> · Del contenido nuevo de hoy: qué es **cache de lista blanca** y por qué **batching no aplica** aquí
 
 ---
 
@@ -422,19 +470,83 @@ Gana `"` con 3.1 aunque `{` tenía 8.2 y `Sure` 7.9: no compiten, valen `-inf`.
 - [ ] **Campo `reasoning` en el JSON generado** *(propuesto por el estudiante, 2026-08-06)* — dejar que el modelo escriba su razonamiento antes de `name` y `parameters`. Motivo: el modelo solo "piensa" generando tokens; con el razonamiento ya en su contexto, la atención se apoya en él al elegir la función, en vez de acertar en frío al primer token.
   **A resolver:** el output exige exactamente `prompt`, `name`, `parameters` — habría que generarlo y descartarlo antes de escribir. Y cada token de razonamiento es una llamada más al modelo, contra el límite de 5 minutos. Pendiente de medir si compensa.
 - [ ] **Formato del texto del prompt** — cómo se convierte `functions_definition.json` (dict) en el string que recibe `encode`. Redacción, orden y si se incluyen las descripciones. Afecta directamente al acierto del modelo.
+- [ ] **Mecanismo de recuperación del bonus 3** *(abierto, 2026-08-10)* — qué se hace cuando un resultado no pasa la validación. Nada decidido todavía.
+  **Restricción que acota el problema:** con greedy (`np.argmax`) reintentar sin cambiar nada devuelve una copia idéntica, así que un simple contador de intentos no arregla nada — algo tiene que cambiar entre intento e intento.
+  **Palancas sobre la mesa, sin elegir:** reformular el prompt · inyectar el error anterior como contexto · pasar a sampling solo en el reintento (se pierde reproducibilidad en ese caso) · registrar el fallo y seguir con el resto de prompts.
+  **A resolver también:** qué cuenta como fallo recuperable — el formato ya lo garantiza la máscara al 100%, así que aquí solo caben fallos de **contenido**.
+  **Ya decidido (2026-08-10):** hay un **límite de N reintentos** por prompt; agotado el límite **no se aborta** — se sigue con el resto y el fallo va al log de errores. Falta elegir **qué cambia entre intento e intento** y **cuánto vale N**.
 
 ### Responsabilidades sueltas
 
 *(todo lo que el subject exige, antes de agruparlo en bloques)*
 
-- [ ] 
+> [!success] Dada por completa — estudiante, 2026-08-10
+> Puede crecer o encoger durante el diseño; se añade aquí en el momento en que aparezca algo nuevo. Siguiente paso: agruparla en bloques y fijar el orden de dependencia.
+
+**Obligatorias:**
+
+- [ ] Parsear los argumentos de línea de comandos (`--functions_definition`, `--input`, `--output`) con sus valores por defecto
+- [ ] Comprobar que los archivos de entrada existen
+- [ ] Leer y parsear cada JSON de entrada sin crashear si viene ausente, vacío o corrupto
+- [ ] Cargar el vocabulario en memoria como `dict` string → id, una sola vez
+- [ ] Construir el texto del prompt a partir del catálogo de funciones y el prompt del usuario
+- [ ] Convertir texto a token ids
+- [ ] Pedir logits al modelo
+- [ ] Calcular la lista blanca según el estado del JSON y el schema de la función
+- [ ] Aplicar la máscara sobre los logits y elegir el token (`np.argmax`)
+- [ ] Llevar el contador de profundidad y decidir cuándo para el bucle
+- [ ] Convertir los ids generados a texto
+- [ ] Validar el resultado contra el schema de la función con `pydantic`
+- [ ] Repetir el ciclo completo una vez por prompt
+- [ ] Acumular los N resultados y escribir el array en el archivo de salida
+
+**De los bonus:**
+
+- [ ] Aislar el modelo tras una interfaz propia, para que nada dependa del vocabulario de Qwen *(bonus 1)*
+- [ ] Implementar `encode` y `decode` propios desde `vocab.json` y `merges.txt` *(bonus 2, 8, 9)*
+- [ ] Recuperar un prompt fallido *(bonus 3)* — **mecanismo sin decidir**, ver `[[PROJECT#A analizar en esta fase]]`
+- [ ] Cachear la lista blanca por estado del JSON *(bonus 4)*
+- [ ] Suite de tests con `pytest` *(bonus 5)*
+- [ ] Trazar cada paso de la generación: cuántos logits, cuántos sobreviven a la máscara, y los 3 mejores con el elegido primero *(bonus 6)*
+- [ ] Validar estructuras anidadas — el mecanismo con pila, no solo el plano *(bonus 7)*
+
+> [!note] Decisiones que salieron al listar — 2026-08-10
+> · **Paralelizar llamadas al modelo descartado de momento:** una pasada ya satura los núcleos, y cada proceso extra carga su propia copia del modelo (~2.4 GB en `float32`). Si se retoma, se mide antes.
+> · **Batching no aplica:** `get_logits_from_input_ids` recibe una única secuencia.
+> · **El bonus 3 solo tiene sentido sobre fallos de contenido**, no de formato: el formato ya lo garantiza la máscara al 100%.
+> · **Reintentar con greedy sin cambiar nada es un bucle de copias idénticas** — `argmax` es determinista.
 
 ### Bloques
 
-*(en orden de dependencia)*
+*(en orden de dependencia — propuestos por el estudiante, 2026-08-10)*
 
-1. 
-2. 
+> [!warning] Sin cerrar
+> Los bloques están identificados y ordenados, pero **ninguno tiene todavía clases, atributos ni firmas**. El diseño de cada uno se abre por separado, en este orden.
+
+| # | Bloque | Qué resuelve | Por qué va aquí |
+|---|---|---|---|
+| 1 | **Tokenizer** | `encode`/`decode` propios desde `vocab.json` y `merges.txt`. Carga el vocabulario en memoria como `dict` string → id | Todo lo demás necesita convertir texto ↔ ids. Con los bonus 2·8·9 dentro, no es una llamada al SDK: es BPE implementado a mano |
+| 2 | **I/O de archivos** | Leer y validar los dos JSON de entrada, escribir el JSON de salida y el log de errores. Sin crashear ante archivo ausente, vacío o corrupto | Misma familia: acceso a disco, `try-except` y context managers en un solo sitio |
+| 3 | **Construcción del prompt** | Catálogo de funciones + prompt del usuario → un solo string, con la plantilla de chat y los tokens especiales del modelo | Aísla **todo lo específico del modelo**. Es la costura que hace barato el bonus 1: cambiar de modelo toca este bloque y ninguno más |
+| 4 | **Validez de tokens** | Dado el estado del JSON y el schema, qué ids son válidos. FSM para lo plano, pila (PDA) para lo anidado. Cache de la lista blanca | Se escribe y se testea **sin llamar al modelo** — esa es la costura que lo separa del bucle |
+| 5 | **Bucle de generación** | Pedir logits, aplicar la máscara, `np.argmax`, contador de profundidad, parada. Validar el resultado con `pydantic` | Es el único que necesita el modelo cargado. Depende de los cuatro anteriores |
+
+| 6 | **`Chat` — orquestador** | Recorre los N prompts, llama al bloque 5 una vez por prompt y junta los resultados en orden | No fabrica nada: **recibe las piezas ya construidas** y solo las coordina. Depende de todos los anteriores |
+
+Los argumentos de línea de comandos se parsean en `src/__main__.py`, fuera de los bloques: es el punto de entrada, no una pieza del diseño.
+
+> [!success] Cómo lo enunció él — 2026-08-10
+> *"Se crean todas las clases necesarias, como piezas de un carro. Se puede probar el motor independientemente; luego le ponemos el motor al carro, al chat. Chat recibe los objetos funcionales, solo centraliza las piezas construidas independientemente en una sola interfaz, nada más."*
+>
+> Consecuencia práctica: `Chat` recibe el tokenizer y el generador por parámetro en vez de construirlos dentro. En producción da igual — el vocabulario se carga una vez y el modelo se elige al arrancar. La diferencia está en poder correr el orquestador **sin cargar el modelo**, sustituyendo el generador por una pieza falsa en los tests.
+
+> [!success] Decisiones de esta ronda — 2026-08-10
+> · **El tokenizer es bloque propio, no un paso del bloque de entrada.** Con el bonus 2 es el trabajo más caro junto al 7.
+> · **La construcción del prompt sale del bloque de I/O**, porque la plantilla de chat es específica del modelo y el bonus 1 obliga a cambiarla sin tocar la lectura de archivos.
+> · **`pydantic` valida en el bloque 5, por prompt**, no al final sobre todos.
+> · **Nunca se aborta la ejecución:** aunque falle un prompt (o el 60% de ellos), se procesan todos y la salida lleva siempre **N objetos**. Razón: un archivo con 12 objetos donde se esperaban 20 es indistinguible de un programa que se colgó.
+> · **Los fallos se registran en un archivo de log aparte**, escrito por el bloque de I/O, con la forma `{índice_del_prompt: "mensaje"}` — la clave es el índice, no el nombre de la función, porque varios prompts fallidos pueden compartir función. El índice es la posición en el array, la misma en entrada y en salida.
+> · **Función inexistente no necesita guard:** la máscara solo permite continuaciones de los nombres del catálogo, así que el modelo no tiene tokens con los que escribir una función que no existe. El fallo posible es de **contenido**, no de nombre.
 
 ---
 
