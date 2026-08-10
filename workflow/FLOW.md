@@ -98,7 +98,7 @@ graph LR
 
 | # | Bloque | Diseño | Implementación | Tests |
 |---|---|---|---|---|
-| 1 | Tokenizer | ⚪ | ⚪ | ⚪ |
+| 1 | Tokenizer | 🔵 | ⚪ | ⚪ |
 | 2 | I/O de archivos | ⚪ | ⚪ | ⚪ |
 | 3 | Construcción del prompt | ⚪ | ⚪ | ⚪ |
 | 4 | Validez de tokens | ⚪ | ⚪ | ⚪ |

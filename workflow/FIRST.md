@@ -104,11 +104,13 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-08-07
+> [!info] Estado — 2026-08-10
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 0 **completa**. Fase 1 desbloqueada y sin empezar
-> **Último bloque cerrado:** ninguno — todavía no hay diseño ni código
-> **En qué se estaba:** 10/10 temas en `dominado`, `Input/Output` y `Restricciones generales` volcados
-> **Abierto:** reforzar los **imports relativos** cuando aparezca el primero en Fase 2 · se implementan **los 9 bonus** (el 7 condiciona el diseño de la máscara) · `Makefile` y `.gitignore` vacíos por decisión suya
+> **Fase:** 1 — diseño. Responsabilidades sueltas cerradas, **6 bloques** definidos y ordenados
+> **Último bloque cerrado:** ninguno. El **Bloque 1 (Tokenizer)** está en diseño: mecanismo acordado, sin clases ni firmas
+> **En qué se estaba:** diseño del tokenizer BPE — bucle de fusiones, dos diccionarios, tabla byte↔carácter
+> **Antes de nada:** lanzar el **cuestionario de repaso** — guion escrito en `[[PROJECT#🔁 Cuestionarios de repaso de sesión]]`. Después, y solo después, volver a explicarle la tabla byte↔carácter
+> **Abierto:** reforzar los **imports relativos** cuando aparezca el primero en Fase 2 · se implementan **los 9 bonus** · mecanismo del bonus 3 sin decidir · `Makefile` y `.gitignore` vacíos por decisión suya
+> **Vista rápida de los bloques:** `[[FLOW]]`
 
 *(lo rellena el agente saliente en su cierre; el detalle largo va en el briefing de `[[HANDOFF]]`)*

@@ -21,8 +21,9 @@ tags: [42, proyecto]
 > [!info] Dónde estamos
 > **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
-> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia, sin responsabilidades sueltas
-> **Siguiente paso:** abrir el diseño del **Bloque 1 — Tokenizer**: clases, atributos y firmas
+> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · **Bloque 1 en diseño**, mecanismo acordado
+> **Siguiente paso:** cerrar el diseño del **Bloque 1 — Tokenizer** — clases, atributos y firmas. Lo propone él
+> **Vista rápida de los bloques:** `[[FLOW]]`
 > **Bloqueos abiertos:** ninguno
 > **Al abrir sesión:** cuestionario de repaso obligatorio — ver `[[PROJECT#🔁 Cuestionarios de repaso de sesión]]`
 > **Alcance:** se van a implementar **los 9 bonus** (decisión del estudiante, 2026-08-07) — ver `[[PROJECT#Alcance — bonus]]`
@@ -41,7 +42,7 @@ graph LR
 
 | Bloque | Descripción | Estado | Qué recibe | Qué entrega |
 |---|---|---|---|---|
-| 1 — Tokenizer | `encode`/`decode` propios desde `vocab.json` y `merges.txt` | ⚪ | Rutas del SDK | Texto ↔ ids, y el `dict` string → id |
+| 1 — Tokenizer | `encode`/`decode` propios desde `vocab.json` y `merges.txt` | 🔵 | Rutas del SDK | Texto ↔ ids, y el `dict` string → id |
 | 2 — I/O de archivos | Leer y validar los JSON de entrada, escribir salida y log | ⚪ | Rutas de los argumentos | Catálogo y prompts validados |
 | 3 — Construcción del prompt | Plantilla de chat y tokens especiales del modelo | ⚪ | Catálogo + prompt del usuario | Un string listo para tokenizar |
 | 4 — Validez de tokens | FSM/PDA + schema + cache de lista blanca | ⚪ | Estado del JSON y schema | Ids permitidos en ese estado |
@@ -84,11 +85,23 @@ graph LR
 > El texto que entra a `encode` (prompt + funciones, después ids acumulados sin re-encodear) · los ~150.000 logits y qué puntúan · la lista blanca por **prefijo** en `{"name": "fn_a` · el contador de profundidad y su valor exacto (1) en `..."b": 2}` · el corte `input_ids[len(prompt_ids):]` antes de `decode` · el bonus 7 necesita **pila (PDA)**, no basta un FSM.
 
 > [!bug] A volver a preguntar en el próximo repaso
+> · **Decodificar byte a byte** — ==tercera vez que se cae en lo mismo== (dos el 2026-08-07 en el Tema 6, una hoy diseñando el Bloque 1). Ante la `é` de `"Greet José"` partida en dos piezas, propuso volver a pasar por `encode`. Lo correcto: **acumular todos los bytes de todas las piezas y llamar a `.decode("utf-8")` una sola vez al final**. Un byte suelto lanza `UnicodeDecodeError`, no devuelve basura. Preguntar con el caso de `José`, no en abstracto
 > · **Token vs carácter** — falló dos veces en la misma sesión, es el que más riesgo tiene de volver
 > · **`loads` / `dumps`** — cuál convierte en qué dirección
 > · **Por qué un prompt por llamada** — la razón, no la regla
 > · **Determinismo de greedy** — dijo *"puede salir lo mismo o otra cosa"*; sale siempre lo mismo
 > · Del contenido nuevo de hoy: qué es **cache de lista blanca** y por qué **batching no aplica** aquí
+
+> [!important] Guion del repaso de la próxima sesión — pedido por él, 2026-08-10
+> Además de los puntos de arriba, el cuestionario cubre lo trabajado en el diseño de Fase 1:
+> · Los **6 bloques** y el orden de dependencia — que los nombre él
+> · Por qué el tokenizer es bloque propio y no un paso del de entrada
+> · Por qué `Chat` **recibe** las piezas en vez de construirlas (su analogía del motor y el carro)
+> · Qué es un **tensor** y por qué `encode` del SDK devuelve 2-D
+> · El **bucle de fusiones de BPE**: qué se fusiona primero y por qué hay que volver a mirar todos los pares
+> · Los cuatro pasos de **su** `decode` y en cuál va `bytes.decode("utf-8")`
+>
+> **Después de que él responda —no antes—, volver a explicarle la tabla byte↔carácter.** Petición explícita: quiere el repaso primero y la explicación después.
 
 ---
 
@@ -547,6 +560,76 @@ Los argumentos de línea de comandos se parsean en `src/__main__.py`, fuera de l
 > · **Nunca se aborta la ejecución:** aunque falle un prompt (o el 60% de ellos), se procesan todos y la salida lleva siempre **N objetos**. Razón: un archivo con 12 objetos donde se esperaban 20 es indistinguible de un programa que se colgó.
 > · **Los fallos se registran en un archivo de log aparte**, escrito por el bloque de I/O, con la forma `{índice_del_prompt: "mensaje"}` — la clave es el índice, no el nombre de la función, porque varios prompts fallidos pueden compartir función. El índice es la posición en el array, la misma en entrada y en salida.
 > · **Función inexistente no necesita guard:** la máscara solo permite continuaciones de los nombres del catálogo, así que el modelo no tiene tokens con los que escribir una función que no existe. El fallo posible es de **contenido**, no de nombre.
+
+---
+
+### Bloque 1 — Tokenizer
+
+> [!info] Estado
+> **diseño — en curso.** Abierto el 2026-08-10. Mecanismo acordado; **clases, atributos y firmas sin definir todavía**
+
+**Descripción:** convertir texto a token ids y token ids a texto, sin usar `encode`/`decode` del SDK. Implementa BPE byte-level a mano desde `vocab.json` y `merges.txt`.
+
+**Depende de:** nada — es el primero en orden de dependencia.
+**Qué recibe:** las rutas de `get_path_to_vocab_file()` y `get_path_to_merges_file()`.
+**Qué entrega:** `encode(str) -> list[int]`, `decode(list[int]) -> str`, y el `dict` del vocabulario que necesita el `[[PROJECT#Bloques|Bloque 4]]` para calcular la lista blanca.
+
+#### Lo acordado el 2026-08-10
+
+**Estructuras que se cargan una sola vez al arrancar:**
+
+| Estructura | Forma | Para qué |
+|---|---|---|
+| Vocabulario directo | `{string: id}` | `encode` — buscar el id de cada pieza. Consulta O(1) |
+| Vocabulario invertido | `{id: string}` | `decode` — buscar la pieza de cada id. Sin él habría que recorrer 150.000 entradas por token |
+| Tabla de merges | lista ordenada de pares | El orden **es** la prioridad: la línea 1 es la fusión más prioritaria |
+| Tabla byte↔carácter | 256 entradas, en los dos sentidos | Traducir entre bytes reales y los caracteres visibles con que `vocab.json` los escribe |
+
+**El bucle de fusiones de BPE, tal como se acordó:**
+
+```
+1. Partir el texto en símbolos sueltos (bytes)
+2. Repetir:
+     a. Listar todos los pares vecinos actuales
+     b. Quedarse con el que aparece más arriba en merges.txt
+     c. Si ninguno está en la tabla → parar
+     d. Fusionar ese par en un solo símbolo
+3. Los símbolos que quedan son los tokens
+```
+
+> [!important] El matiz del paso 2b
+> No se aplica la primera regla que encaje, sino la de **prioridad más alta** entre las que encajan. Por eso cada vuelta hay que volver a mirar todos los pares vecinos.
+
+**La tabla byte↔carácter:**
+
+`vocab.json` es un archivo de texto y no puede contener bytes crudos (el 0, el salto de línea, el espacio). Por eso cada uno de los 256 bytes tiene asignado un carácter imprimible que lo representa.
+
+| Byte | Qué es | Carácter |
+|---|---|---|
+| 32 | espacio | `Ġ` |
+| 10 | salto de línea | `Ċ` |
+| 65 | `A` | `A` — se representa a sí mismo |
+| 195 | primer byte de `é` | `Ã` |
+| 169 | segundo byte de `é` | `©` |
+
+Regla: los bytes que ya son caracteres imprimibles se representan a sí mismos; los que no, se desplazan 256 posiciones a una zona visible sin usar. **Esa tabla no está en ningún archivo** — se construye en código, ~10 líneas. Se usa en las dos direcciones: en `encode` bytes → caracteres, en `decode` caracteres → bytes.
+
+> [!warning] Los cuatro pasos de `decode`, en este orden
+> ```
+> 1. id → pieza                    con el dict invertido
+> 2. pieza → bytes                 con la tabla byte↔carácter
+> 3. acumular los bytes            en un bytearray, sin tocarlos
+> 4. bytearray.decode("utf-8")     ← una sola vez, fuera del bucle
+> ```
+> El paso 4 es de **Python**, no se implementa. Lo prohibido es el `decode` del SDK, no el de `bytes`.
+> Decodificar pieza a pieza lanza `UnicodeDecodeError` en cuanto un carácter multibyte cae partido — ver `"Greet José"`.
+
+#### Abierto en este bloque
+
+- [ ] **Cómo encontrar el par de mayor prioridad** sin recorrer las ~150.000 reglas en cada vuelta. Es la decisión de rendimiento del bloque
+- [ ] Clases, atributos y firmas — nada definido todavía
+- [ ] Dónde vive la tabla byte↔carácter: dentro del tokenizer o aparte
+- [ ] Qué expone el bloque al Bloque 4, y en qué forma
 
 ---
 
