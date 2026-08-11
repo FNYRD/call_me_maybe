@@ -15,7 +15,8 @@ tags: [42, sistema, workflow]
 | `SYSTEM.md` | Directrices universales. Cómo se trabaja. | Casi nunca |
 | `PSYCHOLOGY.md` | Perfil del estudiante. Cómo enseñarle mejor. Vuelve a la base al cerrar. | Por sesión |
 | `HANDOFF.md` | El subject traducido + briefings de relevo. | Solo la parte de relevo |
-| `PROJECT.md` | **El proyecto vivo.** Restricciones, conceptos, bloques, clases y progreso. | Constantemente |
+| `PROJECT.md` | **El proyecto vivo.** Restricciones, conceptos, bloques, clases y progreso. Incluye la `Lista de refuerzo` y el `Cuestionario de la próxima sesión`. | Constantemente |
+| `REVIEWS.md` | Histórico de los cuestionarios de repaso, una entrada por sesión. **No se lee al contextualizarse.** | Se le añade una entrada al cerrar cada repaso |
 | `Posible mejoras al sistema.md` | Qué mejorar del sistema. Vuelve a la base al cerrar. Lo anota el estudiante. | Cuando algo estorba |
 
 > [!important] Todo en Markdown
@@ -849,7 +850,15 @@ Los históricos van con `[!info]-` (nacen plegados): están si hacen falta, sin 
 
 **4. Escribir el briefing** — los 8 campos en `HANDOFF.md`. El anterior pasa a plegado.
 
-**5. Confirmar** — lista de qué quedó escrito y dónde, para que el estudiante lo verifique antes de cerrar.
+**5. Escribir el cuestionario de la próxima sesión** — en `PROJECT.md`, con las preguntas **ya redactadas**: mitad de lo que está en 🔴 en la `Lista de refuerzo`, mitad de lo trabajado en la sesión que se cierra. Y actualizar los estados de esa lista.
+
+> [!important] Por qué lo escribe el que cierra
+> El agente saliente tiene la sesión entera en la cabeza: sabe qué costó, qué quedó a medias y qué se dio por entendido sin comprobar. El entrante solo tiene los archivos. Si las preguntas las improvisa él, el repaso cubre lo que se deduzca de un documento, no lo que de verdad falló.
+
+**6. Confirmar** — lista de qué quedó escrito y dónde, para que el estudiante lo verifique antes de cerrar.
+
+> [!note]- Aplicado provisionalmente — 2026-08-11
+> Los pasos que tocan la `Lista de refuerzo`, el `Cuestionario de la próxima sesión` y `REVIEWS.md` vienen de una propuesta todavía **sin adoptar formalmente**: sigue viva en `Posible mejoras al sistema.md` y se aplica a la carpeta base al cerrar el proyecto. Se anticipó aquí a petición del estudiante, por ser parte central de cómo trabaja. El resto del protocolo no cambió.
 
 > [!warning] Si el contexto está casi agotado
 > Se invierte el orden: **briefing primero**, luego `PROJECT.md`, luego `PSYCHOLOGY.md`. Sin briefing el siguiente agente arranca ciego; lo demás se reconstruye leyendo el código.

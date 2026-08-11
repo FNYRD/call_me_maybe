@@ -21,14 +21,14 @@ tags: [42, proyecto]
 > [!info] Dónde estamos
 > **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
-> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · **Bloque 1 en diseño**, mecanismo acordado
-> **Siguiente paso:** cerrar el diseño del **Bloque 1 — Tokenizer** — clases, atributos y firmas. Lo propone él
+> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · **Bloque 1 con diseño cerrado y construcción empezada** en `src/tokenizer.py`
+> **Siguiente paso:** corregir los dos fallos del bucle de merges y dividir las cargas en métodos privados — ver `[[PROJECT#📋 Cuestionario de la próxima sesión]]`
 > **Vista rápida de los bloques:** `[[FLOW]]`
 > **Bloqueos abiertos:** ninguno
-> **Al abrir sesión:** cuestionario de repaso obligatorio — ver `[[PROJECT#🔁 Cuestionarios de repaso de sesión]]`
+> **Al abrir sesión:** lanzar el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — una pregunta por mensaje
 > **Alcance:** se van a implementar **los 9 bonus** (decisión del estudiante, 2026-08-07) — ver `[[PROJECT#Alcance — bonus]]`
 > **Arrastrado a Fase 2:** reforzar los **imports relativos** del Tema 3 en el momento en que aparezca el primero, sin esperar a que él lo pida
-> **A reforzar la próxima sesión:** los 3 fallos del repaso del 2026-08-10 — ver `[[PROJECT#Repaso de sesión 2026-08-10 — a reforzar]]`
+> **A reforzar:** todo lo pendiente está en una sola tabla — `[[PROJECT#🎯 Lista de refuerzo]]`. El histórico de los repasos vive en `[[REVIEWS]]` y **no se lee** salvo que haga falta
 
 ```mermaid
 graph LR
@@ -56,52 +56,98 @@ graph LR
 
 ---
 
-## 🔁 Cuestionarios de repaso de sesión
+## ⚙️ Tarea pendiente de verificación — hook de caveman
 
-> [!important] Obligatorio al abrir sesión — petición del estudiante, 2026-08-10
-> Nada más contextualizarse, **antes de abrir tema nuevo**, el agente lanza un cuestionario corto sobre lo aprendido y lo hecho en la sesión anterior.
-> · 4–6 preguntas · **una por mensaje** · en **orden de ejecución** del programa
-> · Las preguntas salen del registro de la sesión anterior y del `[[NOTEBOOK]]`
-> · Un fallo **no se corrige dando la respuesta**: se le pone el caso límite concreto y llega solo. Solo si dice *"no sé"* se responde directo
-> · Al terminar, el agente **añade aquí una entrada nueva** con los fallos y sus correcciones. Todos los repasos se acumulan, no se sobrescriben
-
-> [!warning] Para qué sirve el histórico
-> El foco de cada repaso es doble: **lo último visto** y **lo que ya falló antes y todavía no está controlado**. Un fallo que aparece en dos repasos seguidos vuelve a preguntarse hasta que resista; si aparece tres veces, el tema baja de ✅ a 🟡 en el `[[PROJECT#Cuestionario de verificación]]`.
-
-### Repaso 2026-08-10 — Fase 0 completa, entrada a Fase 1
-
-**Fallos:**
-
-| # | Fallo | Corrección | Tema |
-|---|---|---|---|
-| 1 | Sabía que se manda **un prompt por llamada**, pero no la razón: la atribuyó al procesamiento de la respuesta. Ante el caso de 5 objetos con uno repetido y otro sin responder, dijo *"no sé"* | La razón no es el formato — es la **correspondencia prompt↔resultado**. La máscara garantiza estructura (JSON válido, nombres y tipos del schema); que el objeto 3 responda al prompt 3 es **semántica** y no se puede enmascarar. Con un prompt por llamada la correspondencia la garantiza el bucle: un prompt, un resultado, mismo índice | 1, 10 |
-| 2 | Dijo **"carácter"** en vez de **token**, dos veces seguidas | Un logit por **entrada del vocabulario**, no por letra. Hay entradas multicarácter (`name`, `{"`, `dd_numbers`): un solo token puede añadir 10 caracteres de golpe. Confundirlos rompe el diseño de la máscara, que compara **strings de token** | 6, 8 |
-| 3 | Del bucle al archivo saltó de `decode` directo a `json.dump`. No recordaba qué hace `json.loads` | `decode` devuelve un **string**; pydantic valida un **dict**. Orden real: `decode` → `json.loads` → `dict` → pydantic → guardar en la lista de los N → **un solo** `json.dump` del array al final. Un `dump` sobre el string escribe el JSON escapado entre comillas | 5 |
-| 4 | `while deep_counter > 0` con el contador a 0 antes de generar — el bucle no entra nunca | Lo resolvió él: primera llamada **fuera** del `while`, el resto dentro. Antes había propuesto inicializar el contador al número de llaves esperado por función; se descartó al ver que el nombre de la función aún no está escrito cuando toca inicializar | — |
-| 5 | Creía que las rutas de los archivos de entrada eran fijas | Salen de `argparse`, con `data/input/` y `data/output/` como defaults. El corrector puede pasar cualquier ruta | 4 |
-| 6 | No sabía quién convierte `functions_definition.json` (dict) en el texto que recibe `encode` | Lo hace **tu programa**: es una responsabilidad propia. El SDK solo tokeniza lo que le des. El formato exacto sigue abierto en `[[PROJECT#A analizar en esta fase]]` | 1 |
-
-> [!success] Correcto sin ayuda
-> El texto que entra a `encode` (prompt + funciones, después ids acumulados sin re-encodear) · los ~150.000 logits y qué puntúan · la lista blanca por **prefijo** en `{"name": "fn_a` · el contador de profundidad y su valor exacto (1) en `..."b": 2}` · el corte `input_ids[len(prompt_ids):]` antes de `decode` · el bonus 7 necesita **pila (PDA)**, no basta un FSM.
-
-> [!bug] A volver a preguntar en el próximo repaso
-> · **Decodificar byte a byte** — ==tercera vez que se cae en lo mismo== (dos el 2026-08-07 en el Tema 6, una hoy diseñando el Bloque 1). Ante la `é` de `"Greet José"` partida en dos piezas, propuso volver a pasar por `encode`. Lo correcto: **acumular todos los bytes de todas las piezas y llamar a `.decode("utf-8")` una sola vez al final**. Un byte suelto lanza `UnicodeDecodeError`, no devuelve basura. Preguntar con el caso de `José`, no en abstracto
-> · **Token vs carácter** — falló dos veces en la misma sesión, es el que más riesgo tiene de volver
-> · **`loads` / `dumps`** — cuál convierte en qué dirección
-> · **Por qué un prompt por llamada** — la razón, no la regla
-> · **Determinismo de greedy** — dijo *"puede salir lo mismo o otra cosa"*; sale siempre lo mismo
-> · Del contenido nuevo de hoy: qué es **cache de lista blanca** y por qué **batching no aplica** aquí
-
-> [!important] Guion del repaso de la próxima sesión — pedido por él, 2026-08-10
-> Además de los puntos de arriba, el cuestionario cubre lo trabajado en el diseño de Fase 1:
-> · Los **6 bloques** y el orden de dependencia — que los nombre él
-> · Por qué el tokenizer es bloque propio y no un paso del de entrada
-> · Por qué `Chat` **recibe** las piezas en vez de construirlas (su analogía del motor y el carro)
-> · Qué es un **tensor** y por qué `encode` del SDK devuelve 2-D
-> · El **bucle de fusiones de BPE**: qué se fusiona primero y por qué hay que volver a mirar todos los pares
-> · Los cuatro pasos de **su** `decode` y en cuál va `bytes.decode("utf-8")`
+> [!warning] Compruébalo al arrancar y borra esta sección
+> El hook de `.claude/settings.json` se escribió el **2026-08-11**, pero `.claude/` no existía al empezar aquella sesión, así que el vigilante de configuración pudo no cargarlo. Quedó sin verificar en vivo.
 >
-> **Después de que él responda —no antes—, volver a explicarle la tabla byte↔carácter.** Petición explícita: quiere el repaso primero y la explicación después.
+> **Cómo comprobarlo:** en tu primera escritura con `Edit` o `Write`, mira si te llega el recordatorio de modo ejecución.
+>
+> | Resultado | Qué haces |
+> |---|---|
+> | **Funciona** | **No le digas nada.** Borra esta sección entera de `[[PROJECT]]` y sigue trabajando |
+> | **No funciona** | **Avísale.** Es la red que sostiene la regla 6 de `[[FIRST]]`, y sin ella vuelve a depender de que el agente se acuerde |
+
+---
+
+## 🎯 Lista de refuerzo
+
+> [!important] Una sola lista, acumulada — petición del estudiante, 2026-08-11
+> Todo lo que hay que reforzar vive **aquí y solo aquí**. No se busca en las entradas de repaso ni en las filas del cuestionario de verificación.
+> Una fila por tema. Se añade en el momento en que aparece; se marca ✅ cuando resiste una pregunta sin ayuda, y **no se borra** — el histórico de que costó es lo que evita darlo por sabido demasiado pronto.
+
+**Origen:** 🙋 lo pidió él · ❌ falló en un cuestionario · 🔍 lo propone el agente
+**Estado:** 🔴 pendiente · 🟡 explicado, sin verificar · ✅ resiste sin ayuda · ⏸️ diferido a Fase 2 por decisión suya
+
+| Tema | Origen | Estado | Cómo preguntarlo / qué falta |
+|---|---|---|---|
+| **De qué depende la lista blanca** — las dos cosas: texto ya escrito + schema del campo | ❌ 08-11 | 🔴 | No las recordaba. Preguntar con dos estados distintos del mismo prompt |
+| **Cache de la lista blanca (bonus 4)** — qué va de clave y qué de valor | ❌ 08-11 · 🙋 diferir | ⏸️ | Volvió tres veces al `dict` invertido del tokenizer. Explicado con dos bloques de código; quedó *"medio claro"*. **Se explica de nuevo al implementar el bonus 4**, y se pregunta antes de escribirlo |
+| **Por qué el Bloque 4 es bloque propio** | ❌ 08-11 | 🔴 | Llegó a la razón con ayuda, no de memoria. Preguntar por el test: qué hace falta cargar para probar la lista blanca |
+| **Qué es un tensor** | 🙋 08-11 · ❌ 08-11 | 🔴 | Lo contestó bien por la mañana y se le olvidó el mismo día. Preguntar con `encode` del SDK devolviendo `tensor([[151644, ...]])` y por qué los corchetes van dobles |
+| **Por qué un prompt por llamada** — la razón, no la regla | ❌ 08-10 | 🔴 | Arrastrado: **no se preguntó en el repaso del 08-11**. Caso de 5 objetos con uno repetido y otro sin responder |
+| **Por qué batching no aplica aquí** | 🔍 08-10 | 🔴 | Arrastrado: no se preguntó el 08-11. `get_logits_from_input_ids` recibe una única secuencia |
+| **Tabla byte↔carácter: el desplazamiento es `256 + puesto`, no `256 + byte`** | ❌ 08-11 · 🙋 08-11 | 🟡 | Costó cuatro intentos y tres *"no entiendo"*. Lo que por fin funcionó: poner los invisibles en fila (`0…32, 127, 128…`) y preguntarle **qué puesto ocupa el 127** — contestó 33 al primer intento. Lo abstracto lo bloquea; contar puestos en una fila concreta lo desbloquea. También falló creyendo que `chr(byte)` valía para los 256, y que ASCII llegaba a 256 (llega a 127; un byte son 256 valores). Preguntar con el 127, nunca con el espacio — con el espacio la regla mala y la buena coinciden |
+| **BPE byte-level** — el suelo del vocabulario son los **256 bytes**, no las letras | 🙋 08-11 | 🟡 | Petición suya al no reconocer el término, aunque ya lo había cerrado como *"bytes como suelo"* en el Tema 6. Explicado con la tabla de las dos opciones (caracteres = alfabeto infinito · bytes = 256 y nunca falta símbolo) y con `José` arrancando en 5 símbolos, no 4. **Sin verificar** — preguntar por qué un carácter nuevo nunca rompe la tokenización |
+| **Imports relativos** — por qué `python -m src` fija `__package__` y `python src/__main__.py` no | 🙋 08-07 | ⏸️ | Petición suya: reforzarlo **cuando aparezca el primer import relativo** en el código, sin esperar a que lo pida |
+| **Cómo se construye la tabla byte↔carácter** — el algoritmo, las ~10 líneas | 🙋 08-11 | ⏸️ | Sabe *qué* hace en las dos direcciones, que es lo que necesitaba para el diseño. El *cómo* se explica al escribir el tokenizer |
+| **Decodificar byte a byte** — acumular y una sola llamada a `.decode("utf-8")` | ❌ ×3 (08-07, 08-10) | ✅ 08-11 | Cuarta vez preguntado, primera limpia, con el caso de `José`. Volver a tocarlo solo si reaparece |
+| **Token vs carácter** | ❌ ×2 (08-10) | ✅ 08-11 | `dd_numbers` = una vuelta del bucle, 10 caracteres. Respondido sin dudar |
+| **`loads` / `dump`** — cuál convierte en qué dirección | ❌ 08-10 | ✅ 08-11 | — |
+| **Determinismo de greedy** | ❌ 08-10 | ✅ 08-11 | — |
+
+> [!warning] Regla de reincidencia
+> Un tema que falla **tres veces** baja de ✅ a 🟡 en el `[[PROJECT#Cuestionario de verificación]]`, y la explicación que se usó las veces anteriores se busca en `[[REVIEWS]]` — para no repetir la que ya no funcionó.
+
+---
+
+## 📋 Cuestionario de la próxima sesión
+
+> [!important] Se escribe al **cerrar** la sesión, no al abrirla — petición del estudiante, 2026-08-11
+> El agente saliente deja aquí las preguntas ya redactadas. Así el agente entrante no tiene que deducirlas, y el estudiante se pone al día con lo de ayer y refuerza lo que le cuesta, en el mismo cuestionario.
+>
+> **Y se escribe al final de todo, nunca a mitad de sesión.** Si se redacta antes de terminar, deja fuera lo trabajado después — que es lo más reciente y lo que más riesgo tiene de olvidarse. Pasó el 2026-08-11: se escribió a media tarde y hubo que rehacerlo al cerrar.
+>
+> **Cómo se construye:** mitad de la `[[PROJECT#🎯 Lista de refuerzo]]` (lo que está en 🔴), mitad de lo trabajado en la sesión que se cierra.
+> **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
+> **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
+
+### Para la sesión del 2026-08-12
+
+> [!info] Seis preguntas, en orden de ejecución del programa
+> Tres de la `Lista de refuerzo` (🔴 sin resolver) y tres de lo trabajado el 2026-08-11.
+
+1. Tienes 5 prompts en el archivo de entrada. ¿Por qué se manda **uno por llamada** y no los cinco de golpe? La razón, no la regla. *(refuerzo, arrastrado del 08-10)*
+2. Llega un prompt con un carácter que el modelo no vio jamás al entrenarse — pon un emoji raro. ¿Por qué no rompe la tokenización? *(lo de hoy: el suelo son los 256 bytes)*
+3. Te toca traducir el **byte 127** a su carácter. ¿Cuál es, y de dónde sale ese número? *(lo de hoy — **usar el 127, nunca el espacio**: con el 32 la regla equivocada acierta por casualidad)*
+4. Símbolos `l o w`, con la regla `o w` en la línea 5 y `l o` en la línea 900. ¿Cuál fusionas primero y por qué? *(lo de hoy)*
+5. `encode` del SDK devuelve `tensor([[151644, 8948]])`. ¿Qué es eso y por qué los corchetes van dobles? *(refuerzo — lo contestó bien el 08-11 por la mañana y se le había olvidado por la tarde)*
+6. Congelada la generación en `{"a": ` — ¿de qué **dos cosas** depende la lista blanca en ese punto? *(refuerzo)*
+
+> [!note] Banco para la sesión siguiente
+> No caben en seis, pero siguen pendientes: por qué **batching no aplica** · por qué la clave de los merges es una **tupla** y no las piezas pegadas · qué se rompía si el `Tokenizer` pidiera las rutas al SDK · dónde va el **guard** y por qué no en `get_vocab()`.
+
+> [!important] Tarea fijada para después del cuestionario — decisión suya, 2026-08-11
+> **Dividir la carga de `vocab.json` y `merges.txt` en métodos privados**, llamados desde `__init__`. Ahora mismo están en línea dentro del constructor.
+> Decidido tras discutirlo: su argumento (que el objeto no se construya si algo falla) se cumple igual con métodos, porque el `raise` sigue ocurriendo durante la construcción. Lo que se gana es localizar el fallo y poder reejecutar una sola carga con un archivo de juguete.
+> Antes de eso hay **dos fallos que arreglar** en el bucle de merges — ver `[[PROJECT#Bloque 1 — Tokenizer]]`.
+
+---
+
+## 🔁 Cómo funcionan los repasos
+
+> [!important] El ciclo completo — tres archivos, cada uno con su papel
+> | Archivo | Qué guarda | Cuándo se toca |
+> |---|---|---|
+> | `[[PROJECT#🎯 Lista de refuerzo]]` | **Lo vivo:** qué falta reforzar, de dónde salió y en qué estado está | Se actualiza al terminar cada repaso y en cuanto aparece algo nuevo |
+> | `[[PROJECT#📋 Cuestionario de la próxima sesión]]` | Las preguntas **ya redactadas** para la sesión siguiente | Las escribe el agente **saliente**, al cerrar |
+> | `[[REVIEWS]]` | **El histórico:** cómo fue cada repaso, con fallos y correcciones | Se le añade una entrada al terminar el repaso. **No se lee al contextualizarse** |
+
+> [!warning] Por qué el cuestionario se escribe al cerrar y no al abrir
+> El agente que cierra tiene la sesión entera en la cabeza: sabe qué costó, qué quedó a medias y qué se dio por entendido sin comprobar. El que abre solo tiene los archivos. Redactar las preguntas al cerrar es lo que hace que el repaso del día siguiente cubra **lo de ayer y lo que cuesta**, en vez de lo que se deduzca de un documento.
+
+> [!warning] Regla del histórico
+> `[[REVIEWS]]` **no entra en la ruta de lectura**: son miles de palabras que no cambian lo que toca hacer hoy. Se abre solo cuando un tema falla por tercera vez y hay que ver **cómo** se explicó antes, para no repetir la explicación que no funcionó.
 
 ---
 
@@ -162,6 +208,7 @@ Array con **un objeto por prompt de entrada**, en el mismo orden, con **exactame
 | Subject | Permitido solo `numpy` y `json`. Prohibido tocar métodos o atributos **privados** de `llm_sdk` (todo lo que empieza por `_`) | Solo los 6 métodos públicos de `[[PROJECT#Interfaz real del llm_sdk]]` |
 | Técnica | **Python 3.10+**, type hints completos, docstrings PEP 257, `try-except` en todo lo que pueda fallar, context managers para archivos | Un crash durante la evaluación cuenta como no funcional |
 | Técnica | `llm_sdk/` se copia dentro del repositorio, no se instala como paquete externo | Ya está en `llm_sdk/` |
+| Entorno | **`vocab.json` y `merges.txt` no están en el repo** *(verificado 2026-08-11)*. `get_path_to_vocab_file()` y `get_path_to_merges_file()` llaman a `hf_hub_download`, que los **descarga de Hugging Face** la primera vez y devuelve la ruta dentro de `~/.cache/huggingface/hub` | **La primera ejecución necesita red.** Con la caché vacía y sin conexión, el programa no arranca — ni en tu máquina ni en la del corrector. En esta máquina la caché todavía no existe: nada del SDK se ha ejecutado aún |
 | Entorno | **La máquina de trabajo no tiene GPU** — sin NVIDIA (`nvidia-smi` no devuelve nada) y sin Apple Silicon, así que el SDK cae a `cpu` con `float32` *(verificado 2026-08-07)* | Es el camino más lento de los tres que contempla el SDK. El límite del subject —todos los prompts en menos de 5 minutos— pasa a ser una restricción real de diseño, no un trámite. Cada token generado es una pasada completa por las 28 capas del modelo |
 | Estilo | Pasa **flake8** y **mypy** sin errores | `make lint` los ejecuta |
 | Estilo | README en **inglés**, primera línea en cursiva con el formato exacto que fija el subject | Ver `[[HANDOFF#📄 README.md — requisitos]]` |
@@ -560,13 +607,16 @@ Los argumentos de línea de comandos se parsean en `src/__main__.py`, fuera de l
 > · **Nunca se aborta la ejecución:** aunque falle un prompt (o el 60% de ellos), se procesan todos y la salida lleva siempre **N objetos**. Razón: un archivo con 12 objetos donde se esperaban 20 es indistinguible de un programa que se colgó.
 > · **Los fallos se registran en un archivo de log aparte**, escrito por el bloque de I/O, con la forma `{índice_del_prompt: "mensaje"}` — la clave es el índice, no el nombre de la función, porque varios prompts fallidos pueden compartir función. El índice es la posición en el array, la misma en entrada y en salida.
 > · **Función inexistente no necesita guard:** la máscara solo permite continuaciones de los nombres del catálogo, así que el modelo no tiene tokens con los que escribir una función que no existe. El fallo posible es de **contenido**, no de nombre.
+> · **El cálculo de la lista blanca del Bloque 4 tiene que ser una función que recibe el estado y devuelve los ids** *(2026-08-11)*. Si queda enterrado dentro del bucle de generación, meter el cache del bonus 4 después obliga a rehacerlo. Con la función aislada, el cache se pone encima sin tocar nada.
 
 ---
 
 ### Bloque 1 — Tokenizer
 
 > [!info] Estado
-> **diseño — en curso.** Abierto el 2026-08-10. Mecanismo acordado; **clases, atributos y firmas sin definir todavía**
+> **diseño cerrado, construcción empezada.** Abierto el 2026-08-10. Clase, atributos y firmas definidos el 2026-08-11 en `src/tokenizer.py`.
+> **Ya construido:** las dos tablas byte↔carácter (verificadas: espacio → `Ġ`, `é` → `Ã` + `©`, 256 caracteres sin colisión), el vocabulario invertido, y la carga de `vocab.json` y `merges.txt` — esta última **con dos fallos abiertos**.
+> **Pendiente:** los cuerpos de `encode` y `decode`, que siguen devolviendo valores de relleno.
 
 **Descripción:** convertir texto a token ids y token ids a texto, sin usar `encode`/`decode` del SDK. Implementa BPE byte-level a mano desde `vocab.json` y `merges.txt`.
 
@@ -624,12 +674,37 @@ Regla: los bytes que ya son caracteres imprimibles se representan a sí mismos; 
 > El paso 4 es de **Python**, no se implementa. Lo prohibido es el `decode` del SDK, no el de `bytes`.
 > Decodificar pieza a pieza lanza `UnicodeDecodeError` en cuanto un carácter multibyte cae partido — ver `"Greet José"`.
 
+#### Dónde vive el diseño
+
+> [!important] Las firmas están en el código, no aquí — decisión suya, 2026-08-11
+> `src/tokenizer.py` — clase `Tokenizer`, esqueleto sin cuerpo.
+> `PROJECT.md` guarda la descripción, las decisiones y las objeciones; las firmas viven en el archivo. Propuesta de sistema anotada en `Posible mejoras al sistema.md`.
+> **Decidido, 2026-08-11:** se trabaja **directamente en `src/`**, que es la carpeta que exige el subject. Se descartó una carpeta `clases/` de borrador para no tener que mover archivos y rehacer imports después. Un módulo por bloque, plano dentro de `src/`.
+
+#### Decisiones cerradas el 2026-08-11
+
+| Decisión | Por qué |
+|---|---|
+| **Tabla de merges: `dict[tuple[str, str], int]`** — clave el par, valor el número de línea | Resuelve la pregunta de rendimiento del bloque: una consulta O(1) por par vecino, en vez de recorrer las ~150.000 reglas. La **tupla** conserva la frontera: con la clave concatenada, `('lo','w')` y `('l','ow')` dan las dos `"low"` y una pisa a la otra |
+| **`__init__` recibe `vocab_path` y `merges_path`** | Llegó él tras retirar la opción contraria: *"eso no la hace reusable"*. Si el `Tokenizer` pidiera las rutas al SDK por dentro, necesitaría una instancia del modelo (2.4 GB) para existir, y el test con un vocabulario de juguete sería imposible |
+| **El guard va en `__init__`, con `raise`, no en el getter** | Si existe un `Tokenizer`, su vocabulario es válido **por construcción**. Con el guard en `get_vocab()`, el `Optional` se propaga al Bloque 4 y obliga a comprobar `None` en cada uso. El `raise` lo atrapa quien lo construye: no rompe la restricción de no crashear |
+| **Nunca devolver un valor falso de relleno** | Descartado `return {"empty": 0}` con el vocabulario vacío: el Bloque 4 calcularía la lista blanca sobre un vocabulario inventado, sin error y sin aviso |
+| **La tabla byte↔carácter vive dentro del `Tokenizer`** | Solo `encode` y `decode` traducen bytes. El Bloque 4 pide el `dict` del vocabulario; el Bloque 5, `encode`/`decode`. Nadie más toca bytes |
+| **Al Bloque 4 se le entrega con `get_vocab() -> dict[str, int]`** | — |
+| **Cinco atributos:** `vocab` `{str: int}` · `reversed_vocab` `{int: str}` · `merge_board` `{(str,str): int}` · `byte_char` `{int: str}` · `char_byte` `{str: int}` | El invertido del vocabulario se construye en una línea dentro de `__init__`; no necesita método propio |
+
+| **Un método privado por estructura, llamado desde `__init__`** — decisión suya, 2026-08-11 | `__init__` solo coloca; cada método hace una cosa, devuelve su estructura y se testea por separado. Cubre la carga de `vocab.json` y `merges.txt` (con `try-except` y context manager) y la construcción de las tablas de bytes |
+
 #### Abierto en este bloque
 
-- [ ] **Cómo encontrar el par de mayor prioridad** sin recorrer las ~150.000 reglas en cada vuelta. Es la decisión de rendimiento del bloque
-- [ ] Clases, atributos y firmas — nada definido todavía
-- [ ] Dónde vive la tabla byte↔carácter: dentro del tokenizer o aparte
-- [ ] Qué expone el bloque al Bloque 4, y en qué forma
+> [!bug] Dos fallos en el bucle de merges — detectados 2026-08-11, sin corregir
+> · **`counter` nunca se incrementa.** Se queda en 0, la condición `if counter != 0` no se cumple nunca y `_merge_board` acaba vacío: siempre se lanza el `ValueError`. Ninguna regla llega a cargarse
+> · **`tokens[1]` revienta con una línea que no tenga dos piezas.** `merges.txt` termina en salto de línea, así que la última vuelta da `tokens = []` → `IndexError`
+
+- [ ] **Corregir esos dos fallos**, y después **dividir las dos cargas en métodos privados** — decidido el 2026-08-11, es la primera tarea tras el cuestionario de la próxima sesión
+- [ ] `self._in_visible` es un `lambda` guardado como atributo. Funciona; queda anotado por si al implementar `encode` estorba
+- [ ] **Los cuerpos de `encode` y `decode`** — devuelven `[0]` y `""` de relleno
+- [ ] Los guards de lectura: **quién atrapa** `FileNotFoundError` y `JSONDecodeError` — ¿el `Tokenizer`, o quien lo construye? No decidido
 
 ---
 

@@ -305,7 +305,41 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 5 — activo
+> [!info] Agente 6 — activo
+> **Periodo:** Cuestionario de repaso del 2026-08-11 → **Bloque 1 con diseño cerrado y construcción empezada**.
+>
+> **Qué se hizo:**
+> - **Repaso de sesión ejecutado.** 4 fallos, y dos aciertos que llevaban tres sesiones cayéndose (decodificar byte a byte, token vs carácter).
+> - **Sistema de refuerzo rehecho a petición suya**, en tres piezas: `[[REVIEWS]]` (histórico, **no se lee** al contextualizarse), `[[PROJECT#🎯 Lista de refuerzo]]` (una sola tabla acumulada, con el origen de cada entrada: 🙋 la pidió él · ❌ falló · 🔍 la propone el agente) y `[[PROJECT#📋 Cuestionario de la próxima sesión]]` (lo escribe el agente **saliente**). Aplicado ya, y anotado en `Posible mejoras al sistema.md` para adoptarlo bien al cerrar.
+> - **Bloque 1 diseñado y empezado** en `src/tokenizer.py`: cinco atributos, `get_vocab`, `encode`, `decode`, las dos tablas byte↔carácter (verificadas a mano) y las dos cargas de archivo.
+> - **Hook nuevo** en `.claude/settings.json` que recuerda caveman ultra al tocar `Edit`/`Write`/`Bash`, más la regla 6 de `[[FIRST]]`. **Sin verificar en vivo** — hay una tarea al principio de `[[PROJECT]]` para comprobarlo.
+>
+> **Dónde se quedó:** `src/tokenizer.py`, con **dos fallos sin corregir** en el bucle que carga `merges.txt` (`counter` nunca sube · `tokens[1]` con línea vacía). `encode` y `decode` siguen vacíos.
+>
+> **Decisiones tomadas:**
+> - **Se trabaja directamente en `src/`.** Descartada una carpeta `clases/` de borrador para no mover archivos y rehacer imports después.
+> - **Las firmas se escriben en el `.py`, no en `PROJECT.md`** — petición suya. Condición obligatoria: cada bloque enlaza a sus archivos, o el relevo arranca ciego.
+> - **Tabla de merges: `dict[tuple[str, str], int]`.** La tupla conserva la frontera; con la clave concatenada `('lo','w')` y `('l','ow')` chocan.
+> - **`__init__` recibe las rutas.** Llegó él tras retirar la opción contraria: *"eso no la hace reusable"*.
+> - **El guard va en `__init__` con `raise`, no en el getter** — si existe un `Tokenizer`, su vocabulario es válido por construcción. Descartado `Optional` y descartado devolver un valor de relleno.
+> - **Restricción nueva:** `vocab.json` y `merges.txt` **no están en el repo**; `hf_hub_download` los baja la primera vez. La primera ejecución necesita red.
+>
+> **Callejones sin salida:**
+> - **La tabla byte↔carácter, cuatro intentos fallidos.** Tablas, trazas y código: *"no entendí nada"*, *"no entendí ni papa"*. Lo que funcionó fue poner los invisibles en fila y preguntarle **qué puesto ocupa el 127** — contestó 33 al primer intento. No expliques el desplazamiento: hazle contar puestos.
+> - **Nunca preguntes esto con el espacio.** Con el byte 32 su regla equivocada (`byte + 256`) da el resultado correcto por casualidad, y el fallo no se ve. Con el 127 sí.
+> - Insistir en un tema que él mismo había diferido. Se estuvo re-explicando el algoritmo de la tabla, que estaba marcado ⏸️. Lo que desbloqueó fue **parar y decirlo**.
+>
+> **Abierto:**
+> - Los dos fallos del bucle de merges, y partir las cargas en métodos privados — **esa es la primera tarea tras el cuestionario**, decidida por él.
+> - Quién atrapa `FileNotFoundError` y `JSONDecodeError` al leer: ¿el `Tokenizer` o quien lo construye?
+> - Verificar el hook de caveman. Si funciona: borrar la sección y **no decirle nada**. Si no: avisarle.
+> - Mecanismo del bonus 3, sin decidir. · 9 propuestas en `Posible mejoras al sistema.md`.
+>
+> **Sobre el estudiante:** Dos cosas nuevas. Cuando pide *"no me des el código"* y minutos después *"dame el código"*, no se contradice: lo primero es para no perder el ejercicio, lo segundo es para **verificar visualmente** algo que ya entendió. Y detecta el desperdicio de contexto — preguntó si un subagente gasta más tokens, y se dio cuenta solo de que no estaba usando caveman en ejecución. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** El cuestionario ya está escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 8 preguntas, una por mensaje. Después, los dos fallos y los métodos privados.
+
+> [!info]- Agente 5 — histórico
 > **Periodo:** Cierre de Fase 0 → **Fase 1 abierta**, 6 bloques definidos y Bloque 1 en diseño.
 >
 > **Qué se hizo:**

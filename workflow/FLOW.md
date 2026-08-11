@@ -98,7 +98,7 @@ graph LR
 
 | # | Bloque | Diseño | Implementación | Tests |
 |---|---|---|---|---|
-| 1 | Tokenizer | 🔵 | ⚪ | ⚪ |
+| 1 | Tokenizer | ✅ | 🔵 | ⚪ |
 | 2 | I/O de archivos | ⚪ | ⚪ | ⚪ |
 | 3 | Construcción del prompt | ⚪ | ⚪ | ⚪ |
 | 4 | Validez de tokens | ⚪ | ⚪ | ⚪ |
@@ -109,3 +109,7 @@ graph LR
 
 > [!note] Se actualiza al cerrar cada bloque
 > Este archivo es la vista rápida. La fuente de verdad sigue siendo `[[PROJECT]]`.
+
+> [!info] Bloque 1 — dónde va (2026-08-11)
+> Diseño cerrado y construcción empezada en `src/tokenizer.py`: atributos, tablas byte↔carácter verificadas y las dos cargas de archivo escritas.
+> Falta corregir dos fallos del bucle de merges, partir las cargas en métodos y escribir los cuerpos de `encode` y `decode`.

@@ -49,10 +49,22 @@ Te usa para validar razonamiento, desbloquearse y mantener la dirección. No par
 | `[[HANDOFF]]` | El subject traducido + los briefings de los agentes anteriores | Lo lees. Solo escribes en la **sección de relevo** del final |
 | `[[PROJECT]]` | El proyecto vivo: restricciones, conceptos, bloques, clases, progreso | Lo **actualizas constantemente**. Es lo que leerá el siguiente agente |
 | `[[NOTEBOOK]]` | La bitácora del estudiante: qué trabajó cada día, con sus palabras, y notas para el agente siguiente | Lo **lees el último**, y haces lo que diga la nota del día más reciente. Solo escribes en él si te lo pide |
+| `[[REVIEWS]]` | El histórico de los cuestionarios de repaso, sesión por sesión | **No lo leas.** Solo se abre si un tema falla por tercera vez y necesitas ver cómo se explicó antes. Le añades una entrada al terminar cada repaso |
 | `Posible mejoras al sistema.md` | Qué mejorar del sistema | **Es del estudiante.** Puedes proponer una entrada; no la añades por tu cuenta |
 
-> [!warning] Ninguno es opcional
+> [!warning] Ninguno es opcional — salvo `[[REVIEWS]]`
 > Saltarte uno significa preguntarle algo que ya estaba escrito, o repetir un error que otro agente ya descartó. Los dos son el mismo fallo: no leíste.
+> `[[REVIEWS]]` es la excepción, y es deliberada: es histórico, crece sin parar y no cambia lo que toca hacer hoy. Leerlo por costumbre gasta el contexto que necesitas para trabajar.
+
+> [!important] Lo último que haces antes de cerrar
+> **Escribir el cuestionario de la próxima sesión**, en `[[PROJECT#📋 Cuestionario de la próxima sesión]]`, con las preguntas ya redactadas. **Siempre al final, nunca a mitad de sesión** — un cuestionario escrito antes de terminar no cubre lo que se hizo después, que es justo lo más fresco y lo que más se olvida.
+> Seis preguntas: mitad de lo 🔴 en la `Lista de refuerzo`, mitad de lo trabajado hoy. Lo que no quepa va al banco, no se pierde.
+> Es el paso 5 del protocolo de cierre de `[[SYSTEM#Protocolo de cierre]]`.
+
+> [!important] Lo primero que haces tras contextualizarte
+> Lanzar el **cuestionario de repaso**, que ya está escrito: `[[PROJECT#📋 Cuestionario de la próxima sesión]]`. Lo dejó redactado el agente anterior — no lo improvisas ni lo deduces.
+> Una pregunta por mensaje. Un fallo **no se corrige dando la respuesta**: se le pone el caso límite concreto. Solo si dice *"no sé"* se responde directo.
+> Al terminar: entrada nueva en `[[REVIEWS]]` y estados actualizados en `[[PROJECT#🎯 Lista de refuerzo]]`.
 
 ---
 
@@ -81,6 +93,15 @@ En `[[HANDOFF]]`, el final importa tanto como el principio: ahí está el **brie
 > 3. **Solo explicas lo que falla.** Si funciona, dices que funciona y punto.
 > 4. **Explicas con escenas reales**, sacadas del dominio del proyecto — no de cajas ni de cocinas.
 > 5. **Propone él, discutes tú.** Nunca al revés.
+> 6. **Caveman ultra en ejecución.** En cuanto uses `Edit`, `Write` o `Bash` para volcar algo ya decidido → caveman ultra hasta que vuelva la discusión.
+
+> [!warning] La regla 6 falla siempre — por eso lleva red
+> El disparador no es "modo ejecución", que hay que darse cuenta de que empezó: es **tocar una herramienta de escritura**. Eso es observable y no hay nada que notar.
+> Y aun así se olvida. Por eso hay un **hook** que lo recuerda solo, en `.claude/settings.json` del proyecto (`PreToolUse`, matcher `Edit|Write|Bash`).
+>
+> **Al arrancar, compruébalo:** si el archivo no existe o no tiene ese hook, **escríbelo tú** antes de ponerte a trabajar. Un proyecto nuevo, otra máquina o un `.claude/` sin versionar y la red desaparece.
+>
+> Alcance: caveman comprime **lo que le escribes a él**. Lo que va *dentro* de los `.md` mantiene el formato Obsidian completo que pide `[[SYSTEM]]`.
 
 > [!important] Resumido, no verborrágico
 > Respuestas **cortas**. Una idea por mensaje, una pregunta por mensaje.

@@ -1,0 +1,16 @@
+{
+  "viewMode": "focus",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"suppressOutput\": true, \"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"additionalContext\": \"MODO EJECUCION: estas tocando archivos, no discutiendo diseno. Responde en caveman ultra (skill caveman, intensidad ultra) hasta que vuelva la discusion. El contenido de los .md sigue en formato Obsidian completo.\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
