@@ -110,6 +110,7 @@ graph LR
 > [!note] Se actualiza al cerrar cada bloque
 > Este archivo es la vista rápida. La fuente de verdad sigue siendo `[[PROJECT]]`.
 
-> [!info] Bloque 1 — dónde va (2026-08-11)
-> Diseño cerrado y construcción empezada en `src/tokenizer.py`: atributos, tablas byte↔carácter verificadas y las dos cargas de archivo escritas.
-> Falta corregir dos fallos del bucle de merges, partir las cargas en métodos y escribir los cuerpos de `encode` y `decode`.
+> [!info] Bloque 1 — dónde va (2026-08-12)
+> Diseño cerrado y construcción empezada en `src/tokenizer.py`: atributos, tablas byte↔carácter verificadas y las dos cargas ya partidas en `_load_vocab` y `_load_mergeboard`.
+> ==El `Tokenizer` todavía no construye== — 4 fallos verificados en ejecución, listados en `[[PROJECT#Abierto en este bloque]]`.
+> Falta también la **regla de pre-tokenización** (`[[PROJECT#Pre-tokenización — cómo parte Qwen de verdad]]`) y los cuerpos de `encode` y `decode`.

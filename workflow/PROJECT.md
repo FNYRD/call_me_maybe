@@ -22,7 +22,7 @@ tags: [42, proyecto]
 > **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
 > **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · **Bloque 1 con diseño cerrado y construcción empezada** en `src/tokenizer.py`
-> **Siguiente paso:** corregir los dos fallos del bucle de merges y dividir las cargas en métodos privados — ver `[[PROJECT#📋 Cuestionario de la próxima sesión]]`
+> **Siguiente paso:** él trae la **hoja de evaluación** (la tiene en Slack) y **antes de tocar código** se define la estrategia de medición del 90% — decisión suya, 2026-08-12. Después, los cuerpos de `encode` y `decode`
 > **Vista rápida de los bloques:** `[[FLOW]]`
 > **Bloqueos abiertos:** ninguno
 > **Al abrir sesión:** lanzar el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — una pregunta por mensaje
@@ -56,20 +56,6 @@ graph LR
 
 ---
 
-## ⚙️ Tarea pendiente de verificación — hook de caveman
-
-> [!warning] Compruébalo al arrancar y borra esta sección
-> El hook de `.claude/settings.json` se escribió el **2026-08-11**, pero `.claude/` no existía al empezar aquella sesión, así que el vigilante de configuración pudo no cargarlo. Quedó sin verificar en vivo.
->
-> **Cómo comprobarlo:** en tu primera escritura con `Edit` o `Write`, mira si te llega el recordatorio de modo ejecución.
->
-> | Resultado | Qué haces |
-> |---|---|
-> | **Funciona** | **No le digas nada.** Borra esta sección entera de `[[PROJECT]]` y sigue trabajando |
-> | **No funciona** | **Avísale.** Es la red que sostiene la regla 6 de `[[FIRST]]`, y sin ella vuelve a depender de que el agente se acuerde |
-
----
-
 ## 🎯 Lista de refuerzo
 
 > [!important] Una sola lista, acumulada — petición del estudiante, 2026-08-11
@@ -81,14 +67,17 @@ graph LR
 
 | Tema | Origen | Estado | Cómo preguntarlo / qué falta |
 |---|---|---|---|
-| **De qué depende la lista blanca** — las dos cosas: texto ya escrito + schema del campo | ❌ 08-11 | 🔴 | No las recordaba. Preguntar con dos estados distintos del mismo prompt |
+| **De qué depende la lista blanca** — las dos cosas: texto ya escrito + schema del campo | ❌ 08-11 · ❌ 08-12 | 🟡 | Segunda vez que falla. El 08-12 contestó *"del catch y de la máscara"* — confunde el **resultado** con la causa. Sacó el **schema** con el par `{"a":` number vs `{"s":` string; el **texto ya escrito** dijo *"no sé"* y se le dio directo (par `{"a":` vs `{"a": 40`, mismo schema). Preguntar siempre con **dos congelados que solo cambien en una de las dos cosas** |
 | **Cache de la lista blanca (bonus 4)** — qué va de clave y qué de valor | ❌ 08-11 · 🙋 diferir | ⏸️ | Volvió tres veces al `dict` invertido del tokenizer. Explicado con dos bloques de código; quedó *"medio claro"*. **Se explica de nuevo al implementar el bonus 4**, y se pregunta antes de escribirlo |
 | **Por qué el Bloque 4 es bloque propio** | ❌ 08-11 | 🔴 | Llegó a la razón con ayuda, no de memoria. Preguntar por el test: qué hace falta cargar para probar la lista blanca |
-| **Qué es un tensor** | 🙋 08-11 · ❌ 08-11 | 🔴 | Lo contestó bien por la mañana y se le olvidó el mismo día. Preguntar con `encode` del SDK devolviendo `tensor([[151644, ...]])` y por qué los corchetes van dobles |
-| **Por qué un prompt por llamada** — la razón, no la regla | ❌ 08-10 | 🔴 | Arrastrado: **no se preguntó en el repaso del 08-11**. Caso de 5 objetos con uno repetido y otro sin responder |
-| **Por qué batching no aplica aquí** | 🔍 08-10 | 🔴 | Arrastrado: no se preguntó el 08-11. `get_logits_from_input_ids` recibe una única secuencia |
-| **Tabla byte↔carácter: el desplazamiento es `256 + puesto`, no `256 + byte`** | ❌ 08-11 · 🙋 08-11 | 🟡 | Costó cuatro intentos y tres *"no entiendo"*. Lo que por fin funcionó: poner los invisibles en fila (`0…32, 127, 128…`) y preguntarle **qué puesto ocupa el 127** — contestó 33 al primer intento. Lo abstracto lo bloquea; contar puestos en una fila concreta lo desbloquea. También falló creyendo que `chr(byte)` valía para los 256, y que ASCII llegaba a 256 (llega a 127; un byte son 256 valores). Preguntar con el 127, nunca con el espacio — con el espacio la regla mala y la buena coinciden |
-| **BPE byte-level** — el suelo del vocabulario son los **256 bytes**, no las letras | 🙋 08-11 | 🟡 | Petición suya al no reconocer el término, aunque ya lo había cerrado como *"bytes como suelo"* en el Tema 6. Explicado con la tabla de las dos opciones (caracteres = alfabeto infinito · bytes = 256 y nunca falta símbolo) y con `José` arrancando en 5 símbolos, no 4. **Sin verificar** — preguntar por qué un carácter nuevo nunca rompe la tokenización |
+| **Qué es un tensor — una fila es un texto entero, no un token** | 🙋 08-11 · ❌ 08-11 · ❌ 08-12 · 🙋 08-12 | 🟡 | Falló otra vez el 08-12: dijo que cada fila era *"un token id"*, y luego preguntó si las filas eran los turnos (pregunta/respuesta). **Lo que funcionó:** poner dos textos con nombre (`texto_A`, `texto_B`) al lado del tensor de dos filas y preguntar *"¿en qué fila quedó `texto_B`?"* — contestó "segunda" y ahí lo vio. Corregido también: la conversación entera va en **una sola fila**; lo que separa turnos son los tokens especiales (`<\|im_start\|>`), no las filas. Pidió él reforzarlo |
+| **Por qué un prompt por llamada** — la razón, no la regla | ❌ 08-10 · ❌ 08-12 · 🙋 08-12 | 🟡 | 08-12: dio tres razones ciertas pero secundarias (contexto, localizar errores, contador de profundidad) y se le escapó la de fondo. **Lo que lo desbloqueó:** pegar los 5 prompts y preguntar *"¿de cuál de los 5 es el token que sale de `argmax`?"* — reaccionó con *"¿pueden mezclarse las respuestas?"*. No se mezclan: solo hay **una** continuación, la del último token; los otros 4 prompts quedan como contexto sucio. Pidió él reforzarlo |
+| **Por qué batching no aplica aquí — y paralelizar llamadas no es batching** | 🔍 08-10 · 🙋 08-12 | 🟡 | Explicado el 08-12 con entrada de 2 filas → salida de 2 filas de logits, cada fila aislada. Dos cosas que anotó: (a) `get_logits_from_input_ids` recibe **lista plana**, así que el SDK no admite filas; (b) propuso llamar N veces en paralelo — eso son **N pasadas completas** por las 28 capas, no una compartida, y sin GPU una sola pasada ya reparte el trabajo entre todos los núcleos. Pidió él reforzarlo. Preguntar por la diferencia entre las dos cosas, no por la regla |
+| **Tabla byte↔carácter: el desplazamiento es `256 + puesto`, no `256 + byte`** | ❌ 08-11 · 🙋 08-11 | ✅ 08-12 | Costó cuatro intentos y tres *"no entiendo"*. Lo que por fin funcionó: poner los invisibles en fila (`0…32, 127, 128…`) y preguntarle **qué puesto ocupa el 127** — contestó 33 al primer intento. Lo abstracto lo bloquea; contar puestos en una fila concreta lo desbloquea. También falló creyendo que `chr(byte)` valía para los 256, y que ASCII llegaba a 256 (llega a 127; un byte son 256 valores). Preguntar con el 127, nunca con el espacio — con el espacio la regla mala y la buena coinciden |
+| **BPE byte-level** — el suelo del vocabulario son los **256 bytes**, no las letras | 🙋 08-11 | ✅ 08-12 | Verificado con el emoji `🜛` nunca visto: *"no es el carácter lo que pasa, se pasa todo a bytes"*. Sin ayuda |
+| **Prioridad de merges** — se fusiona la regla de línea más baja, no de izquierda a derecha | 🔍 08-12 | ✅ 08-12 | `l o w` con `o w` en la línea 5 y `l o` en la 900 → contestó `ow` a la primera |
+| **`str` vs `bytes`, y la dirección de `encode`/`decode`** | ❌ 08-12 · 🔍 08-12 | 🟡 | Dijo `"JosÃ©".unicode("utf-8")` — inventó el método (`.unicode` no existe) y lo aplicó sobre un `str`. **Un `str` no se decodifica: ya está decodificado.** Se le corrió el caso: `"JosÃ©".encode("utf-8")` da **7 bytes**, y los que quiere son los **5** que él reconstruye con `_char_byte`. Corolario que no vio: los bytes del bytearray **no** son "los bytes de esa string". Regla fijada: `str --encode--> bytes`, `bytes --decode--> str`. Repitió `unicode` tres veces en la misma sesión — preguntar por el **nombre y la dirección**, no por el concepto |
+| **Byte 195 ≠ `chr(195)`** — el carácter del disfraz ocupa a su vez sus propios bytes | 🙋 08-12 | 🟡 | Preguntó *"¿cómo llega la `é` a mi equipo si no tiene ese byte, mi computador tiene más bytes?"*. Un byte es siempre 0–255; la `é` son **dos** bytes (195, 169) que el terminal renderiza como un glifo. Y `chr(195)` = `Ã`, que en UTF-8 son otros dos bytes (195, 131). Llegó él a la analogía que lo cerró: *"mi terminal tiene un render"*. **Sin verificar** |
 | **Imports relativos** — por qué `python -m src` fija `__package__` y `python src/__main__.py` no | 🙋 08-07 | ⏸️ | Petición suya: reforzarlo **cuando aparezca el primer import relativo** en el código, sin esperar a que lo pida |
 | **Cómo se construye la tabla byte↔carácter** — el algoritmo, las ~10 líneas | 🙋 08-11 | ⏸️ | Sabe *qué* hace en las dos direcciones, que es lo que necesitaba para el diseño. El *cómo* se explica al escribir el tokenizer |
 | **Decodificar byte a byte** — acumular y una sola llamada a `.decode("utf-8")` | ❌ ×3 (08-07, 08-10) | ✅ 08-11 | Cuarta vez preguntado, primera limpia, con el caso de `José`. Volver a tocarlo solo si reaparece |
@@ -112,25 +101,35 @@ graph LR
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
 
-### Para la sesión del 2026-08-12
+### Para la sesión siguiente al 2026-08-12
 
 > [!info] Seis preguntas, en orden de ejecución del programa
-> Tres de la `Lista de refuerzo` (🔴 sin resolver) y tres de lo trabajado el 2026-08-11.
+> Tres de la `Lista de refuerzo` (🟡 sin verificar) y tres de lo trabajado el 2026-08-12.
 
-1. Tienes 5 prompts en el archivo de entrada. ¿Por qué se manda **uno por llamada** y no los cinco de golpe? La razón, no la regla. *(refuerzo, arrastrado del 08-10)*
-2. Llega un prompt con un carácter que el modelo no vio jamás al entrenarse — pon un emoji raro. ¿Por qué no rompe la tokenización? *(lo de hoy: el suelo son los 256 bytes)*
-3. Te toca traducir el **byte 127** a su carácter. ¿Cuál es, y de dónde sale ese número? *(lo de hoy — **usar el 127, nunca el espacio**: con el 32 la regla equivocada acierta por casualidad)*
-4. Símbolos `l o w`, con la regla `o w` en la línea 5 y `l o` en la línea 900. ¿Cuál fusionas primero y por qué? *(lo de hoy)*
-5. `encode` del SDK devuelve `tensor([[151644, 8948]])`. ¿Qué es eso y por qué los corchetes van dobles? *(refuerzo — lo contestó bien el 08-11 por la mañana y se le había olvidado por la tarde)*
-6. Congelada la generación en `{"a": ` — ¿de qué **dos cosas** depende la lista blanca en ese punto? *(refuerzo)*
+1. Te llega este código y quieres saber si `merges.txt` existe de verdad. ¿Qué te impide fiarte del mensaje de error? *(lo de hoy — el `except:` pelado que relanza todo como `FileNotFoundError`)*
+
+```python
+except:
+    raise FileNotFoundError(f"This route {path} doesn't take to an existing file")
+```
+
+2. Estás escribiendo `_load_vocab` y quieres que devuelva `Dict[str, int]`, sin `Optional`. Si el archivo no existe, no hay nada que devolver. ¿Por qué mypy no se queja? *(lo de hoy — `raise` es una salida válida; se le corrió `--strict` delante)*
+3. `"José"` entra a tu `encode`. ¿Cuántos símbolos tiene la lista **antes** de aplicar ninguna fusión, y por qué? *(lo de hoy — 5, la `é` va partida en `Ã` + `©`)*
+4. Tienes la string `"JosÃ©"` armada con `_reversed_vocab`. ¿Por qué no puedes llamarle `.decode("utf-8")` y devolverla? *(refuerzo 🟡 — dijo `.unicode()` tres veces; `str` no se decodifica, y esos bytes no son los que quieres)*
+5. Tu `encode` parte `"user\nGreet"` en dos trozos por el `\n`. Qwen lo parte igual. Pero con `"<|im_end|>\n"` Qwen devuelve **un solo trozo**. ¿Qué regla te falta? *(lo de hoy — la rama de puntuación se traga los saltos de línea que vengan detrás)*
+6. Congelada la generación en `{"a": ` con `a` de tipo `number`, y el modelo quiere escribir `40`. ¿Cuántos tokens necesita? *(lo de hoy — los dígitos se parten uno a uno; enlaza con la lista blanca del Bloque 4)*
 
 > [!note] Banco para la sesión siguiente
-> No caben en seis, pero siguen pendientes: por qué **batching no aplica** · por qué la clave de los merges es una **tupla** y no las piezas pegadas · qué se rompía si el `Tokenizer` pidiera las rutas al SDK · dónde va el **guard** y por qué no en `get_vocab()`.
+> Por qué la clave de los merges es una **tupla** y no las piezas pegadas · qué se rompía si el `Tokenizer` pidiera las rutas al SDK · por qué `get_vocab()` no debe devolver `Optional` · por qué **batching no aplica** y en qué se diferencia de paralelizar llamadas · qué es la caché de Hugging Face y por qué la primera ejecución necesita red.
 
-> [!important] Tarea fijada para después del cuestionario — decisión suya, 2026-08-11
-> **Dividir la carga de `vocab.json` y `merges.txt` en métodos privados**, llamados desde `__init__`. Ahora mismo están en línea dentro del constructor.
-> Decidido tras discutirlo: su argumento (que el objeto no se construya si algo falla) se cumple igual con métodos, porque el `raise` sigue ocurriendo durante la construcción. Lo que se gana es localizar el fallo y poder reejecutar una sola carga con un archivo de juguete.
-> Antes de eso hay **dos fallos que arreglar** en el bucle de merges — ver `[[PROJECT#Bloque 1 — Tokenizer]]`.
+> [!important] Orden de la próxima sesión — fijado por él, 2026-08-12
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Corregir los 4 fallos de `src/tokenizer.py`** | *"lo primero mañana es corregir esos errores"*. El `Tokenizer` no construye — ver `[[PROJECT#Abierto en este bloque]]` |
+> | 2 | **Hoja de evaluación y estrategia de medición** | La trae él de Slack. `function_calling_tests.json` solo tiene prompts, sin resultados esperados, así que hoy no hay con qué comparar automáticamente. Con 5 prompts, un fallo son 20 puntos |
+> | 3 | **Cuestionario de repaso** | Las 6 preguntas de arriba |
+>
+> Después: los cuerpos de `encode` y `decode`.
 
 ---
 
@@ -613,10 +612,11 @@ Los argumentos de línea de comandos se parsean en `src/__main__.py`, fuera de l
 
 ### Bloque 1 — Tokenizer
 
-> [!info] Estado
+> [!info] Estado — 2026-08-12
 > **diseño cerrado, construcción empezada.** Abierto el 2026-08-10. Clase, atributos y firmas definidos el 2026-08-11 en `src/tokenizer.py`.
-> **Ya construido:** las dos tablas byte↔carácter (verificadas: espacio → `Ġ`, `é` → `Ã` + `©`, 256 caracteres sin colisión), el vocabulario invertido, y la carga de `vocab.json` y `merges.txt` — esta última **con dos fallos abiertos**.
-> **Pendiente:** los cuerpos de `encode` y `decode`, que siguen devolviendo valores de relleno.
+> **Ya construido:** las dos tablas byte↔carácter (verificadas: espacio → `Ġ`, `é` → `Ã` + `©`, 256 caracteres sin colisión), el vocabulario invertido, y las dos cargas ya partidas en `_load_vocab` y `_load_mergeboard`.
+> **⚠️ No arranca:** el `Tokenizer` **no se puede construir** — 4 fallos verificados en ejecución, ver `[[PROJECT#Abierto en este bloque]]`.
+> **Pendiente:** los cuerpos de `encode` y `decode`, que siguen devolviendo valores de relleno, y la **regla de pre-tokenización**.
 
 **Descripción:** convertir texto a token ids y token ids a texto, sin usar `encode`/`decode` del SDK. Implementa BPE byte-level a mano desde `vocab.json` y `merges.txt`.
 
@@ -695,16 +695,75 @@ Regla: los bytes que ya son caracteres imprimibles se representan a sí mismos; 
 
 | **Un método privado por estructura, llamado desde `__init__`** — decisión suya, 2026-08-11 | `__init__` solo coloca; cada método hace una cosa, devuelve su estructura y se testea por separado. Cubre la carga de `vocab.json` y `merges.txt` (con `try-except` y context manager) y la construcción de las tablas de bytes |
 
+#### Pre-tokenización — cómo parte Qwen de verdad
+
+> [!important] Leído del `tokenizer.json` real — 2026-08-12
+> Salió al discutir si el bucle de merges se aplica al texto entero o por trozos. **Se aplica por trozos**, y la regla de partido no la inventas: viene en el `pre_tokenizer` de `tokenizer.json`, que expone `get_path_to_tokenizer_file()`.
+
+```json
+"pre_tokenizer": {
+  "type": "Sequence",
+  "pretokenizers": [
+    { "type": "Split",
+      "pattern": { "Regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+" },
+      "behavior": "Isolated" },
+    { "type": "ByteLevel", "add_prefix_space": false, "use_regex": false }
+  ]
+}
+```
+
+Aplicado a los dos textos reales del proyecto:
+
+```python
+"<|im_start|>user\nGreet shrek<|im_end|>\n"
+→ ['<|', 'im', 'start', '|>', 'user', '\n', 'Greet', ' shrek', '<|', 'im', 'end', '|>\n']
+
+"What is the sum of 40 and 2?"
+→ ['What', ' is', ' the', ' sum', ' of', ' ', '4', '0', ' and', ' ', '2', '?']
+```
+
+| Hallazgo | Consecuencia |
+|---|---|
+| El `\n` es **trozo propio**, y la puntuación se separa de la palabra | Descarta `split(" ")` + reañadir espacios, que era la propuesta del estudiante. Reconstruye el texto pero no reproduce el partido de Qwen |
+| **Los números se parten dígito a dígito** — el patrón lleva `\p{N}` **sin `+`** | Afecta al `[[PROJECT#Bloques\|Bloque 4]]`: la lista blanca de un campo `number` nunca verá un token `40`, solo dígitos sueltos |
+| El espacio antes de un número queda **solo** (`' '`), antes de una palabra viaja **pegado** (`' shrek'`) | Son ramas distintas del patrón; no vale una regla única |
+| `\p{L}` y `\p{N}` **no existen en el `re` de la stdlib**, y el paquete `regex` es de terceros y no está instalado | Hay que traducir el patrón (`\p{L}` → `[^\W\d_]`, `\p{N}` → `\d`). La traducción usada para la prueba es **aproximada** — el guion bajo no se comporta igual. Verificarla contra el `encode` del SDK antes de darla por buena |
+
+> [!important] El test que zanja el bloque
+> ```python
+> mi_ids  = tokenizer.encode(texto)
+> sdk_ids = modelo.encode(texto)[0].tolist()
+> assert mi_ids == sdk_ids
+> ```
+> Es **binario**: o los ids son idénticos o no. No hay zona gris. Y llega mucho antes que medir acierto, porque no necesita el bucle de generación.
+
+> [!success] Plan B acordado — estudiante, 2026-08-12
+> Se implementan `encode`/`decode` propios y se comparan con los del SDK. **Si no coinciden y el acierto cae**, se usan los del SDK en el flujo principal y se sigue adelante — la costura ya está puesta, cambiar de clase es barato.
+> **Coste asumido:** se pierde el **bonus 2** y el **9** se queda cojo; el **8** (que existan y sean públicos) se conserva. Coherente con el riesgo ya anotado: si algo se recorta, se recortan bonus, nunca la parte obligatoria.
+> **Por qué no peligra el 100% de JSON válido:** lo garantiza la máscara, que trabaja sobre ids del vocabulario. Un tokenizer malo degrada el **90% de acierto**, no la validez.
+
 #### Abierto en este bloque
 
-> [!bug] Dos fallos en el bucle de merges — detectados 2026-08-11, sin corregir
-> · **`counter` nunca se incrementa.** Se queda en 0, la condición `if counter != 0` no se cumple nunca y `_merge_board` acaba vacío: siempre se lanza el `ValueError`. Ninguna regla llega a cargarse
-> · **`tokens[1]` revienta con una línea que no tenga dos piezas.** `merges.txt` termina en salto de línea, así que la última vuelta da `tokens = []` → `IndexError`
+> [!success] Cerrado el 2026-08-12
+> · El `counter` ya subía — el fallo estaba mal anotado el 08-11.
+> · El `tokens[1]` con línea corta, resuelto con `if len(tokens) == 2`. Falló primero con `len(line)`, que mide el string entero, no las piezas.
+> · Las dos cargas ya están en `_load_vocab` y `_load_mergeboard`, ambos `@staticmethod` y recibiendo la ruta por parámetro — así se prueban con archivos de juguete sin construir un `Tokenizer`.
 
-- [ ] **Corregir esos dos fallos**, y después **dividir las dos cargas en métodos privados** — decidido el 2026-08-11, es la primera tarea tras el cuestionario de la próxima sesión
+> [!bug] Cuatro fallos abiertos en `src/tokenizer.py` — verificados en ejecución el 2026-08-12
+> ==El `Tokenizer` no se puede construir.== Con un `vocab.json` y un `merges.txt` de juguete **válidos**, lanza `FileNotFoundError: This route merges.txt doesn't take to an existing file` — y el archivo existe. El mensaje miente.
+>
+> | # | Fallo | Qué provoca |
+> |---|---|---|
+> | 1 | **Guard invertido** en `_load_mergeboard`: `if merge_board and len(merge_board): raise ValueError("Merge board is empty")` | Salta cuando el merge board **sí** tiene contenido. Es la causa directa de que nada funcione |
+> | 2 | **`except:` pelado** en los dos métodos de carga | Atrapa el `ValueError` que acaba de lanzar la línea de arriba y lo relanza como `FileNotFoundError`. Por eso el mensaje dice que el archivo no existe cuando el problema era otro. También se traga `KeyboardInterrupt`. Debe ser `except OSError as error: ... from error` |
+> | 3 | **Guard muerto** en `_load_vocab`: `if vocab and len(vocab) <= 0` | Nunca es cierto — si `vocab` es *truthy*, su longitud es > 0. Un `vocab.json` vacío pasa sin aviso |
+> | 4 | **`Optional` volvió**, y `_reversed_vocab` se define dentro de un `if` | Contradice la decisión del 08-11 (*"si existe un `Tokenizer`, su vocabulario es válido por construcción"*). `get_vocab()` devuelve `Optional[Dict]` otra vez, que es justo lo que se descartó porque propaga la comprobación de `None` al Bloque 4. Y si `self._vocab` fuera falsy, `_reversed_vocab` no llega a existir |
+>
+> Ya se le enseñó que `raise` es salida válida para mypy (`--strict` pasa sin `Optional`) — ver el ejemplo del guard de lectura.
 - [ ] `self._in_visible` es un `lambda` guardado como atributo. Funciona; queda anotado por si al implementar `encode` estorba
 - [ ] **Los cuerpos de `encode` y `decode`** — devuelven `[0]` y `""` de relleno
-- [ ] Los guards de lectura: **quién atrapa** `FileNotFoundError` y `JSONDecodeError` — ¿el `Tokenizer`, o quien lo construye? No decidido
+- [x] Los guards de lectura: **quién atrapa** `FileNotFoundError` y `JSONDecodeError` — *resuelto 2026-08-12*: los métodos de carga atrapan y **relanzan con mensaje propio** (`raise ... from error`), y quien construye el `Tokenizer` es quien decide qué hacer. Razón: el error acaba en el log de fallos, y al log solo llega `str(error)` sin traza — **el mensaje es lo único que sobrevive**. Corolario: un `try-except` que solo hace `raise` pelado no aporta nada y se borra
+- [ ] **La regla de pre-tokenización** — traducir el patrón de Qwen a la stdlib y verificarlo. Ver `[[PROJECT#Pre-tokenización — cómo parte Qwen de verdad]]`. Decisión pendiente: si se usa `re` (stdlib, como `json`) o se escribe el partido a mano — el subject dice literalmente *"numpy y json"*
 
 ---
 

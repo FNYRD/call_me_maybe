@@ -305,7 +305,40 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 6 — activo
+> [!info] Agente 7 — activo
+> **Periodo:** Cuestionario de repaso del 2026-08-12 → **Bloque 1 con las cargas partidas, la pre-tokenización investigada y `encode`/`decode` repasados**.
+>
+> **Qué se hizo:**
+> - **Repaso ejecutado.** 3 fallos, 3 limpios. Entrada en `[[REVIEWS]]`, `[[PROJECT#🎯 Lista de refuerzo]]` actualizada: tres filas a ✅ y tres nuevas a 🟡.
+> - **Hook de caveman verificado** — funciona. Sección de verificación borrada de `[[PROJECT]]`, no se le dijo nada.
+> - **Las dos cargas partidas** en `_load_vocab` y `_load_mergeboard`, `@staticmethod` y recibiendo la ruta.
+> - **Resuelto quién atrapa los errores de lectura:** los métodos relanzan con mensaje propio (`raise ... from error`); decide quien construye. Razón que lo cerró: al log solo llega `str(error)`, sin traza, y tres bloques distintos abren archivos.
+> - **Repasados `encode` y `decode` paso a paso.** Los dos huecos que salieron: la traducción byte↔carácter en cada dirección, y que un `str` no se decodifica.
+> - **Investigada la pre-tokenización real de Qwen** — sección nueva `[[PROJECT#Pre-tokenización — cómo parte Qwen de verdad]]` con el patrón, el partido de los dos textos reales y cuatro consecuencias.
+>
+> **Dónde se quedó:** `src/tokenizer.py` **no construye**. Cuatro fallos verificados en ejecución, con un `vocab.json`/`merges.txt` de juguete válidos: guard invertido en `_load_mergeboard`, `except:` pelado que miente en el mensaje, guard muerto en `_load_vocab`, y el `Optional` de vuelta. Detalle en `[[PROJECT#Abierto en este bloque]]`.
+>
+> **Decisiones tomadas:**
+> - **Plan B del bonus 2, propuesto por él:** se implementan `encode`/`decode` propios, se comparan con el SDK, y si el acierto cae se usan los del SDK. Coste asumido: se pierde el bonus 2 y el 9 queda cojo.
+> - **El test que zanja el bloque es `assert mi_ids == sdk_ids`**, no medir acierto. Es binario y no necesita el bucle de generación.
+> - **Antes de tocar código la próxima sesión**, él trae la hoja de evaluación de Slack y se define cómo se mide el 90%. Salió de que `function_calling_tests.json` no trae resultados esperados.
+> - **Los dos fallos anotados el 08-11 no eran dos:** el del `counter` estaba mal registrado, ya se incrementaba.
+>
+> **Callejones sin salida:**
+> - **Discutir con él sobre qué hace una función no funciona; ejecutarla sí.** Dos veces: defendió `.unicode("utf-8")` hasta ver `hasattr → False`, y sostuvo que mypy exigía `Optional` hasta ver `--strict` pasando sin él. Corre el código, no argumentes.
+> - **No le expliques la diferencia entre dos propuestas de split — enséñale el trozo de salida donde la suya rompe.** Funcionó tres veces seguidas con un trozo de una línea (`'\|>\n'`).
+> - Decirle que un `try-except` sobra sin darle la alternativa útil: se resistió con razón. Lo que lo cerró fue el mensaje del log, no la regla.
+>
+> **Abierto:**
+> - Los 4 fallos de `src/tokenizer.py`, los cuerpos de `encode`/`decode`, y la regla de pre-tokenización (traducir `\p{L}`/`\p{N}` a la stdlib, y decidir si entra `re`).
+> - **La caché de Hugging Face sigue vacía.** El `tokenizer.json` se bajó con `curl` al scratchpad, no por el SDK.
+> - Mecanismo del bonus 3, sin decidir. · 9 propuestas en `Posible mejoras al sistema.md`.
+>
+> **Sobre el estudiante:** Distingue qué se puede aplazar y qué no — bloqueó la pre-tokenización *"porque nos va a dejar un tema muy complicado a revisar"*, y eso convive con su patrón de refuerzo diferido sin contradecirlo: aplaza detalle, bloquea estructura. Y cuestiona los números del subject: preguntó sobre qué N se calcula el 90%. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** La hoja de evaluación y la estrategia de medición, después el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]`, y después los 4 fallos.
+
+> [!info]- Agente 6 — histórico
 > **Periodo:** Cuestionario de repaso del 2026-08-11 → **Bloque 1 con diseño cerrado y construcción empezada**.
 >
 > **Qué se hizo:**

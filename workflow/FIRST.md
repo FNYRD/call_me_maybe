@@ -125,13 +125,14 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-08-10
+> [!info] Estado — 2026-08-12
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 1 — diseño. Responsabilidades sueltas cerradas, **6 bloques** definidos y ordenados
-> **Último bloque cerrado:** ninguno. El **Bloque 1 (Tokenizer)** está en diseño: mecanismo acordado, sin clases ni firmas
-> **En qué se estaba:** diseño del tokenizer BPE — bucle de fusiones, dos diccionarios, tabla byte↔carácter
-> **Antes de nada:** lanzar el **cuestionario de repaso** — guion escrito en `[[PROJECT#🔁 Cuestionarios de repaso de sesión]]`. Después, y solo después, volver a explicarle la tabla byte↔carácter
-> **Abierto:** reforzar los **imports relativos** cuando aparezca el primero en Fase 2 · se implementan **los 9 bonus** · mecanismo del bonus 3 sin decidir · `Makefile` y `.gitignore` vacíos por decisión suya
+> **Fase:** 1 — diseño. **6 bloques** definidos y ordenados; el Bloque 1 con diseño cerrado y en construcción
+> **Último bloque cerrado:** ninguno. El **Bloque 1 (Tokenizer)** se está escribiendo en `src/tokenizer.py`
+> **En qué se estaba:** cargas de `vocab.json` y `merges.txt` partidas en métodos · investigada la pre-tokenización real de Qwen · repasados `encode` y `decode` paso a paso
+> **⚠️ El `Tokenizer` no construye** — 4 fallos verificados en ejecución, en `[[PROJECT#Abierto en este bloque]]`
+> **Antes de nada:** él trae la **hoja de evaluación** y se define cómo se mide el 90% de acierto. Después, el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]`
+> **Abierto:** los 4 fallos · cuerpos de `encode`/`decode` · regla de pre-tokenización · reforzar los **imports relativos** cuando aparezca el primero en Fase 2 · se implementan **los 9 bonus** · mecanismo del bonus 3 sin decidir · `Makefile` y `.gitignore` vacíos por decisión suya
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 *(lo rellena el agente saliente en su cierre; el detalle largo va en el briefing de `[[HANDOFF]]`)*

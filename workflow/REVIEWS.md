@@ -23,6 +23,27 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-08-12 — entrada de sesión, Bloque 1 en construcción
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | **Por qué un prompt por llamada:** dio tres razones ciertas pero secundarias — que el contexto se expandiría, que los errores se localizan mejor y que el contador de profundidad se lleva más fácil. La razón de fondo no apareció | Se le pegaron los 5 prompts en un solo texto y se le preguntó de cuál de los 5 era el token que sale de `argmax`. Reaccionó con *"¿pueden mezclarse las respuestas del modelo?"* — ahí estaba el hueco. **No se mezclan: solo hay una continuación**, la del último token de la secuencia; los otros 4 prompts quedan como contexto sucio. Cerró él: *"el modelo responde basado en el contexto, según el próximo token, que es lo más probable que siga"* | 1, 7 |
+| 2 | **Tensor:** dijo que cada fila del tensor era *"un token id"*, y después preguntó si las filas eran los turnos (pregunta, respuesta, pregunta…) | Se pusieron **dos textos con nombre** (`texto_A`, `texto_B`) al lado de un tensor de dos filas y se le preguntó *"¿en qué fila quedó `texto_B`?"*. Contestó "segunda" y lo vio: **una fila = un texto entero**. Corregido además que la conversación completa va en **una sola fila** — lo que separa turnos son los tokens especiales (`<\|im_start\|>`), no las filas | 6, 8 |
+| 3 | **De qué depende la lista blanca:** contestó *"del catch y de la máscara"*. La máscara es el resultado, no la causa | Dos congelados con el mismo texto y schema distinto (`{"a":` number vs `{"s":` string) → sacó **el schema**. Con el segundo par (`{"a":` vs `{"a": 40`, mismo schema) dijo *"no sé"* y se le dio directo: **el texto ya escrito**. El schema dice qué forma puede tener el valor; el texto, en qué parte de esa forma vas | 10 |
+
+> [!success] Correcto sin ayuda
+> **BPE byte-level** — con el emoji `🜛` nunca visto: *"no es el carácter lo que pasa, se pasa todo a bytes"* · **Tabla byte↔carácter** — byte 127 → 289, *"porque es el carácter invisible número 33 y la fórmula es 256 + 33"*. ==Dijo el puesto, no el byte==: primera vez limpio tras cuatro explicaciones fallidas el 08-11 · **Prioridad de merges** — `l o w` con `o w` en la línea 5 y `l o` en la 900 → `ow`, *"porque se hace por orden de prioridad y no de izquierda a derecha"*.
+
+> [!note] Explicaciones dadas durante el repaso
+> · **Batching**, a petición suya: entrada de 2 filas → salida de 2 filas de logits, cada fila procesada aislada. Y por qué no aplica aquí — `get_logits_from_input_ids` recibe **lista plana**.
+> · **Paralelizar llamadas no es batching.** Propuso una función que reciba un batch y llame N veces a `get_logits_from_input_ids` en paralelo. Se le puso el caso límite: sin GPU, una sola pasada ya reparte el trabajo entre todos los núcleos — *"¿de dónde saca núcleos la segunda llamada?"*. Lo cerró con *"entiendo"*. Ya estaba descartado el 08-10 en `[[PROJECT#Responsabilidades sueltas]]`.
+>
+> Pidió él que las tres (prompt por llamada, tensor, batching) se anotaran para reforzar.
+
+---
+
 ## Repaso 2026-08-11 — entrada de sesión, Bloque 1 en diseño
 
 **Fallos:**
