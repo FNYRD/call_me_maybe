@@ -21,8 +21,9 @@ tags: [42, proyecto]
 > [!info] Dónde estamos
 > **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
-> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · **Bloque 1 con diseño cerrado y construcción empezada** en `src/tokenizer.py`
-> **Siguiente paso:** él trae la **hoja de evaluación** (la tiene en Slack) y **antes de tocar código** se define la estrategia de medición del 90% — decisión suya, 2026-08-12. Después, los cuerpos de `encode` y `decode`
+> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · **Bloque 1 con el `Tokenizer` construyendo, la pre-tokenización funcionando y `encode` a medias** en `src/tokenizer.py`
+> **Siguiente paso:** el **bucle de fusiones de BPE** — es donde se paró el 08-14. El algoritmo ya está diseñado desde el 08-10; toca escribirlo. Antes, los **dos bugs de `encode`**
+> **Pendiente de antes:** la **hoja de evaluación** (la tiene en Slack) y la estrategia de medición del 90% — decisión suya, 2026-08-12
 > **Vista rápida de los bloques:** `[[FLOW]]`
 > **Bloqueos abiertos:** ninguno
 > **Al abrir sesión:** lanzar el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — una pregunta por mensaje
@@ -76,7 +77,13 @@ graph LR
 | **Tabla byte↔carácter: el desplazamiento es `256 + puesto`, no `256 + byte`** | ❌ 08-11 · 🙋 08-11 | ✅ 08-12 | Costó cuatro intentos y tres *"no entiendo"*. Lo que por fin funcionó: poner los invisibles en fila (`0…32, 127, 128…`) y preguntarle **qué puesto ocupa el 127** — contestó 33 al primer intento. Lo abstracto lo bloquea; contar puestos en una fila concreta lo desbloquea. También falló creyendo que `chr(byte)` valía para los 256, y que ASCII llegaba a 256 (llega a 127; un byte son 256 valores). Preguntar con el 127, nunca con el espacio — con el espacio la regla mala y la buena coinciden |
 | **BPE byte-level** — el suelo del vocabulario son los **256 bytes**, no las letras | 🙋 08-11 | ✅ 08-12 | Verificado con el emoji `🜛` nunca visto: *"no es el carácter lo que pasa, se pasa todo a bytes"*. Sin ayuda |
 | **Prioridad de merges** — se fusiona la regla de línea más baja, no de izquierda a derecha | 🔍 08-12 | ✅ 08-12 | `l o w` con `o w` en la línea 5 y `l o` en la 900 → contestó `ow` a la primera |
-| **`str` vs `bytes`, y la dirección de `encode`/`decode`** | ❌ 08-12 · 🔍 08-12 | 🟡 | Dijo `"JosÃ©".unicode("utf-8")` — inventó el método (`.unicode` no existe) y lo aplicó sobre un `str`. **Un `str` no se decodifica: ya está decodificado.** Se le corrió el caso: `"JosÃ©".encode("utf-8")` da **7 bytes**, y los que quiere son los **5** que él reconstruye con `_char_byte`. Corolario que no vio: los bytes del bytearray **no** son "los bytes de esa string". Regla fijada: `str --encode--> bytes`, `bytes --decode--> str`. Repitió `unicode` tres veces en la misma sesión — preguntar por el **nombre y la dirección**, no por el concepto |
+| **Por qué `raise` es salida válida para mypy** — un método que lanza no necesita `Optional` | ❌ 08-12 · ❌ 08-14 | 🔴 | Segunda vez. El 08-14 dijo *"no sé"* directo. El tipo de retorno dice *"si esto devuelve algo, será `Dict[str, int]"*, no *"esto siempre devuelve"*: por la rama del `except` no se sale de la función. Ya se le corrió `--strict` delante una vez. **Preguntar con el método delante**, no en abstracto |
+| **Los dos patrones de la clase** — cuál corta por especiales y cuál corta el texto de en medio | ❌ 08-14 | 🔴 | Creía que el patrón del `tokenizer.json` servía para separar los especiales. Son dos objetos distintos y se usan en orden: primero `_specials_pattern_compiler.split()`, después `_tokenizer_pattern_compiler.findall()` sobre cada tramo no especial. **Preguntar pasándole el mismo texto a los dos** y pidiendo las dos salidas |
+| **Los especiales no están en `vocab.json`** — sus ids salen de `added_tokens` | ❌ 08-14 ×2 | 🔴 | Dijo *"no entiendo"* dos veces. Lo que lo desbloqueó fue pedirle que mirara bajo qué clave de primer nivel estaba el `<|endoftext|>` que tenía seleccionado: `added_tokens`. Reforzar con las dos búsquedas al lado (`_vocab[...]` → KeyError vs `special_ids[...]` → 151644) |
+| **El bucle de merges corre por trozo, no sobre el texto entero** | ❌ 08-14 | 🟡 | Contestó *"corre sobre todo"*. Cuatro explicaciones no lo movieron; lo cerró **hacerle escribir los pares vecinos** de `'Greet'` y `'Ġshrek'` y buscar el par `('t','Ġ')` en sus propias listas — no estaba. El regex pone muros: ninguna fusión los cruza |
+| **La regla de pre-tokenización de Qwen** — qué hace el patrón y por qué no se parchea después del split | ❌ 08-14 · 🙋 08-14 | 🟡 | Dijo *"no entendí lo del patrón ni sé qué hace ese patrón"*. Ante `'\|>\n'` propuso un parche a posteriori (`if [i] == "\|>" and [i+1] == "\n"`); el caso `"Greet shrek!\n\n"` → `'!\n\n'` lo tumbó y dijo *"no tengo ni idea"*. Se le dio la rama ` ?[^\s\p{L}\p{N}]+[\r\n]*`. **Es el pendiente grande de `encode`** — se retoma entero al escribir el cuerpo |
+| **Orden de los `except`: la subclase antes que la padre** | 🔍 08-14 | 🟡 | Con `JSONDecodeError` (subclase de `ValueError`) cazado por un `except ValueError`, propuso primero reordenar `FileNotFoundError`/`ValueError` — dos ramas que nunca competían. Con la colisión señalada llegó solo: *"tengo que crear un except para json y lo coloco antes de value"*. Preguntar con dos excepciones donde una herede de la otra |
+| **`str` vs `bytes`, y la dirección de `encode`/`decode`** | ❌ 08-12 · 🔍 08-12 · ❌ 08-14 | 🟡 | **08-14: la dirección ya la tiene** — *"decode solo actúa sobre un byte array"*, limpio y sin repetir `.unicode`. **Lo que sigue fallando es el corolario:** preguntado cuántos bytes da `"JosÃ©".encode("utf-8")` contestó **5**; son **7**, porque la `Ã` es el disfraz del byte 195 pero como carácter ocupa a su vez 2 bytes (`b'\xc3\x83'`). Se cerró ejecutándolo carácter a carácter. **Preguntar siempre por el número de bytes, no por la dirección** — la dirección ya está. · Dijo `"JosÃ©".unicode("utf-8")` — inventó el método (`.unicode` no existe) y lo aplicó sobre un `str`. **Un `str` no se decodifica: ya está decodificado.** Se le corrió el caso: `"JosÃ©".encode("utf-8")` da **7 bytes**, y los que quiere son los **5** que él reconstruye con `_char_byte`. Corolario que no vio: los bytes del bytearray **no** son "los bytes de esa string". Regla fijada: `str --encode--> bytes`, `bytes --decode--> str`. Repitió `unicode` tres veces en la misma sesión — preguntar por el **nombre y la dirección**, no por el concepto |
 | **Byte 195 ≠ `chr(195)`** — el carácter del disfraz ocupa a su vez sus propios bytes | 🙋 08-12 | 🟡 | Preguntó *"¿cómo llega la `é` a mi equipo si no tiene ese byte, mi computador tiene más bytes?"*. Un byte es siempre 0–255; la `é` son **dos** bytes (195, 169) que el terminal renderiza como un glifo. Y `chr(195)` = `Ã`, que en UTF-8 son otros dos bytes (195, 131). Llegó él a la analogía que lo cerró: *"mi terminal tiene un render"*. **Sin verificar** |
 | **Imports relativos** — por qué `python -m src` fija `__package__` y `python src/__main__.py` no | 🙋 08-07 | ⏸️ | Petición suya: reforzarlo **cuando aparezca el primer import relativo** en el código, sin esperar a que lo pida |
 | **Cómo se construye la tabla byte↔carácter** — el algoritmo, las ~10 líneas | 🙋 08-11 | ⏸️ | Sabe *qué* hace en las dos direcciones, que es lo que necesitaba para el diseño. El *cómo* se explica al escribir el tokenizer |
@@ -100,6 +107,52 @@ graph LR
 > **Cómo se construye:** mitad de la `[[PROJECT#🎯 Lista de refuerzo]]` (lo que está en 🔴), mitad de lo trabajado en la sesión que se cierra.
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
+
+### Para la sesión siguiente al 2026-08-14
+
+> [!info] Siete preguntas, en orden de ejecución del programa
+> Tres de la `Lista de refuerzo` y cuatro de lo trabajado el 2026-08-14. **Pesan lo que le costó ese día**, sobre todo los tres *"no sé"* / *"no tengo ni idea"*.
+> La **6 la pidió él** al cerrar la sesión.
+
+1. Estás escribiendo `_load_vocab`. La firma dice `-> Dict[str, int]` y dentro solo hay un `return` y varios `raise`. Si el archivo no existe, el método no devuelve ningún diccionario. ¿Por qué `mypy --strict` no te obliga a poner `Optional`? *(refuerzo 🔴 — **falló dos veces**, 08-12 y 08-14, la segunda con un "no sé" directo. Preguntar con el método delante, nunca en abstracto)*
+
+2. Tu `Tokenizer` ya construido. Corres estas dos líneas:
+
+```python
+self._vocab["<|im_start|>"]        # → KeyError
+self.special_ids["<|im_start|>"]   # → 151644
+```
+
+   El mismo texto, dos resultados. ¿Por qué el primero no lo encuentra? *(lo del 08-14 — dijo "no entiendo" dos veces aquí. Lo que lo desbloqueó fue señalar bajo qué clave del `tokenizer.json` estaba: `added_tokens`, no `model.vocab`)*
+
+3. Tienes dos patrones compilados en `__init__`. Le pasas este texto a **cada uno por separado**:
+
+```python
+"<|im_start|>user\nGreet<|im_end|>"
+```
+
+   ¿Qué devuelve cada uno, y en qué orden se usan? *(lo del 08-14 — confundió los dos patrones: creía que el del `tokenizer.json` servía para cortar por los especiales)*
+
+4. `"What is the sum of 40 and 2?"` te da 12 trozos del `findall`. ¿Cuántas veces corre el bucle de fusiones de BPE, y qué pasaría si corriera una sola vez sobre el texto entero pegado? *(lo del 08-14 — contestó "corre sobre todo". Lo que lo cerró fue hacerle escribir los pares vecinos de dos trozos y buscar el par `('t','Ġ')` en sus propias listas)*
+
+5. Dentro de tu `decode` tienes armada la string `"JosÃ©"` con `_reversed_vocab`. ¿Cuántos bytes te da `"JosÃ©".encode("utf-8")`, y cuántos son los que de verdad quieres? *(refuerzo 🟡 — el 08-14 contestó **5**; son **7** y quiere **5**. La dirección `str`/`bytes` ya la tiene limpia; lo que falla es este corolario)*
+
+6. Alguien te dice: *"¿por qué no partes el texto por espacios y ya? ese patrón de regex es un lío"*. Dos partes: **(a)** ¿qué se rompe si partes con `split(" ")` en vez de con el patrón del `tokenizer.json`? **(b)** ¿por qué eso le importa al **modelo** — qué relación tiene con acertar la función y los argumentos? *(pedida por él al cerrar el 08-14: "no entendí lo del patrón, esto lo tengo que reforzar un montón". La clave de (b): el modelo aprendió con un partido concreto; si le llegan ids distintos a los que vio en el entrenamiento, ve un texto que no reconoce y los logits empeoran — ahí se cae el 90%, no el 100% de JSON válido, que lo garantiza la máscara)*
+
+7. Quieres escribir un test que compruebe que en `{"a": ` con `a` de tipo `number` solo se permiten dígitos y el `-`. ¿Qué necesitas tener cargado para correr ese test? *(refuerzo 🔴 desde el 08-11, sin volver a preguntar. Va al final porque es del Bloque 4)*
+
+> [!note] Banco para la sesión siguiente
+> De dónde salen las cadenas vacías de `split` · por qué `regex.escape` es obligatorio al construir el patrón de especiales · por qué `batching` no aplica y en qué se diferencia de paralelizar llamadas · por qué la clave de los merges es una **tupla** · qué es la caché de Hugging Face y por qué la primera ejecución necesita red.
+
+> [!important] Orden de la próxima sesión
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **El bucle de fusiones de BPE** | Es donde se paró: *"lo que no sé es cómo pasarlo por la tabla de merge"*. Dejó un comentario en `encode` marcando el punto. **No hay bugs pendientes** — `encode` quedó limpio hasta ahí |
+> | 2 | **Cuestionario de repaso** | Las 7 preguntas de arriba |
+>
+> Sigue pendiente de sesiones anteriores: la **hoja de evaluación** y la estrategia de medición del 90%.
+
+---
 
 ### Para la sesión siguiente al 2026-08-12
 
@@ -205,6 +258,7 @@ Array con **un objeto por prompt de entrada**, en el mismo orden, con **exactame
 | Subject | **La función la elige el LLM**, nunca heurísticas ni `if/else` sobre palabras clave del prompt | El enrutado prompt→función sale de los logits |
 | Subject | **Todas las clases usan `pydantic`** para validación | El diseño de Fase 1 se apoya en modelos pydantic |
 | Subject | Permitido solo `numpy` y `json`. Prohibido tocar métodos o atributos **privados** de `llm_sdk` (todo lo que empieza por `_`) | Solo los 6 métodos públicos de `[[PROJECT#Interfaz real del llm_sdk]]` |
+| Técnica | **Se permite la librería `regex`** — decisión del estudiante, 2026-08-14 | El subject (IV.3.1) dice *"You can use the numpy and json packages"* y prohíbe *"dspy (or any similar package) … pytorch, huggingface, transformers, outlines"*. `regex` **no está en la lista prohibida**, que son librerías de LLM y de constrained decoding. Su razonamiento: *"no dice que las librerías prohibidas son todas, sino solo estas"*, y prefiere discutirlo con el evaluador antes que gastar tiempo reimplementando. **Ventaja concreta:** con `regex` se copia el patrón literal del `pre_tokenizer` de `tokenizer.json` y no hay traducción de `\p{L}`/`\p{N}` que verificar — que es donde se cuelan los fallos silenciosos. **Riesgo asumido:** un corrector puede leer la frase del subject como lista cerrada |
 | Técnica | **Python 3.10+**, type hints completos, docstrings PEP 257, `try-except` en todo lo que pueda fallar, context managers para archivos | Un crash durante la evaluación cuenta como no funcional |
 | Técnica | `llm_sdk/` se copia dentro del repositorio, no se instala como paquete externo | Ya está en `llm_sdk/` |
 | Entorno | **`vocab.json` y `merges.txt` no están en el repo** *(verificado 2026-08-11)*. `get_path_to_vocab_file()` y `get_path_to_merges_file()` llaman a `hf_hub_download`, que los **descarga de Hugging Face** la primera vez y devuelve la ruta dentro de `~/.cache/huggingface/hub` | **La primera ejecución necesita red.** Con la caché vacía y sin conexión, el programa no arranca — ni en tu máquina ni en la del corrector. En esta máquina la caché todavía no existe: nada del SDK se ha ejecutado aún |
@@ -612,11 +666,13 @@ Los argumentos de línea de comandos se parsean en `src/__main__.py`, fuera de l
 
 ### Bloque 1 — Tokenizer
 
-> [!info] Estado — 2026-08-12
-> **diseño cerrado, construcción empezada.** Abierto el 2026-08-10. Clase, atributos y firmas definidos el 2026-08-11 en `src/tokenizer.py`.
-> **Ya construido:** las dos tablas byte↔carácter (verificadas: espacio → `Ġ`, `é` → `Ã` + `©`, 256 caracteres sin colisión), el vocabulario invertido, y las dos cargas ya partidas en `_load_vocab` y `_load_mergeboard`.
-> **⚠️ No arranca:** el `Tokenizer` **no se puede construir** — 4 fallos verificados en ejecución, ver `[[PROJECT#Abierto en este bloque]]`.
-> **Pendiente:** los cuerpos de `encode` y `decode`, que siguen devolviendo valores de relleno, y la **regla de pre-tokenización**.
+> [!info] Estado — 2026-08-14
+> **diseño cerrado, construcción avanzada.** Abierto el 2026-08-10. Clase, atributos y firmas definidos el 2026-08-11 en `src/tokenizer.py`.
+> **Ya construido y funcionando:** las dos tablas byte↔carácter · el vocabulario invertido · `_load_vocab` y `_load_mergeboard` con guards · **`_load_tokenizer`** (patrón de pre-tokenización + `special_ids`, una sola lectura) · **los dos patrones compilados** en `__init__` · `get_special_id`.
+> **✅ El `Tokenizer` construye** — los 4 fallos cerrados el 2026-08-14, más un quinto que salió por el camino. Los 6 casos de construcción y los 4 de `_load_tokenizer` verificados en ejecución.
+> **🔵 `encode` empezado** — pasos 0 a 3 escritos (partir por especiales, `findall`, bytes, chars). Se paró justo antes del bucle de fusiones. **Dos bugs sin corregir**, ver `[[PROJECT#Abierto en este bloque]]`.
+> **Pendiente:** el bucle de merges, el paso 5 (símbolos → ids), y `decode` entero.
+> **Herramientas:** venv en `callme/`, con `regex` 2026.7.19 instalado. `mypy` y `flake8` se pasan **al final**, decisión suya del 08-14.
 
 **Descripción:** convertir texto a token ids y token ids a texto, sin usar `encode`/`decode` del SDK. Implementa BPE byte-level a mano desde `vocab.json` y `merges.txt`.
 
@@ -697,6 +753,25 @@ Regla: los bytes que ya son caracteres imprimibles se representan a sí mismos; 
 
 #### Pre-tokenización — cómo parte Qwen de verdad
 
+> [!success] Resuelto en código el 2026-08-14 — ==la pre-tokenización funciona==
+> `_load_tokenizer` extrae el patrón de `["pre_tokenizer"]["pretokenizers"][0]["pattern"]["Regex"]` y se compila con `regex.compile` en `__init__`. Verificado en ejecución:
+> ```
+> findall("What is the sum of 40 and 2?")
+> → ['What',' is',' the',' sum',' of',' ','4','0',' and',' ','2','?']
+> ```
+> Idéntico al partido real de Qwen anotado abajo, dígitos sueltos incluidos. **No hizo falta traducir `\p{L}`/`\p{N}`** — se usa la librería `regex`.
+
+> [!important] Los tokens especiales van **antes** del patrón — descubierto el 2026-08-14
+> `<|im_start|>`, `<|im_end|>` y `<|endoftext|>` **no están en `vocab.json`** (verificado: `'<|im_start|>' in model.vocab → False`). Viven en `added_tokens` del `tokenizer.json`, con ids 151643–151668, que empiezan justo donde acaba el vocabulario (0–151642).
+> Por eso `encode` corta primero por ellos, con un **segundo patrón** que se construye a mano:
+> ```python
+> self._specials_pattern_compiler = regex.compile(
+>     '(' + '|'.join(regex.escape(t) for t in self.special_ids) + ')')
+> ```
+> Los paréntesis hacen que `split` **conserve** los separadores; `regex.escape` es obligatorio porque `|` y `<` son sintaxis de patrón.
+> **Si el patrón del `tokenizer.json` los viera**, despedazaría `<|im_start|>` en `<|`, `im`, `start`, `|>` — cuatro tokens en vez de uno. Eso invalida la prueba del 08-12 de abajo, que corrió solo el patrón sin este paso previo.
+> **Consecuencia para el `[[PROJECT#Bloques\|Bloque 4]]`:** el vector de logits tiene más posiciones que entradas tiene `_vocab`. Esos ids de más son los especiales y no tienen string en el diccionario — la máscara debe dejarlos fuera, o el modelo puede meter un `<|im_end|>` en mitad del JSON. Comprobar con `len(logits)` vs `len(self._vocab)` cuando corra el modelo.
+
 > [!important] Leído del `tokenizer.json` real — 2026-08-12
 > Salió al discutir si el bucle de merges se aplica al texto entero o por trozos. **Se aplica por trozos**, y la regla de partido no la inventas: viene en el `pre_tokenizer` de `tokenizer.json`, que expone `get_path_to_tokenizer_file()`.
 
@@ -749,21 +824,35 @@ Aplicado a los dos textos reales del proyecto:
 > · El `tokens[1]` con línea corta, resuelto con `if len(tokens) == 2`. Falló primero con `len(line)`, que mide el string entero, no las piezas.
 > · Las dos cargas ya están en `_load_vocab` y `_load_mergeboard`, ambos `@staticmethod` y recibiendo la ruta por parámetro — así se prueban con archivos de juguete sin construir un `Tokenizer`.
 
-> [!bug] Cuatro fallos abiertos en `src/tokenizer.py` — verificados en ejecución el 2026-08-12
-> ==El `Tokenizer` no se puede construir.== Con un `vocab.json` y un `merges.txt` de juguete **válidos**, lanza `FileNotFoundError: This route merges.txt doesn't take to an existing file` — y el archivo existe. El mensaje miente.
+> [!success] Los cuatro fallos, cerrados el 2026-08-14 — ==el `Tokenizer` ya construye==
+> Corregidos por él, uno a uno, verificando en ejecución después de cada arreglo. `mypy --strict` limpio y `flake8` limpio.
 >
-> | # | Fallo | Qué provoca |
+> | # | Fallo | Cómo quedó |
 > |---|---|---|
-> | 1 | **Guard invertido** en `_load_mergeboard`: `if merge_board and len(merge_board): raise ValueError("Merge board is empty")` | Salta cuando el merge board **sí** tiene contenido. Es la causa directa de que nada funcione |
-> | 2 | **`except:` pelado** en los dos métodos de carga | Atrapa el `ValueError` que acaba de lanzar la línea de arriba y lo relanza como `FileNotFoundError`. Por eso el mensaje dice que el archivo no existe cuando el problema era otro. También se traga `KeyboardInterrupt`. Debe ser `except OSError as error: ... from error` |
-> | 3 | **Guard muerto** en `_load_vocab`: `if vocab and len(vocab) <= 0` | Nunca es cierto — si `vocab` es *truthy*, su longitud es > 0. Un `vocab.json` vacío pasa sin aviso |
-> | 4 | **`Optional` volvió**, y `_reversed_vocab` se define dentro de un `if` | Contradice la decisión del 08-11 (*"si existe un `Tokenizer`, su vocabulario es válido por construcción"*). `get_vocab()` devuelve `Optional[Dict]` otra vez, que es justo lo que se descartó porque propaga la comprobación de `None` al Bloque 4. Y si `self._vocab` fuera falsy, `_reversed_vocab` no llega a existir |
+> | 1 | Guard invertido en `_load_mergeboard` | Pasó por `and not len(merge_board)` —que seguía muerto— antes de llegar a `if not merge_board:`. Lo que lo cerró fue evaluar la primera mitad de la condición con `{}` delante |
+> | 2 | `except:` pelado en los dos métodos de carga | Partido en `except FileNotFoundError` / `except json.JSONDecodeError as error: raise ValueError(...) from error` / `except ValueError`. El catch-all final **lo borró él** en vez de tiparlo: *"simplemente elimino el except pelado"* — así un `PermissionError` llega al log con su mensaje real en vez de con un `"Unexpected error"` que no dice nada |
+> | 3 | Guard muerto en `_load_vocab` | `if not vocab:` |
+> | 4 | `Optional` de vuelta + `_reversed_vocab` dentro de un `if` | `get_vocab() -> Dict[str, int]` con un solo `return self._vocab`. Los dos guards de `__init__` borrados — **la carga ya garantiza el dato**. Ese razonamiento lo generalizó él: señaló por su cuenta que el `if not self._merge_board` de `__init__` también sobraba |
 >
-> Ya se le enseñó que `raise` es salida válida para mypy (`--strict` pasa sin `Optional`) — ver el ejemplo del guard de lectura.
+> **Quinto fallo, encontrado durante la corrección:** un `vocab.json` corrupto (no vacío) salía como `ValueError: Vocabulary's file empty`. Causa: `json.JSONDecodeError` **es subclase de `ValueError`**, así que el `except ValueError` lo cazaba antes de que nadie lo distinguiera. Cerrado con la regla general — **la subclase siempre antes que la padre**.
+>
+> **Los 6 casos verificados con archivos de juguete:** todo bien → construye · vocab vacío → `ValueError: Vocabulary's file empty` · vocab corrupto → `ValueError: Corrupt JSON in ...` · vocab ausente → `FileNotFoundError` · merges vacío → `ValueError: Merge board is empty` · merges ausente → `FileNotFoundError`.
 - [ ] `self._in_visible` es un `lambda` guardado como atributo. Funciona; queda anotado por si al implementar `encode` estorba
-- [ ] **Los cuerpos de `encode` y `decode`** — devuelven `[0]` y `""` de relleno
+- [ ] **El cuerpo de `decode`** — devuelve `""` de relleno
+
+> [!success] `encode` sin bugs abiertos — 2026-08-14
+> Los dos que se anotaron al cerrar quedaron resueltos en el momento:
+> · **`bytes_to_char` no se reiniciaba** — corregido por él, ahora se vacía al empezar cada trozo. Hacía falta porque las fusiones no cruzan de un trozo a otro; si llegan pegados desaparece el muro que pone la pre-tokenización.
+> · **El `get_special_id` no era un bug** — se anotó que lanzaba `ValueError` y reventaba el walrus, pero él ya lo había cambiado a `return 0`. Sin colisión posible: los ids de `special_ids` empiezan en 151643, nunca valen 0.
+>
+> Menor, sin urgencia: `id` pisa el nombre de la función interna de Python, y `pattern` se usa como variable de un trozo cuando en esta clase *patrón* ya significa otra cosa (hay dos patrones compilados).
+
+> [!info] Dónde paró exactamente — 2026-08-14
+> En `encode`, con el comentario `# HASTA ESTE PUNTO, SI` puesto por él. Hecho hasta ahí: partido por especiales, `findall` por trozo, `.encode("utf-8")` y traducción a caracteres disfrazados.
+> **Lo siguiente es el bucle de fusiones de BPE**, con sus palabras: *"lo que no sé es cómo pasarlo por la tabla de merge"*. El algoritmo está diseñado desde el 2026-08-10 en `[[PROJECT#Lo acordado el 2026-08-10]]` — no hay que rediseñarlo, hay que escribirlo.
 - [x] Los guards de lectura: **quién atrapa** `FileNotFoundError` y `JSONDecodeError` — *resuelto 2026-08-12*: los métodos de carga atrapan y **relanzan con mensaje propio** (`raise ... from error`), y quien construye el `Tokenizer` es quien decide qué hacer. Razón: el error acaba en el log de fallos, y al log solo llega `str(error)` sin traza — **el mensaje es lo único que sobrevive**. Corolario: un `try-except` que solo hace `raise` pelado no aporta nada y se borra
-- [ ] **La regla de pre-tokenización** — traducir el patrón de Qwen a la stdlib y verificarlo. Ver `[[PROJECT#Pre-tokenización — cómo parte Qwen de verdad]]`. Decisión pendiente: si se usa `re` (stdlib, como `json`) o se escribe el partido a mano — el subject dice literalmente *"numpy y json"*
+- [ ] **La regla de pre-tokenización** — ver `[[PROJECT#Pre-tokenización — cómo parte Qwen de verdad]]`. **Decidido el 2026-08-14: se usa la librería `regex`** (ver la fila en `[[PROJECT#Restricciones generales]]`), así que **no hay traducción de `\p{L}`/`\p{N}` que hacer** — el patrón se lee tal cual de `get_path_to_tokenizer_file()` y se compila. Ventaja extra: otro modelo trae su propio patrón y el **bonus 1** sale casi gratis. **Sigue abierto:** él no entendió qué hace el patrón (*"no entendí nada"*) — se explica entero al escribir el cuerpo de `encode`, está en la `[[PROJECT#🎯 Lista de refuerzo]]`
+- [ ] **No hay `pyproject.toml` en la raíz del repo** *(detectado 2026-08-14)* — solo existe el del `llm_sdk`. El subject lo exige junto con `uv.lock`. Es por donde entra la dependencia `regex`
 
 ---
 

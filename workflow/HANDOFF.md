@@ -305,7 +305,44 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 7 — activo
+> [!info] Agente 8 — activo
+> **Periodo:** Cuestionario de repaso del 2026-08-14 → **los 4 fallos cerrados, la pre-tokenización funcionando y `encode` a medio escribir**.
+>
+> **Qué se hizo:**
+> - **Repaso ejecutado.** 3 fallos, 3 limpias. Entrada en `[[REVIEWS]]`, `[[PROJECT#🎯 Lista de refuerzo]]` actualizada.
+> - **Los 4 fallos de `src/tokenizer.py`, cerrados** — más un quinto que salió por el camino: un `vocab.json` corrupto salía como *"file empty"* porque `json.JSONDecodeError` **es subclase de `ValueError`**. El `Tokenizer` construye; 6 casos verificados en ejecución.
+> - **`_load_tokenizer` escrito y probado** — saca el patrón de pre-tokenización y los `special_ids` en **una sola lectura** del archivo de 11 MB. 4 casos verificados.
+> - **Los dos patrones compilados** en `__init__`. `findall` reproduce el partido real de Qwen, dígitos sueltos incluidos.
+> - **`encode` empezado:** pasos 0 a 3 (partir por especiales, `findall`, bytes, chars). Paró antes del bucle de merges.
+> - `.gitignore` rellenado (`callme/`, `__pycache__/`, cachés) y el `.pyc` sacado del índice con `git rm --cached`.
+>
+> **Dónde se quedó:** `src/tokenizer.py`, dentro de `encode`, en el comentario `# HASTA ESTE PUNTO, SI` que puso él. Lo siguiente es **el bucle de fusiones de BPE** — sus palabras: *"lo que no sé es cómo pasarlo por la tabla de merge"*. El algoritmo ya está diseñado desde el 08-10; no hay que rediseñarlo.
+>
+> **Decisiones tomadas:**
+> - **Se usa la librería `regex`.** Suya. El subject prohíbe una lista concreta (dspy, pytorch, transformers…) y `regex` no está en ella. Con `regex` se copia el patrón literal del `tokenizer.json` y **no hay traducción de `\p{L}`/`\p{N}` que verificar**. Instalada en el venv `callme/`.
+> - **El bonus 1 se acota a la familia Qwen.** Suya, con el subject delante (*"You can use other models as long as your project works with Qwen/Qwen3-0.6B"*). Comprobado que gpt2, Mistral y BERT tienen `pre_tokenizer` de tipo distinto y su cadena de acceso revienta en todos.
+> - **Se conservan `vocab.json` + `merges.txt`** en vez de cargarlo todo del `tokenizer.json`, que también los trae. Razón suya: lo que hay ya funciona y está probado.
+> - **Los especiales se cargan, no se copian a mano** — porque los ids cambian entre modelos.
+> - **`mypy` y `flake8` se pasan al final**, no durante.
+>
+> **Callejones sin salida:**
+> - **Amontonar dos cosas en un mensaje le tumba la sesión.** Pasó **cuatro veces** y las cuatro produjeron *"no entendí nada"*. Las cuatro se resolvieron solas al partirlas en una sola pregunta. ==Una idea por mensaje, sin excepción.==
+> - **Enseñarle código sin marcar si es suyo o es propuesta.** Se le mandó `self._specials_pattern` y luego un cuerpo de `encode`; cortó las dos veces (*"eso no existe"*, *"eres tú inventándote cosas"*). Marcar **tuyo** / **propuesta** siempre.
+> - **Mandarle a ejecutar algo que puedes enseñarle:** *"no lo voy a correr, aprende a explicar mejor"*. Ejecutar sirve cuando su creencia compite con tu afirmación, no como sustituto de explicar.
+> - **Cuatro explicaciones no le movieron** que el bucle de merges corre por trozo. Lo cerró **hacerle escribir los pares vecinos** y buscar `('t','Ġ')` en sus propias listas.
+>
+> **Abierto:**
+> - **`encode` no tiene bugs pendientes.** Se anotaron dos al cerrar y se resolvieron ahí mismo: el `bytes_to_char` lo corrigió él, y el del `get_special_id` era una lectura desactualizada del agente. Detalle en `[[PROJECT#Abierto en este bloque]]`.
+> - `decode` entero · el paso 5 de `encode` (símbolos → ids).
+> - La **hoja de evaluación** y la estrategia de medición del 90%, arrastrada del 08-12.
+> - No hay `pyproject.toml` en la raíz. Él trabaja con el venv `callme/` y lo dejó para la entrega.
+> - Mecanismo del bonus 3, sin decidir. · 9 propuestas en `Posible mejoras al sistema.md`.
+>
+> **Sobre el estudiante:** Abrió la sesión preguntando si vale la pena escribir código, dado que no piensa programar profesionalmente. Lo que cerró la duda no fue el argumento sino **su propio guard invertido**: código que leído no chirría y que solo detectas si has escrito veinte guards antes. Y hoy pidió por primera vez **menos verborrea de forma explícita y repetida** — *"limítate a responder lo que te pregunto"*. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** El bucle de merges. Antes, los dos bugs y el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]`.
+
+> [!info]- Agente 7 — histórico
 > **Periodo:** Cuestionario de repaso del 2026-08-12 → **Bloque 1 con las cargas partidas, la pre-tokenización investigada y `encode`/`decode` repasados**.
 >
 > **Qué se hizo:**

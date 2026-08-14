@@ -23,6 +23,34 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-08-14 — entrada de sesión, corrección de los 4 fallos del Bloque 1
+
+> [!note] Lanzado en segundo lugar, no al abrir
+> El orden lo había fijado él el 08-12: primero los 4 fallos, luego la hoja de evaluación, luego el repaso. Se arrancó por los fallos y **cortó él** para pedir el cuestionario primero.
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | **Por qué no fiarse del mensaje de error del `except:` pelado.** Leyó el mensaje como verdadero y buscó razones por las que el archivo podría no existir: *"aún no tengo la ruta"*, *"que el archivo haya sido borrado post descarga"* | Se le congeló la escena: *"el archivo existe, se abre y se lee entero, y a mitad del `try` salta `raise ValueError("Merge board is empty")` — ¿qué mensaje sale por pantalla?"*. Contestó **"Merge board is empty"** — todavía mal. Lo que cerró: poner el `raise` y el `except` en el mismo bloque de código con una flecha, y preguntar **dónde cae** ese `ValueError`. Ahí lo vio: *"va a salir el raise, va a llevar al try y va a salir el filenotfounderror"* | Guards de lectura |
+| 2 | **Por qué mypy no exige `Optional` si el método puede no devolver.** Dijo *"no sé"* directo | Se respondió directo, como manda la regla. **`raise` es una salida válida**: el tipo de retorno dice *"si esto devuelve algo, será `Dict[str, int]"*, no *"esto siempre devuelve"*. Por la rama del `except` no se sale de la función, así que mypy no tiene ahí ningún camino que revisar. **Segunda vez que se le enseña** — ya se le corrió `--strict` delante el 08-12 | Tipado |
+| 3 | **La regla de pre-tokenización.** Ante `"<\|im_end\|>\n"` partido por Qwen en un solo trozo `'\|>\n'`, propuso un parche a posteriori: recorrer el resultado del split y pegar `[i] == "\|>"` con `[i+1] == "\n"` | Se le puso un caso que su parche no cubre: `"Greet shrek!\n\n"` → Qwen devuelve `'!\n\n'` de una pieza. Preguntado qué tienen en común los dos casos, dijo *"no tengo ni idea"* → se respondió directo con la rama del patrón, ` ?[^\s\p{L}\p{N}]+[\r\n]*`: **una tirada de símbolos que no son ni espacio ni letra ni dígito, y detrás todos los saltos de línea que vengan**. No es una excepción del `\|>`, es una regla general de puntuación | Pre-tokenización |
+
+> [!success] Correcto sin ayuda
+> **`"José"` da 5 símbolos antes de fusionar** — *"porque la e con acento son 2 bytes, son 4 caracteres 5 bytes"* · **Un `str` no se decodifica** — *"porque decode solo actúa sobre un byte array"*, sin rodeos y sin repetir el `.unicode` inventado del 08-12 · **Los números se parten dígito a dígito** — 2 pasos del bucle para escribir `40`.
+
+> [!bug] Corolario que sigue sin verse — el de `.encode("utf-8")` sobre la string disfrazada
+> Preguntado cuántos bytes da `"JosÃ©".encode("utf-8")`, contestó **5**. Son **7**: la `Ã` es el disfraz del byte 195, pero como carácter ella misma ocupa 2 bytes en UTF-8 (`b'\xc3\x83'`), y lo mismo la `©`.
+> Se cerró **ejecutándolo** — carácter a carácter con su `.encode` al lado. Tercera vez que un `python3 -c` zanja algo que la explicación no zanjaba.
+> Es lo que obliga a que `decode` vaya carácter → byte por `_char_byte` y acumule en un `bytearray`, en vez de decodificar la string entera.
+
+> [!note] Fuera de guion — salió del propio repaso
+> · **Puede o no usarse la librería `regex`.** Preguntó si el subject lo prohíbe. Se leyó el texto exacto del PDF (IV.3.1) y se le presentaron los tres caminos con su coste. **Decidió `regex`** — ver `[[PROJECT#Restricciones generales]]`.
+> · **Un `dict` no se accede por índice.** Preguntó si se podía; se le respondió directo con el `KeyError` y con `list(vocab)[0]` como lo que cuesta hacerlo por posición.
+> · **El `{}` de la línea 30 no llega vivo al guard** — creía que `vocab: Dict[str, int] = {}` hacía saltar el `if not vocab`. Lo pisa `json.load` dos líneas después; esa asignación solo sirve para poner el tipo.
+
+---
+
 ## Repaso 2026-08-12 — entrada de sesión, Bloque 1 en construcción
 
 **Fallos:**
