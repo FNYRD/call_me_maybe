@@ -98,7 +98,7 @@ graph LR
 
 | # | Bloque | Diseño | Implementación | Tests |
 |---|---|---|---|---|
-| 1 | Tokenizer | ✅ | 🔵 | ⚪ |
+| 1 | Tokenizer | ✅ | ✅ | ✅ |
 | 2 | I/O de archivos | ⚪ | ⚪ | ⚪ |
 | 3 | Construcción del prompt | ⚪ | ⚪ | ⚪ |
 | 4 | Validez de tokens | ⚪ | ⚪ | ⚪ |
@@ -110,7 +110,8 @@ graph LR
 > [!note] Se actualiza al cerrar cada bloque
 > Este archivo es la vista rápida. La fuente de verdad sigue siendo `[[PROJECT]]`.
 
-> [!info] Bloque 1 — dónde va (2026-08-12)
-> Diseño cerrado y construcción empezada en `src/tokenizer.py`: atributos, tablas byte↔carácter verificadas y las dos cargas ya partidas en `_load_vocab` y `_load_mergeboard`.
-> ==El `Tokenizer` todavía no construye== — 4 fallos verificados en ejecución, listados en `[[PROJECT#Abierto en este bloque]]`.
-> Falta también la **regla de pre-tokenización** (`[[PROJECT#Pre-tokenización — cómo parte Qwen de verdad]]`) y los cuerpos de `encode` y `decode`.
+> [!success] Bloque 1 — dónde va (2026-08-17)
+> **Construcción cerrada** en `src/tokenizer.py`: `encode` y `decode` completos, con el bucle de fusiones de BPE y los 26 tokens especiales cargados de `added_tokens`.
+> ==El test que zanja el bloque pasa== — `assert mi_ids == sdk_ids` con los archivos reales de Qwen, en 43 textos. **129 tests verdes** en `tests/test_bloque_1.py`.
+> Consecuencia: el **bonus 2 sigue vivo**, no hay que caer al plan B de usar el `encode` del SDK.
+> Queda solo la pasada de **guards** y la de **`flake8`/`mypy`** — ver `[[PROJECT#Abierto en este bloque]]`.

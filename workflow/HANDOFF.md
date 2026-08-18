@@ -305,7 +305,80 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 8 — activo
+> [!info] Agente 10 — activo
+> **Periodo:** Cuestionario de repaso del 2026-08-18 → **`pydantic` en el `Tokenizer` y el Bloque 2 a medio diseñar**.
+>
+> **Qué se hizo:**
+> - **Repaso ejecutado.** ==4 limpias de 5==, y los cuatro 🔴 que quedaban cayeron **sin ayuda** — tres llevaban tres sesiones fallando. Entrada en `[[REVIEWS]]`, `[[PROJECT#🎯 Lista de refuerzo]]` actualizada.
+> - **El repaso guiado de los tests, cortado por él.** Lo había pedido el 08-17; a los dos minutos: *"no me expliques pytest… el objetivo no es aprender pytest sino entender por qué el test valida mi trabajo"*, y después *"no tengo ahorita la capacidad para entender, estoy un poco bloqueado"*. **No se re-ofrece.**
+> - **Requisito de `pydantic` recuperado literal del subject** (IV.3.1): *"All classes must use pydantic for validation"*. Lo levantó él al ver que chocaba con el `Tokenizer`.
+> - **`pydantic` aplicado al `Tokenizer`, escrito por él:** `@validate_call` + `FilePath` en los tres argumentos de `__init__`. Los **3 tests de archivo ausente** los adapté yo a `ValidationError` — **129 en verde**.
+> - **Bloque 2 diseñado a medias:** clase `FileManager`, seis métodos, log único `logs/logs.json` con la forma `{"prompts": {...}, "files": {...}}`, y `Chat` como quien atrapa el fallo. Todo en `[[PROJECT#Bloque 2 — I/O de archivos]]`.
+>
+> **Dónde se quedó:** Bloque 2 con métodos y formato del log acordados, **sin atributos, sin firmas y sin los modelos `pydantic`**. Nada escrito en `src/` para ese bloque.
+>
+> **Decisiones tomadas:**
+> - **`FilePath` y no `str`** en el `Tokenizer`: pydantic valida existencia. Consecuencia asumida — un archivo ausente lanza `ValidationError`, no su `FileNotFoundError`, y el mensaje del log lo escribe pydantic.
+> - **Las ramas `except FileNotFoundError` se quedan** aunque sean inalcanzables desde `__init__`: *"si alguien llama al método por aparte se justifican esos except"*.
+> - **`FileManager`**, no `Validator` ni `Monitor` — la clase hace cuatro cosas y todas son de disco.
+> - **Índice del prompt como clave del log**, con un nivel de fuera que separa fallos de prompt y de archivo. Llegó él en tres saltos.
+> - **`Chat` atrapa y `FileManager` escribe.** Descartado un log por bloque.
+> - **`_load_json` privado**, con las dos validaciones separadas.
+>
+> **Callejones sin salida:**
+> - **Explicarle la herramienta cuando pregunta por la garantía.** Pidió por qué el test valida su trabajo y recibió `tmp_path` y `fixture`. Resultado: bloqueo y cambio de tema. ==Qué prueba, no cómo funciona.==
+> - **Objetar sin coste concreto.** Con el log por bloque preguntó *"¿cuál es el problema de mirar los dos?"* y no se movió hasta que llegaron los dos costes reales. Las reglas sin coste no le sirven.
+> - Preguntar *"¿por qué un vocabulario de juguete?"* en abstracto: contesta con el suelo de bytes, que no discrimina. **Pedirle montar un test de prioridad con la tabla real.**
+>
+> **Abierto:**
+> - Bloque 2: atributos, firmas, modelos `pydantic` (y no atar `parameters` a un solo nivel), qué devuelven los dos `validate_*`, dónde se llama a `write_logs`, `logs/` al `.gitignore`.
+> - Bloque 1: pasada de **guards** y pasada de **estilo**. ==`flake8` y `mypy` no están instalados en el venv `callme/`.== `__init__` sin `-> None`.
+> - No hay `pyproject.toml` en la raíz · mecanismo del bonus 3 sin decidir · 10 propuestas en `Posible mejoras al sistema.md`.
+>
+> **Sobre el estudiante:** Dos cosas nuevas. Va a la fuente cuando una regla le estorba —pidió la frase literal del subject antes de decidir— y no busca excusa cuando la lee. Y cuando dice que está bloqueado, hay que parar en el acto: no es el concepto, es la energía, y él mismo propone por dónde seguir. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** El cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 5 preguntas. Después, cerrar el diseño del Bloque 2.
+
+> [!info]- Agente 9 — histórico
+> **Periodo:** Cuestionario de repaso del 2026-08-17 → **Bloque 1 con la construcción cerrada y 129 tests en verde**.
+>
+> **Qué se hizo:**
+> - **Repaso ejecutado.** 4 fallos, 6 limpias. Entrada en `[[REVIEWS]]`, `[[PROJECT#🎯 Lista de refuerzo]]` actualizada — tres filas subieron a ✅ y dos bajaron a 🔴 por tercera reincidencia.
+> - **El bucle de fusiones de BPE, escrito por él.** Lo planteó entero antes de teclear. Tres fallos de lógica cerrados (`KeyError` del acceso con corchetes · fusión aplicada fuera del `if` · `priority_bpe` que solo dejaba fusionar el primer trozo) y dos condiciones equivocadas que habrían dejado un bucle infinito.
+> - **`decode` completo.** Vuelta **limpia**: los especiales se tiran, porque detrás va `json.loads` y un `<|im_end|>` restituido revienta el parseo.
+> - **Refactor de los dos centinelas** a variables locales (opción B de dos que se le ofrecieron), **verificado con 12.480 llamadas a `encode` antes y después: 0 diferencias**.
+> - **`added_tokens[:3]` → todos.** Con `[:3]` cargaba 3 de los 26 especiales de Qwen, y `decode` habría reventado el día que el modelo escribiera `<think>`.
+> - **`tests/test_bloque_1.py` — 129 tests.** 40 con archivos de juguete en `tmp_path` + 89 contra el modelo real. Desglose en `[[PROJECT#Dónde viven los tests]]`.
+> - ==**El test que zanja el bloque pasa:** `assert mi_ids == sdk_ids` en 43 textos con el `vocab.json` real.== El **bonus 2 sigue vivo**, no hay que caer al plan B.
+> - **El modelo, instalado y descargado.** `pip install -e llm_sdk` + primera construcción de `Small_LLM_Model()`. La caché de Hugging Face dejó de estar vacía.
+> - **Abolida la regla de ignorar `PSYCHOLOGY.md`** en los 6 sitios donde vivía, por decisión suya.
+>
+> **Dónde se quedó:** Bloque 1 con la **construcción cerrada por él** y los tests verdes. Quedan las dos pasadas que él mismo ordenó: **guards** y **`flake8`/`mypy`**. El Bloque 2 no está abierto.
+>
+> **Decisiones tomadas:**
+> - **Revisión de código en tres pasadas: lógica → guards → estilo, y no se mezclan.** Regla suya, en `Posible mejoras al sistema.md` y en `[[PSYCHOLOGY]]`.
+> - **"Cuestionarios siempre primero"**, por encima del orden que deje escrito el agente saliente.
+> - **La hoja de evaluación se difiere a la fase de tests** — *"ahora no nos suma demasiado porque la decisión fue hacer el encode y decode y probar"*. Está en `[[PROJECT#Validación final]]`; deja de arrastrarse como pendiente de apertura.
+> - **Centinelas con nombre, y locales de `encode`** — no constantes de clase.
+> - **`decode([])` lanza `ValueError`** en vez de devolver `""`. Queda anotado como asimetría con `encode("")`, que devuelve `[]`.
+> - **El bonus 7 no se decide todavía.** Preguntó si el *"Fase 1, innegociable"* obligaba a decidirlo ya: no. La máscara con pila se diseña **con el Bloque 4**. Lo único que se adelanta es que el **Bloque 2 no ate `parameters` a un solo nivel de profundidad** — anotado en `[[PROJECT#Bloques]]`.
+>
+> **Callejones sin salida:**
+> - **Agrandar el alcance de lo que pide.** Dos veces en esta sesión: pidió comprobar un renombrado y recibió 36 tests del bloque (*"no entiendo que estas testando"*); preguntó por la **construcción** y se le contestó sobre el **bloque** (*"ten mas atencion"*). ==Releer la palabra exacta antes de contestar.==
+> - **Llamar "fragilidad" a algo que no lo es.** Los centinelas de 12 y 13 nueves eran un guiño deliberado suyo; su réplica —cambiar el número es tan deliberado como cambiar un `True`— era correcta. Distinguir legibilidad de acoplamiento antes de abrir la boca.
+> - Preguntar por el total de bytes de `"JosÃ©"`: contesta 5 contando **caracteres** y el fallo se esconde. **Preguntar por `Ã` sola.**
+>
+> **Abierto:**
+> - Las dos pasadas del Bloque 1: guards (el `KeyError` de `encode`, la asimetría de `decode([])`) y estilo.
+> - **No hay `pyproject.toml` en la raíz** — el subject lo exige con `uv.lock`, y es por donde entran `regex` y el SDK.
+> - `.PHONY` del `Makefile` lo estaba arreglando él al cerrar; sin verificar.
+> - Mecanismo del bonus 3, sin decidir. · 10 propuestas en `Posible mejoras al sistema.md`.
+>
+> **Sobre el estudiante:** Ya son **cinco reglas de proceso** creadas por él (histórico de fallos, cuestionario al cerrar, cuestionarios primero, `PSYCHOLOGY` versionado, y las tres pasadas de revisión): no solo hace el proyecto, está construyendo el método. Y en lo técnico, el diseño lo tiene antes de escribir — lo que se le va es la traducción a código, y se cierra mirando el estado de **una** variable concreta. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** El cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 5 preguntas y un repaso guiado de `tests/test_bloque_1.py` que pidió él. Después, la fase de tests y el Bloque 2.
+
+> [!info]- Agente 8 — histórico
 > **Periodo:** Cuestionario de repaso del 2026-08-14 → **los 4 fallos cerrados, la pre-tokenización funcionando y `encode` a medio escribir**.
 >
 > **Qué se hizo:**

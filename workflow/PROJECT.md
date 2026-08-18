@@ -21,9 +21,11 @@ tags: [42, proyecto]
 > [!info] Dónde estamos
 > **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
-> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · **Bloque 1 con el `Tokenizer` construyendo, la pre-tokenización funcionando y `encode` a medias** en `src/tokenizer.py`
-> **Siguiente paso:** el **bucle de fusiones de BPE** — es donde se paró el 08-14. El algoritmo ya está diseñado desde el 08-10; toca escribirlo. Antes, los **dos bugs de `encode`**
-> **Pendiente de antes:** la **hoja de evaluación** (la tiene en Slack) y la estrategia de medición del 90% — decisión suya, 2026-08-12
+> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · **Bloque 1 con la construcción cerrada y sus tests en verde** en `src/tokenizer.py` · **Bloque 2 con los métodos y el formato del log acordados** *(2026-08-18)*
+> **Siguiente paso:** cerrar el diseño del **Bloque 2** — faltan atributos, firmas completas y los **modelos `pydantic`** del catálogo y de los prompts. Ver `[[PROJECT#Bloque 2 — I/O de archivos]]`
+> **Del Bloque 1 queda solo:** la pasada de **guards** y la de **`flake8`/`mypy`** — ver `[[PROJECT#Abierto en este bloque]]`
+> **Requisito recuperado del subject el 2026-08-18:** *"All classes must use pydantic for validation"* (IV.3.1, literal). Aplicado ya al `Tokenizer` con `@validate_call` + `FilePath`; **todas las clases siguientes nacen con él**
+> **Diferido a la fase de tests:** la **hoja de evaluación** y la estrategia de medición del 90% — decisión suya, 2026-08-17. Razón: el test que zanja el Bloque 1 es `assert mi_ids == sdk_ids`, que no necesita medir acierto. Se retoma al montar los tests, y **ahí se decide qué se mantiene**
 > **Vista rápida de los bloques:** `[[FLOW]]`
 > **Bloqueos abiertos:** ninguno
 > **Al abrir sesión:** lanzar el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — una pregunta por mensaje
@@ -44,7 +46,9 @@ graph LR
 | Bloque | Descripción | Estado | Qué recibe | Qué entrega |
 |---|---|---|---|---|
 | 1 — Tokenizer | `encode`/`decode` propios desde `vocab.json` y `merges.txt` | 🔵 | Rutas del SDK | Texto ↔ ids, y el `dict` string → id |
-| 2 — I/O de archivos | Leer y validar los JSON de entrada, escribir salida y log | ⚪ | Rutas de los argumentos | Catálogo y prompts validados |
+| ↳ | *construcción cerrada y 129 tests verdes el 08-17; solo falta la pasada de guards y de `flake8`/`mypy`* | | | |
+| 2 — I/O de archivos | Leer y validar los JSON de entrada, escribir salida y log | 🔵 | Rutas de los argumentos | Catálogo y prompts validados |
+| ↳ | *clase `FileManager` y sus 6 métodos acordados el 08-18; faltan atributos, firmas y los modelos `pydantic`* | | | |
 | 3 — Construcción del prompt | Plantilla de chat y tokens especiales del modelo | ⚪ | Catálogo + prompt del usuario | Un string listo para tokenizar |
 | 4 — Validez de tokens | FSM/PDA + schema + cache de lista blanca | ⚪ | Estado del JSON y schema | Ids permitidos en ese estado |
 | 5 — Bucle de generación | Logits, máscara, `argmax`, parada, validación `pydantic` | ⚪ | Todo lo anterior | Un resultado por prompt |
@@ -70,20 +74,20 @@ graph LR
 |---|---|---|---|
 | **De qué depende la lista blanca** — las dos cosas: texto ya escrito + schema del campo | ❌ 08-11 · ❌ 08-12 | 🟡 | Segunda vez que falla. El 08-12 contestó *"del catch y de la máscara"* — confunde el **resultado** con la causa. Sacó el **schema** con el par `{"a":` number vs `{"s":` string; el **texto ya escrito** dijo *"no sé"* y se le dio directo (par `{"a":` vs `{"a": 40`, mismo schema). Preguntar siempre con **dos congelados que solo cambien en una de las dos cosas** |
 | **Cache de la lista blanca (bonus 4)** — qué va de clave y qué de valor | ❌ 08-11 · 🙋 diferir | ⏸️ | Volvió tres veces al `dict` invertido del tokenizer. Explicado con dos bloques de código; quedó *"medio claro"*. **Se explica de nuevo al implementar el bonus 4**, y se pregunta antes de escribirlo |
-| **Por qué el Bloque 4 es bloque propio** | ❌ 08-11 | 🔴 | Llegó a la razón con ayuda, no de memoria. Preguntar por el test: qué hace falta cargar para probar la lista blanca |
+| **Por qué el Bloque 4 es bloque propio** | ❌ 08-11 | ✅ 08-17 | Preguntado por el test de la lista blanca: contestó **vocabulario**, y que el modelo no hace falta — *"lo que hace el modelo es predecir en base a vocabulario que yo le permito usar"*. Sin ayuda |
 | **Qué es un tensor — una fila es un texto entero, no un token** | 🙋 08-11 · ❌ 08-11 · ❌ 08-12 · 🙋 08-12 | 🟡 | Falló otra vez el 08-12: dijo que cada fila era *"un token id"*, y luego preguntó si las filas eran los turnos (pregunta/respuesta). **Lo que funcionó:** poner dos textos con nombre (`texto_A`, `texto_B`) al lado del tensor de dos filas y preguntar *"¿en qué fila quedó `texto_B`?"* — contestó "segunda" y ahí lo vio. Corregido también: la conversación entera va en **una sola fila**; lo que separa turnos son los tokens especiales (`<\|im_start\|>`), no las filas. Pidió él reforzarlo |
 | **Por qué un prompt por llamada** — la razón, no la regla | ❌ 08-10 · ❌ 08-12 · 🙋 08-12 | 🟡 | 08-12: dio tres razones ciertas pero secundarias (contexto, localizar errores, contador de profundidad) y se le escapó la de fondo. **Lo que lo desbloqueó:** pegar los 5 prompts y preguntar *"¿de cuál de los 5 es el token que sale de `argmax`?"* — reaccionó con *"¿pueden mezclarse las respuestas?"*. No se mezclan: solo hay **una** continuación, la del último token; los otros 4 prompts quedan como contexto sucio. Pidió él reforzarlo |
 | **Por qué batching no aplica aquí — y paralelizar llamadas no es batching** | 🔍 08-10 · 🙋 08-12 | 🟡 | Explicado el 08-12 con entrada de 2 filas → salida de 2 filas de logits, cada fila aislada. Dos cosas que anotó: (a) `get_logits_from_input_ids` recibe **lista plana**, así que el SDK no admite filas; (b) propuso llamar N veces en paralelo — eso son **N pasadas completas** por las 28 capas, no una compartida, y sin GPU una sola pasada ya reparte el trabajo entre todos los núcleos. Pidió él reforzarlo. Preguntar por la diferencia entre las dos cosas, no por la regla |
 | **Tabla byte↔carácter: el desplazamiento es `256 + puesto`, no `256 + byte`** | ❌ 08-11 · 🙋 08-11 | ✅ 08-12 | Costó cuatro intentos y tres *"no entiendo"*. Lo que por fin funcionó: poner los invisibles en fila (`0…32, 127, 128…`) y preguntarle **qué puesto ocupa el 127** — contestó 33 al primer intento. Lo abstracto lo bloquea; contar puestos en una fila concreta lo desbloquea. También falló creyendo que `chr(byte)` valía para los 256, y que ASCII llegaba a 256 (llega a 127; un byte son 256 valores). Preguntar con el 127, nunca con el espacio — con el espacio la regla mala y la buena coinciden |
 | **BPE byte-level** — el suelo del vocabulario son los **256 bytes**, no las letras | 🙋 08-11 | ✅ 08-12 | Verificado con el emoji `🜛` nunca visto: *"no es el carácter lo que pasa, se pasa todo a bytes"*. Sin ayuda |
 | **Prioridad de merges** — se fusiona la regla de línea más baja, no de izquierda a derecha | 🔍 08-12 | ✅ 08-12 | `l o w` con `o w` en la línea 5 y `l o` en la 900 → contestó `ow` a la primera |
-| **Por qué `raise` es salida válida para mypy** — un método que lanza no necesita `Optional` | ❌ 08-12 · ❌ 08-14 | 🔴 | Segunda vez. El 08-14 dijo *"no sé"* directo. El tipo de retorno dice *"si esto devuelve algo, será `Dict[str, int]"*, no *"esto siempre devuelve"*: por la rama del `except` no se sale de la función. Ya se le corrió `--strict` delante una vez. **Preguntar con el método delante**, no en abstracto |
-| **Los dos patrones de la clase** — cuál corta por especiales y cuál corta el texto de en medio | ❌ 08-14 | 🔴 | Creía que el patrón del `tokenizer.json` servía para separar los especiales. Son dos objetos distintos y se usan en orden: primero `_specials_pattern_compiler.split()`, después `_tokenizer_pattern_compiler.findall()` sobre cada tramo no especial. **Preguntar pasándole el mismo texto a los dos** y pidiendo las dos salidas |
-| **Los especiales no están en `vocab.json`** — sus ids salen de `added_tokens` | ❌ 08-14 ×2 | 🔴 | Dijo *"no entiendo"* dos veces. Lo que lo desbloqueó fue pedirle que mirara bajo qué clave de primer nivel estaba el `<|endoftext|>` que tenía seleccionado: `added_tokens`. Reforzar con las dos búsquedas al lado (`_vocab[...]` → KeyError vs `special_ids[...]` → 151644) |
-| **El bucle de merges corre por trozo, no sobre el texto entero** | ❌ 08-14 | 🟡 | Contestó *"corre sobre todo"*. Cuatro explicaciones no lo movieron; lo cerró **hacerle escribir los pares vecinos** de `'Greet'` y `'Ġshrek'` y buscar el par `('t','Ġ')` en sus propias listas — no estaba. El regex pone muros: ninguna fusión los cruza |
-| **La regla de pre-tokenización de Qwen** — qué hace el patrón y por qué no se parchea después del split | ❌ 08-14 · 🙋 08-14 | 🟡 | Dijo *"no entendí lo del patrón ni sé qué hace ese patrón"*. Ante `'\|>\n'` propuso un parche a posteriori (`if [i] == "\|>" and [i+1] == "\n"`); el caso `"Greet shrek!\n\n"` → `'!\n\n'` lo tumbó y dijo *"no tengo ni idea"*. Se le dio la rama ` ?[^\s\p{L}\p{N}]+[\r\n]*`. **Es el pendiente grande de `encode`** — se retoma entero al escribir el cuerpo |
+| **Por qué `raise` es salida válida para mypy** — un método que lanza no necesita `Optional` | ❌ 08-12 · ❌ 08-14 · ❌ 08-17 | ✅ 08-18 | **Tercera vez.** El 08-17 lo atribuyó al `try-except` y no al `raise`, y llamó a la excepción *"como hacer un return ERROR"*. Lo que aisló el `raise`: el mismo `except` con `raise` vs con `print`, y que mypy solo se queja en el segundo. Lo que mató el *"return ERROR"*: `t = Tokenizer("no_existe.json"); print(t)` → **`NameError`**, la asignación nunca ocurre; no hay `Tokenizer` con vocabulario vacío, no hay `Tokenizer`. **Preguntar por dónde queda el valor**, no por el tipo. · **08-18, limpio a la cuarta:** *"se ejecuta el raise y no se devuelve nada"*, sin ayuda |
+| **Los dos patrones de la clase** — cuál corta por especiales y cuál corta el texto de en medio | ❌ 08-14 · ❌ 08-17 | 🟡 | **08-17: la mitad ya la tiene** — dio los 3 tramos exactos del `split` de especiales. Lo que falló: qué devuelve el `findall`, *"no sé en qué patrones los divide"*. Se **ejecutó** con su patrón sobre `"<|im_start|>user\nGreet<|im_end|>"` → `['<|','im','_start','|>','user','\n','Greet','<|','im','_end','|>']`: despedaza el especial en 4 trozos, que es justo por lo que el `split` va primero. **Preguntar por la salida del `findall`** — la del `split` ya la sabe |
+| **Los especiales no están en `vocab.json`** — sus ids salen de `added_tokens` | ❌ 08-14 ×2 | ✅ 08-17 | **08-17, a la primera y sin ayuda:** *"son ids especiales que solo se encuentran definidos en el archivo del tokenizer"*. · El 08-14 dijo *"no entiendo"* dos veces. Lo que lo desbloqueó fue pedirle que mirara bajo qué clave de primer nivel estaba el `<|endoftext|>` que tenía seleccionado: `added_tokens`. Reforzar con las dos búsquedas al lado (`_vocab[...]` → KeyError vs `special_ids[...]` → 151644) |
+| **El bucle de merges corre por trozo, no sobre el texto entero** | ❌ 08-14 | ✅ 08-17 | **08-17, sin ayuda:** *"corre 12 veces, una para cada trozo"*, y preguntado qué fusión sería posible con el texto pegado contestó **`40`** — el caso exacto: `'4'` y `'0'` salen como trozos distintos y pegados serían vecinos. · El 08-14 contestó *"corre sobre todo"*. Cuatro explicaciones no lo movieron; lo cerró **hacerle escribir los pares vecinos** de `'Greet'` y `'Ġshrek'` y buscar el par `('t','Ġ')` en sus propias listas — no estaba. El regex pone muros: ninguna fusión los cruza |
+| **La regla de pre-tokenización de Qwen** — qué hace el patrón y por qué no se parchea después del split | ❌ 08-14 · 🙋 08-14 · ❌ 08-17 | ✅ 08-18 | **08-17:** la consecuencia la tiene —con ids distintos se cae **el acierto**, no el JSON válido— pero la mecánica no. Ante `"Greet shrek!\n\n"` con las dos salidas al lado dijo *"no sé"* qué le pasa al `!` y al espacio → directo: el `split(" ")` **se come el espacio** (y `Ġshrek` es otra entrada, otro id), y el `!` **queda pegado**, así que el bucle puede fusionar `('k','!')`. · El 08-14 dijo *"no entendí lo del patrón ni sé qué hace ese patrón"*. Ante `'\|>\n'` propuso un parche a posteriori (`if [i] == "\|>" and [i+1] == "\n"`); el caso `"Greet shrek!\n\n"` → `'!\n\n'` lo tumbó y dijo *"no tengo ni idea"*. Se le dio la rama ` ?[^\s\p{L}\p{N}]+[\r\n]*`. **Es el pendiente grande de `encode`** — se retoma entero al escribir el cuerpo. · **08-18, limpio:** con `"Greet shrek!\n\n"` y `split(" ")` contestó *"el espacio desaparece, el ! queda pegado a k!\n"* — las dos mitades, sin ayuda |
 | **Orden de los `except`: la subclase antes que la padre** | 🔍 08-14 | 🟡 | Con `JSONDecodeError` (subclase de `ValueError`) cazado por un `except ValueError`, propuso primero reordenar `FileNotFoundError`/`ValueError` — dos ramas que nunca competían. Con la colisión señalada llegó solo: *"tengo que crear un except para json y lo coloco antes de value"*. Preguntar con dos excepciones donde una herede de la otra |
-| **`str` vs `bytes`, y la dirección de `encode`/`decode`** | ❌ 08-12 · 🔍 08-12 · ❌ 08-14 | 🟡 | **08-14: la dirección ya la tiene** — *"decode solo actúa sobre un byte array"*, limpio y sin repetir `.unicode`. **Lo que sigue fallando es el corolario:** preguntado cuántos bytes da `"JosÃ©".encode("utf-8")` contestó **5**; son **7**, porque la `Ã` es el disfraz del byte 195 pero como carácter ocupa a su vez 2 bytes (`b'\xc3\x83'`). Se cerró ejecutándolo carácter a carácter. **Preguntar siempre por el número de bytes, no por la dirección** — la dirección ya está. · Dijo `"JosÃ©".unicode("utf-8")` — inventó el método (`.unicode` no existe) y lo aplicó sobre un `str`. **Un `str` no se decodifica: ya está decodificado.** Se le corrió el caso: `"JosÃ©".encode("utf-8")` da **7 bytes**, y los que quiere son los **5** que él reconstruye con `_char_byte`. Corolario que no vio: los bytes del bytearray **no** son "los bytes de esa string". Regla fijada: `str --encode--> bytes`, `bytes --decode--> str`. Repitió `unicode` tres veces en la misma sesión — preguntar por el **nombre y la dirección**, no por el concepto |
+| **`str` vs `bytes`, y la dirección de `encode`/`decode`** | ❌ 08-12 · 🔍 08-12 · ❌ 08-14 · ❌ 08-17 | ✅ 08-18 | **08-17, tercera vez el mismo corolario:** contestó **5** bytes otra vez, y *"quiero 4"*. Se le pidió **contar por carácter** (`J o s Ã ©`) y dijo *"1"* para todos → se ejecutó: `Ã` = `b'\xc3\x83'` y `©` = `b'\xc2\xa9'`, 2 bytes cada uno por caer fuera de ASCII. Total **7**, quiere **5**. **No preguntar por el total: preguntar cuántos bytes ocupa `Ã` sola.** · **08-14: la dirección ya la tiene** — *"decode solo actúa sobre un byte array"*, limpio y sin repetir `.unicode`. **Lo que sigue fallando es el corolario:** preguntado cuántos bytes da `"JosÃ©".encode("utf-8")` contestó **5**; son **7**, porque la `Ã` es el disfraz del byte 195 pero como carácter ocupa a su vez 2 bytes (`b'\xc3\x83'`). Se cerró ejecutándolo carácter a carácter. **Preguntar siempre por el número de bytes, no por la dirección** — la dirección ya está. · Dijo `"JosÃ©".unicode("utf-8")` — inventó el método (`.unicode` no existe) y lo aplicó sobre un `str`. **Un `str` no se decodifica: ya está decodificado.** Se le corrió el caso: `"JosÃ©".encode("utf-8")` da **7 bytes**, y los que quiere son los **5** que él reconstruye con `_char_byte`. Corolario que no vio: los bytes del bytearray **no** son "los bytes de esa string". Regla fijada: `str --encode--> bytes`, `bytes --decode--> str`. Repitió `unicode` tres veces en la misma sesión — preguntar por el **nombre y la dirección**, no por el concepto |
 | **Byte 195 ≠ `chr(195)`** — el carácter del disfraz ocupa a su vez sus propios bytes | 🙋 08-12 | 🟡 | Preguntó *"¿cómo llega la `é` a mi equipo si no tiene ese byte, mi computador tiene más bytes?"*. Un byte es siempre 0–255; la `é` son **dos** bytes (195, 169) que el terminal renderiza como un glifo. Y `chr(195)` = `Ã`, que en UTF-8 son otros dos bytes (195, 131). Llegó él a la analogía que lo cerró: *"mi terminal tiene un render"*. **Sin verificar** |
 | **Imports relativos** — por qué `python -m src` fija `__package__` y `python src/__main__.py` no | 🙋 08-07 | ⏸️ | Petición suya: reforzarlo **cuando aparezca el primer import relativo** en el código, sin esperar a que lo pida |
 | **Cómo se construye la tabla byte↔carácter** — el algoritmo, las ~10 líneas | 🙋 08-11 | ⏸️ | Sabe *qué* hace en las dos direcciones, que es lo que necesitaba para el diseño. El *cómo* se explica al escribir el tokenizer |
@@ -91,6 +95,12 @@ graph LR
 | **Token vs carácter** | ❌ ×2 (08-10) | ✅ 08-11 | `dd_numbers` = una vuelta del bucle, 10 caracteres. Respondido sin dudar |
 | **`loads` / `dump`** — cuál convierte en qué dirección | ❌ 08-10 | ✅ 08-11 | — |
 | **Determinismo de greedy** | ❌ 08-10 | ✅ 08-11 | — |
+
+| **Qué prueba un test de juguete y qué no** — coherencia interna vs coincidir con Qwen | 🔍 08-17 | ✅ 08-18 | Sin preguntar todavía. Los 40 tests de juguete pasaban con el modelo sin instalar; el `assert mi_ids == sdk_ids` es lo único que dice que los ids son los de Qwen. Preguntar con la escena real: *"esta mañana pasaban 40 tests y el modelo no existía"*. · **08-18, correcto:** *"no estábamos probando directamente contra el modelo, así que no era verídico"* |
+| **Por qué un vocabulario de juguete y no el real** | 🔍 08-17 | 🟡 | Sin preguntar. La razón es que con el de juguete **eliges qué reglas de merge existen**, y sin eso no puedes probar prioridad, fusiones encadenadas ni el muro entre trozos. El coste (1.5 GB, 6 s por carga) es secundario. · **08-18: falló de entrada** — contestó *"validar sobre los 256 bytes"*, que es el suelo que tienen los dos. Lo desbloqueó el caso discriminante: *"quiero probar que se fusiona la regla de línea más baja; con dos líneas `a b` y `b c`, ¿podrías montar ese test con el `merges.txt` real?"* → *"tendría que adaptarse a la tabla del modelo real"*. **Preguntar siempre con una regla de merge concreta que quieras forzar** |
+| **Las cuatro piezas de `pytest`** — `tmp_path`, `fixture`, `parametrize`, `pytest.raises` | 🙋 08-17 | ⏸️ | Lo pidió él: *"quiero revisar un poco los tests para entender cómo lo testas"*. Es un **repaso guiado** de `tests/test_bloque_1.py`. **Cortado por él el 08-18 a los dos minutos:** *"no me expliques pytest, brevemente dime qué se testea y ya; el objetivo no es aprender pytest sino entender por qué el test valida mi trabajo"*, y después *"no tengo ahorita la capacidad para entender, estoy un poco bloqueado"*. **No se re-ofrece.** Si vuelve, se hace por lo que **prueba** cada sección, nunca por la herramienta |
+
+| **Qué valida `pydantic` y qué no** — tipo y forma sí; contenido del archivo no | 🔍 08-18 | 🟡 | Explicado al aplicarlo al `Tokenizer`: `FilePath` cubre existencia, pero *vocab vacío* y *JSON corrupto* no los ve nadie más que sus guards. Preguntar con el caso: *"pasas un `vocab.json` que existe y contiene `{}` — ¿lo corta pydantic?"* |
 
 > [!warning] Regla de reincidencia
 > Un tema que falla **tres veces** baja de ✅ a 🟡 en el `[[PROJECT#Cuestionario de verificación]]`, y la explicación que se usó las veces anteriores se busca en `[[REVIEWS]]` — para no repetir la que ya no funcionó.
@@ -108,7 +118,75 @@ graph LR
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
 
+### Para la sesión siguiente al 2026-08-18
+
+> [!info] Cinco preguntas — tres del Bloque 2 de hoy, dos de refuerzo
+> Los cuatro 🔴 que quedaban de la lista **cayeron limpios hoy**, así que el peso se va a lo trabajado: el diseño del Bloque 2 y el requisito de `pydantic`.
+> El único fallo del repaso de hoy (vocabulario de juguete) vuelve, con la forma que sí lo desbloqueó.
+
+1. Le pasas al `Tokenizer` un `vocab.json` que **existe** y contiene `{}`. ¿Lo corta `pydantic` o llega a tu guard? *(refuerzo 🟡 — es la frontera entre lo que valida `FilePath` y lo que sigue siendo suyo)*
+
+2. Los tests fabrican un `merges.txt` de dos líneas para probar la prioridad. Con el `merges.txt` real de Qwen, ¿qué te impide escribir **ese mismo test**? *(refuerzo 🟡 — el 08-18 contestó "los 256 bytes"; lo desbloqueó pedirle montar el test de la regla de línea más baja con la tabla real)*
+
+3. `functions_definition.json` no existe. Con lo diseñado ayer, ¿en qué clave de `logs/logs.json` acaba ese error, y por qué no puede ir en la otra? *(lo de ayer — las dos familias de fallo, la que tiene índice y la que no)*
+
+4. El prompt 3 revienta dentro del tokenizer. Recorre el camino del mensaje desde donde se lanza hasta que queda escrito en el archivo, nombrando qué clase hace cada paso. *(lo de ayer — el `Tokenizer` lanza, `Chat` atrapa, `FileManager` carga y escribe. Es la decisión que costó más discusión)*
+
+5. `validate_functions` y `validate_prompts` van a leer un JSON cada uno. ¿Qué parte se comparte y qué parte no, y cómo quedó repartido? *(lo de ayer — `_load_json` privado; las validaciones separadas porque sus reglas no se parecen)*
+
+> [!note] Banco para la sesión siguiente
+> Qué devuelven `validate_functions` y `validate_prompts` · por qué `parameters` no puede atarse a un solo nivel (bonus 7) · de dónde salen las cadenas vacías de `split` · por qué `regex.escape` es obligatorio en el patrón de especiales · por qué la clave de los merges es una **tupla** · por qué `batching` no aplica y en qué se diferencia de paralelizar llamadas.
+
+> [!important] Orden de la próxima sesión
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Cuestionario de repaso** | Regla suya: *"cuestionarios siempre primero"* |
+> | 2 | **Cerrar el diseño del Bloque 2** | Faltan atributos, firmas y los modelos `pydantic` — los propone él. Ver `[[PROJECT#Abierto en este bloque]]` del Bloque 2 |
+>
+> Del Bloque 1 siguen abiertas las dos pasadas: **guards** y **`flake8`/`mypy`** (con `flake8` y `mypy` sin instalar en el venv).
+> **El repaso guiado de `pytest` no se re-ofrece** — lo cortó él el 08-18.
+
+---
+
+### Para la sesión siguiente al 2026-08-17
+
+> [!success] Lanzado y cerrado el 2026-08-18 — entrada en `[[REVIEWS]]`
+> 4 limpias de 5. El repaso guiado de los tests lo cortó él a los dos minutos.
+
+> [!info] Cinco preguntas + un repaso guiado — corto a propósito
+> Aprobado por él al cerrar: *"no aprendimos mucho… necesito no perder mucho tiempo en eso"*. Tres preguntas son de los 🔴 que **fallaron hoy** (dos de ellos por tercera vez) y dos de lo que sí se hizo: los tests.
+> **El repaso guiado lo pidió él:** *"quiero incluir el revisar un poco los tests para entender como lo testas"*. Va **dentro de la fase de cuestionario**, al final, y son 10 minutos — no es una pregunta.
+
+1. Tienes `_load_vocab` delante y le pasas una ruta que no existe. La firma promete `Dict[str, int]`. ¿Dónde queda el diccionario que el método iba a devolver? *(refuerzo 🔴 — **tercera vez**: 08-12, 08-14, 08-17. Lo que funcionó el 08-17 fue el `NameError` de `print(t)` dentro del `except`; lo que **no** funciona es preguntar por el tipo en abstracto)*
+
+2. ¿Cuántos bytes ocupa **`Ã` sola** en UTF-8? *(refuerzo 🔴 — **tercera vez**. Preguntar por `Ã`, nunca por el total de `"JosÃ©"`: con el total contesta 5 contando caracteres y parece que lo tiene)*
+
+3. Partes `"Greet shrek!\n\n"` con `split(" ")` en vez de con el patrón. Qué le pasa **al espacio** y qué **al `!`**. *(refuerzo 🔴 — el 08-17 dio la consecuencia correcta, "el acierto disminuye", pero la mecánica fue *"no sé"*)*
+
+4. Esta mañana los **40 tests de juguete** pasaban y el modelo no estaba ni instalado. ¿Por qué eso no demostraba que tu `encode` fuera correcto, y qué añade el `assert mi_ids == sdk_ids`? *(lo de hoy — es la diferencia entre coherencia interna y coincidir con Qwen)*
+
+5. Los tests fabrican un `vocab.json` de **256 entradas** aunque el real de 150.000 ya está descargado. ¿Qué te permite el de juguete que el real no? *(lo de hoy — forzar qué reglas de merge existen, para poder probar prioridad, fusiones encadenadas y el muro entre trozos)*
+
+**Repaso guiado (10 min, al final):** recorrer `tests/test_bloque_1.py` de arriba abajo — las cuatro piezas de pytest que usa (`tmp_path`, `fixture`, `parametrize`, `pytest.raises`), por qué está partido en 8 secciones, y qué caso cubre cada una de las 5 obligatorias de `[[SYSTEM#Casos obligatorios por clase]]`.
+
+> [!note] Banco para la sesión siguiente
+> De dónde salen las cadenas vacías de `split` · por qué `regex.escape` es obligatorio al construir el patrón de especiales · por qué la clave de los merges es una **tupla** · por qué `batching` no aplica y en qué se diferencia de paralizar llamadas · por qué `[0].tolist()` sobre lo que devuelve `model.encode` · por qué `-e` en la instalación del SDK.
+
+> [!important] Orden de la próxima sesión — fijado por él, 2026-08-17
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Cuestionario de repaso** | Regla suya del 08-17: *"cuestionarios siempre primero"*. Las 5 preguntas + el repaso guiado de los tests |
+> | 2 | **Fase de tests** | La abrió él al cerrar. El Bloque 1 ya tiene los suyos; queda entender cómo están hechos y con qué criterio |
+> | 3 | **Bloque 2 — I/O de archivos** | Siguiente en orden de dependencia. Su diseño no está abierto todavía: lo propone él |
+>
+> Del Bloque 1 quedan las dos pasadas pendientes: **guards** y **`flake8`/`mypy`**.
+
+---
+
 ### Para la sesión siguiente al 2026-08-14
+
+> [!success] Lanzado y cerrado el 2026-08-17 — entrada en `[[REVIEWS]]`
+> 4 fallos y 6 aciertos sin ayuda. **Regla nueva suya, dicha al arrancar:** *"cuestionarios siempre primero"* — el repaso va antes del trabajo del día, gane lo que gane el orden escrito en la tabla de abajo.
 
 > [!info] Siete preguntas, en orden de ejecución del programa
 > Tres de la `Lista de refuerzo` y cuatro de lo trabajado el 2026-08-14. **Pesan lo que le costó ese día**, sobre todo los tres *"no sé"* / *"no tengo ni idea"*.
@@ -150,7 +228,7 @@ self.special_ids["<|im_start|>"]   # → 151644
 > | 1 | **El bucle de fusiones de BPE** | Es donde se paró: *"lo que no sé es cómo pasarlo por la tabla de merge"*. Dejó un comentario en `encode` marcando el punto. **No hay bugs pendientes** — `encode` quedó limpio hasta ahí |
 > | 2 | **Cuestionario de repaso** | Las 7 preguntas de arriba |
 >
-> Sigue pendiente de sesiones anteriores: la **hoja de evaluación** y la estrategia de medición del 90%.
+> **La hoja de evaluación queda diferida a la fase de tests** — decisión suya, 2026-08-17: *"ahora no nos suma demasiado porque la decisión fue hacer el encode y decode y probar"*. Deja de arrastrarse como pendiente de apertura de sesión.
 
 ---
 
@@ -261,7 +339,7 @@ Array con **un objeto por prompt de entrada**, en el mismo orden, con **exactame
 | Técnica | **Se permite la librería `regex`** — decisión del estudiante, 2026-08-14 | El subject (IV.3.1) dice *"You can use the numpy and json packages"* y prohíbe *"dspy (or any similar package) … pytorch, huggingface, transformers, outlines"*. `regex` **no está en la lista prohibida**, que son librerías de LLM y de constrained decoding. Su razonamiento: *"no dice que las librerías prohibidas son todas, sino solo estas"*, y prefiere discutirlo con el evaluador antes que gastar tiempo reimplementando. **Ventaja concreta:** con `regex` se copia el patrón literal del `pre_tokenizer` de `tokenizer.json` y no hay traducción de `\p{L}`/`\p{N}` que verificar — que es donde se cuelan los fallos silenciosos. **Riesgo asumido:** un corrector puede leer la frase del subject como lista cerrada |
 | Técnica | **Python 3.10+**, type hints completos, docstrings PEP 257, `try-except` en todo lo que pueda fallar, context managers para archivos | Un crash durante la evaluación cuenta como no funcional |
 | Técnica | `llm_sdk/` se copia dentro del repositorio, no se instala como paquete externo | Ya está en `llm_sdk/` |
-| Entorno | **`vocab.json` y `merges.txt` no están en el repo** *(verificado 2026-08-11)*. `get_path_to_vocab_file()` y `get_path_to_merges_file()` llaman a `hf_hub_download`, que los **descarga de Hugging Face** la primera vez y devuelve la ruta dentro de `~/.cache/huggingface/hub` | **La primera ejecución necesita red.** Con la caché vacía y sin conexión, el programa no arranca — ni en tu máquina ni en la del corrector. En esta máquina la caché todavía no existe: nada del SDK se ha ejecutado aún |
+| Entorno | **`vocab.json` y `merges.txt` no están en el repo** *(verificado 2026-08-11)*. `get_path_to_vocab_file()` y `get_path_to_merges_file()` llaman a `hf_hub_download`, que los **descarga de Hugging Face** la primera vez y devuelve la ruta dentro de `~/.cache/huggingface/hub` | **La primera ejecución necesita red.** Con la caché vacía y sin conexión, el programa no arranca — ni en tu máquina ni en la del corrector. **En esta máquina ya está descargado** *(2026-08-17)*: el SDK se instaló con `pip install -e llm_sdk` y el modelo bajó solo al construir `Small_LLM_Model()` — 1.5 GB en `~/.cache/huggingface`, 63 s la primera carga y 6 s las siguientes |
 | Entorno | **La máquina de trabajo no tiene GPU** — sin NVIDIA (`nvidia-smi` no devuelve nada) y sin Apple Silicon, así que el SDK cae a `cpu` con `float32` *(verificado 2026-08-07)* | Es el camino más lento de los tres que contempla el SDK. El límite del subject —todos los prompts en menos de 5 minutos— pasa a ser una restricción real de diseño, no un trámite. Cada token generado es una pasada completa por las 28 capas del modelo |
 | Estilo | Pasa **flake8** y **mypy** sin errores | `make lint` los ejecuta |
 | Estilo | README en **inglés**, primera línea en cursiva con el formato exacto que fija el subject | Ver `[[HANDOFF#📄 README.md — requisitos]]` |
@@ -570,6 +648,7 @@ Gana `"` con 3.1 aunque `{` tenía 8.2 y `Sure` 7.9: no compiten, valen `-inf`.
 
 > [!warning] Los tres que condicionan el diseño
 > **7** cambia el algoritmo de la máscara: hay que decidirlo antes de diseñarla, no después.
+> **Precisado el 2026-08-17** (preguntó él si eso obligaba a decidirlo ya): *hacer* el bonus 7 está decidido desde el 08-07. Lo innegociable es que **la máscara nazca con pila cuando se diseñe el Bloque 4** — ese es el momento, no antes. Lo único que se adelanta al **Bloque 2** es no atar la forma de `parameters` a un solo nivel; ver la fila de aviso en `[[PROJECT#Bloques]]`.
 > **1** y **2·8·9** no cambian el algoritmo, pero exigen **dejar la costura** — una clase de por medio para el modelo y otra para el tokenizer. Gratis si el diseño las contempla, caras si hay que retrofitear.
 
 > [!note] 2, 8 y 9 son el mismo trabajo
@@ -640,6 +719,7 @@ Gana `"` con 3.1 aunque `{` tenía 8.2 y `Sure` 7.9: no compiten, valen `-inf`.
 |---|---|---|---|
 | 1 | **Tokenizer** | `encode`/`decode` propios desde `vocab.json` y `merges.txt`. Carga el vocabulario en memoria como `dict` string → id | Todo lo demás necesita convertir texto ↔ ids. Con los bonus 2·8·9 dentro, no es una llamada al SDK: es BPE implementado a mano |
 | 2 | **I/O de archivos** | Leer y validar los dos JSON de entrada, escribir el JSON de salida y el log de errores. Sin crashear ante archivo ausente, vacío o corrupto | Misma familia: acceso a disco, `try-except` y context managers en un solo sitio |
+| ⚠️ | **Al diseñar el Bloque 2, no atar `parameters` a un solo nivel** *(anotado 2026-08-17)* | Con el **bonus 7** dentro, un parámetro puede ser un objeto con campos dentro. Si la estructura validada que el Bloque 2 entrega solo sabe representar `{"a": {"type": "number"}}`, el Bloque 4 no puede construir la máscara con pila y hay que rehacer hacia atrás. **La pila en sí se decide al diseñar el Bloque 4, no antes** — lo único que se adelanta es no cerrar la forma del catálogo |
 | 3 | **Construcción del prompt** | Catálogo de funciones + prompt del usuario → un solo string, con la plantilla de chat y los tokens especiales del modelo | Aísla **todo lo específico del modelo**. Es la costura que hace barato el bonus 1: cambiar de modelo toca este bloque y ninguno más |
 | 4 | **Validez de tokens** | Dado el estado del JSON y el schema, qué ids son válidos. FSM para lo plano, pila (PDA) para lo anidado. Cache de la lista blanca | Se escribe y se testea **sin llamar al modelo** — esa es la costura que lo separa del bucle |
 | 5 | **Bucle de generación** | Pedir logits, aplicar la máscara, `np.argmax`, contador de profundidad, parada. Validar el resultado con `pydantic` | Es el único que necesita el modelo cargado. Depende de los cuatro anteriores |
@@ -666,13 +746,58 @@ Los argumentos de línea de comandos se parsean en `src/__main__.py`, fuera de l
 
 ### Bloque 1 — Tokenizer
 
-> [!info] Estado — 2026-08-14
-> **diseño cerrado, construcción avanzada.** Abierto el 2026-08-10. Clase, atributos y firmas definidos el 2026-08-11 en `src/tokenizer.py`.
-> **Ya construido y funcionando:** las dos tablas byte↔carácter · el vocabulario invertido · `_load_vocab` y `_load_mergeboard` con guards · **`_load_tokenizer`** (patrón de pre-tokenización + `special_ids`, una sola lectura) · **los dos patrones compilados** en `__init__` · `get_special_id`.
-> **✅ El `Tokenizer` construye** — los 4 fallos cerrados el 2026-08-14, más un quinto que salió por el camino. Los 6 casos de construcción y los 4 de `_load_tokenizer` verificados en ejecución.
-> **🔵 `encode` empezado** — pasos 0 a 3 escritos (partir por especiales, `findall`, bytes, chars). Se paró justo antes del bucle de fusiones. **Dos bugs sin corregir**, ver `[[PROJECT#Abierto en este bloque]]`.
-> **Pendiente:** el bucle de merges, el paso 5 (símbolos → ids), y `decode` entero.
-> **Herramientas:** venv en `callme/`, con `regex` 2026.7.19 instalado. `mypy` y `flake8` se pasan **al final**, decisión suya del 08-14.
+> [!success] Estado — 2026-08-17 · ==construcción cerrada, tests en verde==
+> **Diseño cerrado** el 2026-08-11. **Construcción dada por cerrada por él** el 2026-08-17.
+> **Completo y verificado:** las dos tablas byte↔carácter · vocabulario invertido · `_load_vocab`, `_load_mergeboard` y `_load_tokenizer` con sus guards · los dos patrones compilados · `get_special_id` · **`encode` entero** (split de especiales → `findall` → bytes → chars → bucle de fusiones → ids) · **`decode` entero** (id → pieza → byte por `_char_byte` → `bytearray` → un solo `.decode("utf-8")`, tirando los especiales).
+> **El test que zanja el bloque pasa:** `assert mi_ids == sdk_ids` con los archivos reales de Qwen, en **43 textos**. Total **129 tests verdes** en `tests/test_bloque_1.py`.
+> **Consecuencia:** el **bonus 2 sigue vivo** — no hace falta el plan B de usar el `encode` del SDK.
+> **Pendiente:** solo la pasada de **guards** y la de **`flake8`/`mypy`** — ver `[[PROJECT#Abierto en este bloque]]`.
+> **Herramientas:** venv `callme/` (Python 3.14) con `regex`, `pytest` y el SDK instalado en editable (`pip install -e llm_sdk`, que arrastra `torch`, `transformers` y `huggingface-hub`). **El modelo ya está descargado** en `~/.cache/huggingface` — la caché dejó de estar vacía el 08-17.
+
+#### `pydantic` en el `Tokenizer` — 2026-08-18
+
+> [!important] El requisito, literal del subject (IV.3.1)
+> > **All classes must use pydantic for validation.**
+>
+> Dice *todas*, sin excepción. Lo levantó él al diseñar el Bloque 2: *"si pide eso para cada clase, en tokenizer no se puede"*.
+
+**Cómo quedó:**
+
+```python
+from pydantic import validate_call, FilePath
+
+@validate_call
+def __init__(self, vocab_path: FilePath, merges_path: FilePath,
+             tokenizer_path: FilePath):
+```
+
+| Qué valida pydantic | Qué sigue siendo de sus guards |
+|---|---|
+| Tipo de los tres argumentos, y que la ruta **exista y sea un archivo** (`FilePath`) | Vocabulario vacío · `merges.txt` sin reglas · JSON corrupto · falta la clave del patrón |
+
+> [!warning] Consecuencia registrada
+> Un archivo ausente ya **no** lanza su `FileNotFoundError`: lo corta pydantic antes de entrar al método, con `ValidationError: path_not_file`. Los tres tests de archivo ausente se adaptaron ese mismo día y **los 129 siguen en verde**.
+> Las tres ramas `except FileNotFoundError` de los métodos de carga quedan **inalcanzables desde `__init__`**. Decisión suya: **se quedan**, porque los métodos pueden llamarse por separado. Anotado para la pasada de guards, no para borrar.
+> Segunda consecuencia: el mensaje que llega al log ante un archivo ausente lo escribe **pydantic**, no él.
+
+> [!note] Para las clases que vienen
+> En el `Tokenizer` es decorador + anotaciones, porque lo único que entra son rutas. Donde entra una **estructura de datos** (catálogo, prompts, resultado generado) se definen modelos `BaseModel` de verdad — ahí pydantic hace el trabajo, no cumple el trámite.
+
+#### Dónde viven los tests
+
+> [!important] `tests/test_bloque_1.py` — 129 tests, escrito por el agente el 2026-08-17
+> Se corre con `make test` (todos) o `make testN test=1` (solo este bloque). Reglas añadidas por él al `Makefile` ese día.
+>
+> | Grupo | Cuántos | Con qué corre |
+> |---|---|---|
+> | Construcción, tabla de bytes, entradas inválidas, `encode`/`decode` | **40** | `vocab.json`/`merges.txt`/`tokenizer.json` **de juguete** en `tmp_path`: 256 entradas y las reglas de merge que el test elige. Sin modelo ni red |
+> | `assert mi_ids == sdk_ids` | **43** | Los archivos **reales** del SDK. Un test por texto (`parametrize`) |
+> | Ida y vuelta `decode(encode(t)) == t` | **43** | Los archivos reales |
+> | Vocabulario real, 26 especiales, ids dentro del vocabulario | **3** | Los archivos reales |
+>
+> **Los 43 textos** cubren: los 5 prompts del subject · el JSON de salida y dos congelados (`{"a": `, `{"a": 40,`) · números (`0`, `40`, `1234567890`, `-3`, `0.5`, `-0.001`, 40 nueves) · multibyte (`José`, `ñandú`, `Straße`, `Ω≈ç√`, `🜛`, emoji con ZWJ) · las ramas del patrón que se resistieron (`" "`, `"\n\n"`, `"\t"`, `"Greet shrek!\n\n"`, `"Hi!!!"`, comillas escapadas, contracciones `'s 't 're`) · plantilla de chat de 3 turnos · cadena vacía y un texto de 650 caracteres.
+>
+> **Por qué los dos grupos y no solo el real:** los de juguete permiten **forzar una regla de merge concreta** para probar la prioridad, las fusiones encadenadas o el muro entre trozos — con el vocabulario real no eliges qué reglas existen. Y corren sin cargar 1.5 GB. Pero **no prueban que los ids sean los de Qwen**: eso solo lo dice el grupo real.
 
 **Descripción:** convertir texto a token ids y token ids a texto, sin usar `encode`/`decode` del SDK. Implementa BPE byte-level a mano desde `vocab.json` y `merges.txt`.
 
@@ -837,8 +962,8 @@ Aplicado a los dos textos reales del proyecto:
 > **Quinto fallo, encontrado durante la corrección:** un `vocab.json` corrupto (no vacío) salía como `ValueError: Vocabulary's file empty`. Causa: `json.JSONDecodeError` **es subclase de `ValueError`**, así que el `except ValueError` lo cazaba antes de que nadie lo distinguiera. Cerrado con la regla general — **la subclase siempre antes que la padre**.
 >
 > **Los 6 casos verificados con archivos de juguete:** todo bien → construye · vocab vacío → `ValueError: Vocabulary's file empty` · vocab corrupto → `ValueError: Corrupt JSON in ...` · vocab ausente → `FileNotFoundError` · merges vacío → `ValueError: Merge board is empty` · merges ausente → `FileNotFoundError`.
-- [ ] `self._in_visible` es un `lambda` guardado como atributo. Funciona; queda anotado por si al implementar `encode` estorba
-- [ ] **El cuerpo de `decode`** — devuelve `""` de relleno
+- [ ] `self._in_visible` es un `lambda` guardado como atributo. Funciona y no estorbó al escribir `encode`; queda para la pasada de estilo
+- [x] **El cuerpo de `decode`** — *escrito el 2026-08-17*. Tira los especiales (vuelta limpia, decidido por él) porque lo que va detrás es `json.loads`: un `<|im_end|>` restituido en el string reventaría el parseo. Un fallo por el camino: `token_id in self._special_ids` buscaba sobre las **claves**, que son texto — corregido con `_reversed_special_ids`, que subió a `__init__` por coherencia con `_reversed_vocab`
 
 > [!success] `encode` sin bugs abiertos — 2026-08-14
 > Los dos que se anotaron al cerrar quedaron resueltos en el momento:
@@ -847,12 +972,74 @@ Aplicado a los dos textos reales del proyecto:
 >
 > Menor, sin urgencia: `id` pisa el nombre de la función interna de Python, y `pattern` se usa como variable de un trozo cuando en esta clase *patrón* ya significa otra cosa (hay dos patrones compilados).
 
-> [!info] Dónde paró exactamente — 2026-08-14
-> En `encode`, con el comentario `# HASTA ESTE PUNTO, SI` puesto por él. Hecho hasta ahí: partido por especiales, `findall` por trozo, `.encode("utf-8")` y traducción a caracteres disfrazados.
-> **Lo siguiente es el bucle de fusiones de BPE**, con sus palabras: *"lo que no sé es cómo pasarlo por la tabla de merge"*. El algoritmo está diseñado desde el 2026-08-10 en `[[PROJECT#Lo acordado el 2026-08-10]]` — no hay que rediseñarlo, hay que escribirlo.
+> [!success] El bucle de fusiones, escrito el 2026-08-17
+> Lo planteó él entero antes de escribirlo: *"tengo que pasar todos los pares y guardar el que tenga la regla con mayor prioridad… fusiono, continúo while haya fusión"*. Una fusión por pasada, la de línea más baja, y vuelta a mirar desde el principio.
+> **Tres fallos de lógica, cerrados el mismo día:**
+> · `self._merge_board[(a, b)]` con corchetes → `KeyError` en el primer par que no esté en la tabla, que es el caso normal. Resuelto con `.get(par, centinela)`.
+> · La fusión se aplicaba **fuera del `if`**, así que corría también sin par encontrado, usando el `index_2_merge` viejo — con el inicial `(0, 0)` borraba el primer carácter del trozo.
+> · `priority_bpe` vivía fuera del `for` de trozos y salía valiendo el centinela: **solo el primer trozo se fusionaba**. Resuelto reiniciándolo al cerrar cada trozo.
+> Después de esos, cambió las dos condiciones a `priority_eval < priority_bpe`, que nunca se cumple (el mínimo no puede ser menor que el último evaluado) — habría dejado un bucle infinito. Llegó él a `if priority_bpe != no_merge_found` y detectó **por su cuenta** que el segundo `if` sobraba entero: los ids se acumulan haya fusión o no.
+
+> [!note] Los dos centinelas — refactor del 2026-08-17
+> Los números crudos (`999999999999` y `9999999999999`, 12 y 13 nueves) eran deliberados: *"fue un poco un guiño de ojo para que visualmente pareciera confuso, pero que la lógica funcionara"*. Se le propuso **A** (un solo centinela + `break`) y **B** (los dos con nombre); eligió **B**, y luego pidió que fueran **locales de `encode`**, no constantes de clase.
+> **Verificado antes y después con 12.480 llamadas a `encode`** (40 tablas de merges × 312 textos, incluidos los casos que lanzan `KeyError`): **0 diferencias**. El script quedó en el scratchpad, no en el repo.
+> Objeción del agente, retirada: dijo que 12 y 13 nueves no se distinguen sin contarlos. Él respondió que cambiar el número es tan deliberado como cambiar un `True` por un `False`, y tiene razón — es legibilidad, no acoplamiento, así que va a la pasada de estilo.
 - [x] Los guards de lectura: **quién atrapa** `FileNotFoundError` y `JSONDecodeError` — *resuelto 2026-08-12*: los métodos de carga atrapan y **relanzan con mensaje propio** (`raise ... from error`), y quien construye el `Tokenizer` es quien decide qué hacer. Razón: el error acaba en el log de fallos, y al log solo llega `str(error)` sin traza — **el mensaje es lo único que sobrevive**. Corolario: un `try-except` que solo hace `raise` pelado no aporta nada y se borra
-- [ ] **La regla de pre-tokenización** — ver `[[PROJECT#Pre-tokenización — cómo parte Qwen de verdad]]`. **Decidido el 2026-08-14: se usa la librería `regex`** (ver la fila en `[[PROJECT#Restricciones generales]]`), así que **no hay traducción de `\p{L}`/`\p{N}` que hacer** — el patrón se lee tal cual de `get_path_to_tokenizer_file()` y se compila. Ventaja extra: otro modelo trae su propio patrón y el **bonus 1** sale casi gratis. **Sigue abierto:** él no entendió qué hace el patrón (*"no entendí nada"*) — se explica entero al escribir el cuerpo de `encode`, está en la `[[PROJECT#🎯 Lista de refuerzo]]`
+- [ ] **La pasada de guards** *(abierta 2026-08-17)* — segunda de las tres pasadas de revisión que fijó él (lógica → guards → estilo). Lo que hay anotado para ella: `encode` lanza `KeyError` si un símbolo fusionado no está en el vocabulario (hay un test que lo documenta); y `decode([])` lanza en vez de devolver `""`, así que la ida y la vuelta no son simétricas con `encode("")`, que devuelve `[]`. Decisión suya pendiente
+- [ ] **La pasada de `flake8` y `mypy`** *(abierta 2026-08-17, ampliada el 08-18)* — tercera y última. Anotado: los dos centinelas sin nombre semántico, `id` y `pattern` pisando nombres, el `lambda` como atributo, la línea larga del `.get` del bucle de merges, **`__init__` sin `-> None`**, el f-string sin placeholders de `decode` (`f"Error decoding token ids. Empty id's list"`), `chunck` mal escrito, y la mezcla de `List[int]` con `list[int]` en el mismo archivo
+- [ ] **`flake8` y `mypy` no están instalados en el venv `callme/`** *(detectado 2026-08-18)* — `python -m flake8` y `python -m mypy` devuelven *No module named*. Hay que instalarlos antes de la tercera pasada
+- [x] **La regla de pre-tokenización** — *cerrada el 2026-08-17*: el patrón se usa tal cual y los 43 textos coinciden con Qwen, así que la regla es correcta en ejecución. Sigue en la `[[PROJECT#🎯 Lista de refuerzo]]` como tema a reforzar, no como trabajo pendiente. Detalle en `[[PROJECT#Pre-tokenización — cómo parte Qwen de verdad]]`. **Decidido el 2026-08-14: se usa la librería `regex`** (ver la fila en `[[PROJECT#Restricciones generales]]`), así que **no hay traducción de `\p{L}`/`\p{N}` que hacer** — el patrón se lee tal cual de `get_path_to_tokenizer_file()` y se compila. Ventaja extra: otro modelo trae su propio patrón y el **bonus 1** sale casi gratis. **Sigue abierto:** él no entendió qué hace el patrón (*"no entendí nada"*) — se explica entero al escribir el cuerpo de `encode`, está en la `[[PROJECT#🎯 Lista de refuerzo]]`
 - [ ] **No hay `pyproject.toml` en la raíz del repo** *(detectado 2026-08-14)* — solo existe el del `llm_sdk`. El subject lo exige junto con `uv.lock`. Es por donde entra la dependencia `regex`
+
+---
+
+### Bloque 2 — I/O de archivos
+
+> [!info] Estado — 2026-08-18 · ==diseño abierto, a medio cerrar==
+> **Acordado hoy:** el nombre de la clase, los seis métodos, la forma del log y quién lo alimenta.
+> **Falta:** atributos, firmas completas con tipos y retorno, y los **modelos `pydantic`** del catálogo y de los prompts. Nada escrito todavía en `src/`.
+
+**Descripción:** leer y validar los dos JSON de entrada, escribir el JSON de resultados y el log de errores. Sin crashear ante archivo ausente, vacío o corrupto.
+
+**Depende de:** nada del código propio — es el segundo en orden de dependencia.
+**Qué recibe:** las **tres rutas ya resueltas**.
+**Qué entrega:** catálogo y prompts validados, el archivo de resultados y el log.
+**Dónde vivirá el diseño:** `src/` — archivo sin crear todavía.
+
+#### ==`FileManager`==
+
+> [!note] El nombre
+> Propuso `Validator`, y después `Monitor`. Se le señaló que la clase hace cuatro cosas y todas son de disco —lee los dos JSON, valida, escribe resultados y escribe el log—, así que *validar* y *vigilar* nombran solo un trozo. Eligió **`FileManager`**.
+
+**Métodos acordados:**
+
+| Método | Qué hace |
+|---|---|
+| `_load_json` | **Privado.** `open` + `json.load` + los dos guards (`FileNotFoundError`, `JSONDecodeError`). Existe porque las dos lecturas son idénticas y las dos validaciones no |
+| `validate_functions` | Llama a `_load_json` y valida el **catálogo** (`name`, `description`, `parameters`, `returns`) |
+| `validate_prompts` | Llama a `_load_json` y valida los **prompts** (`{"prompt": str}`) |
+| `charge_logs` | Recibe del `Chat` el índice y el mensaje de un fallo, y los carga en el dict |
+| `write_logs` | Al final, si el dict tiene datos, lo escribe en `logs/logs.json` |
+| `write_replies` | Escribe el array de N resultados en `function_calling_results.json` |
+
+#### Decisiones cerradas el 2026-08-18
+
+| Decisión | Por qué |
+|---|---|
+| **A la clase le llegan rutas, no flags** | `argparse` vive en `src/__main__.py`, fuera de los bloques. Cuando preguntó por dónde entraba la tercera ruta (`--output`), la respuesta fue: ya resuelta desde el punto de entrada |
+| **Un solo archivo de log: `logs/logs.json`** | Propuesta suya. El método lo escribe solo **si el dict tiene datos**. La carpeta hay que crearla (`mkdir(exist_ok=True)`) o el `open` en escritura falla con `FileNotFoundError` |
+| **Forma del log: `{"prompts": {"3": msg}, "files": {"vocab.json": msg}}`** | Llegó él en tres pasos. Primero propuso `{naturaleza: mensaje}` → se le puso el caso de **dos prompts que fallan por lo mismo**, y vio que el segundo pisa al primero. Pasó a `{naturaleza: [mensajes]}`, y con la pregunta *"el objeto 3 salió mal, ¿cuál te contesta antes?"* llegó al **índice como clave**. El nivel de fuera lo añadió él para separar las **dos familias de fallo**: los que tienen índice (por prompt) y los que no (archivos) |
+| **La clave del prompt es `str`** | En JSON las claves son string siempre; declararlo desde el principio evita la sorpresa al releer el archivo |
+| **`Chat` atrapa el fallo; `FileManager` escribe** | Su primera propuesta fue que el bucle de generación llamara al `FileManager` directamente. Preguntado qué tendría que construir para testear el Bloque 5 aislado, lo vio. Después propuso **un log por bloque** y lo defendió (*"¿cuál es el problema de mirar los dos?"*): se retiró con dos costes concretos — el `Tokenizer` pasaría de *convierte texto ↔ ids* a *convierte y además abre archivos*, y contradice su propia regla del 08-12 (el que falla **relanza con mensaje propio**; decide quien lo construye). Forma final: `except Exception as error: self._io.charge_logs(indice, str(error))` dentro del bucle de `Chat` |
+| **`pydantic` valida la entrada aquí; el resultado generado se valida en el Bloque 5** | Preguntó dónde se validaban las respuestas. Sigue en pie la decisión del 08-10 |
+
+#### Abierto en este bloque
+
+- [ ] **Atributos y firmas completas** — con tipos y retorno, en el `.py`
+- [ ] **Los modelos `pydantic`**: uno para la función del catálogo y otro para el prompt. Al escribirlos, ==no atar `parameters` a un solo nivel de profundidad== — ver la fila ⚠️ de `[[PROJECT#Bloques]]`, es lo que hace posible el bonus 7
+- [ ] **Qué devuelven `validate_functions` y `validate_prompts`** — quedó preguntado, sin contestar
+- [ ] **Dónde se llama a `write_logs`** — al final del `Chat`, presumiblemente; sin decidir
+- [ ] `logs/` en el `.gitignore`
 
 ---
 
@@ -943,6 +1130,7 @@ Aplicado a los dos textos reales del proyecto:
 
 ### Validación final
 
+- [ ] **Hoja de evaluación del peer review** *(diferida aquí el 2026-08-17)* — la tiene en Slack. Con ella se define **cómo se mide el 90%**: sobre qué N, qué cuenta como acierto de función y de argumentos, y qué se compara, dado que `function_calling_tests.json` no trae resultados esperados. Salió de su pregunta del 08-12: *"¿un porcentaje de cuántos? porque si es 1, falla y 0%"*. Aquí se decide también **qué se mantiene** de lo medido
 - [ ] Checklist del subject línea por línea
 - [ ] `make lint` sin errores (`flake8` + `mypy`)
 - [ ] README completo

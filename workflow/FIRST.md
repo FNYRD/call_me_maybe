@@ -115,7 +115,6 @@ El detalle completo de cada una está en `[[SYSTEM]]`. Aquí solo están para qu
 ## Al arrancar, comprueba
 
 - [ ] ¿Existe la carpeta `workflow/` dentro del proyecto?
-- [ ] ¿Está `workflow/PSYCHOLOGY.md` en el `.gitignore`?
 - [ ] ¿`workflow/PROJECT.md` arrastra datos de otro proyecto?
 - [ ] ¿Hay `Makefile` y `.gitignore` en el proyecto?
 
@@ -125,14 +124,15 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-08-12
+> [!info] Estado — 2026-08-18
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 1 — diseño. **6 bloques** definidos y ordenados; el Bloque 1 con diseño cerrado y en construcción
-> **Último bloque cerrado:** ninguno. El **Bloque 1 (Tokenizer)** se está escribiendo en `src/tokenizer.py`
-> **En qué se estaba:** cargas de `vocab.json` y `merges.txt` partidas en métodos · investigada la pre-tokenización real de Qwen · repasados `encode` y `decode` paso a paso
-> **⚠️ El `Tokenizer` no construye** — 4 fallos verificados en ejecución, en `[[PROJECT#Abierto en este bloque]]`
-> **Antes de nada:** él trae la **hoja de evaluación** y se define cómo se mide el 90% de acierto. Después, el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]`
-> **Abierto:** los 4 fallos · cuerpos de `encode`/`decode` · regla de pre-tokenización · reforzar los **imports relativos** cuando aparezca el primero en Fase 2 · se implementan **los 9 bonus** · mecanismo del bonus 3 sin decidir · `Makefile` y `.gitignore` vacíos por decisión suya
+> **Fase:** 1 — diseño. **6 bloques** definidos; el **Bloque 1 con la construcción cerrada** y el **Bloque 2 a medio diseñar**
+> **Último hito:** ==`pydantic` aplicado al `Tokenizer`== (`@validate_call` + `FilePath`, requisito literal del subject) — **129 tests verdes** en `tests/test_bloque_1.py`
+> **En qué se estaba:** diseño del **Bloque 2** — clase `FileManager`, seis métodos, log único `logs/logs.json`, `Chat` atrapa y `FileManager` escribe
+> **Antes de nada:** el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 5 preguntas. Regla suya: *"cuestionarios siempre primero"*
+> **Después:** cerrar el Bloque 2 — atributos, firmas y los **modelos `pydantic`**; los propone él
+> **Abierto:** del Bloque 1, las pasadas de **guards** y de **estilo** (`flake8`/`mypy` **sin instalar** en el venv) · no hay `pyproject.toml` en la raíz · se implementan **los 9 bonus** · mecanismo del bonus 3 sin decidir
+> **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 *(lo rellena el agente saliente en su cierre; el detalle largo va en el briefing de `[[HANDOFF]]`)*

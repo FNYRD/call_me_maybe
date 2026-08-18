@@ -23,6 +23,48 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-08-18 — entrada de sesión, antes del Bloque 2
+
+> [!success] 4 limpias de 5 — ==los cuatro 🔴 pendientes cayeron sin ayuda==
+> Tres de ellos llevaban tres sesiones fallando (mypy/`Optional`, bytes de `Ã`, `split(" ")`).
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | **Por qué un vocabulario de juguete y no el real.** Contestó *"validar sobre los 256 bytes que igual usa el vocabulario"* — el suelo de bytes lo tienen los dos, así que no distingue nada | Se le puso el caso que discrimina: *"quiero un test que compruebe que se fusiona la regla de línea más baja. Con el de juguete escribo `merges.txt` con `a b` en la línea 1 y `b c` en la 2. ¿Podrías montar ese mismo test con el `merges.txt` real?"* → *"podría, pero tendría que adaptarse a la tabla del modelo real"*. Ahí está: con el real **no eliges las reglas**, buscas un caso que ya exista y montas el test alrededor | Testing |
+
+> [!success] Correcto sin ayuda
+> **`raise` como salida válida para mypy** — *"se ejecuta el raise y no se devuelve nada"*, limpio a la cuarta (falló 08-12, 08-14, 08-17) · **Bytes de `Ã` sola** — *"2"*, a la primera; la pregunta acotada funciona donde la del total escondía el fallo · **`split(" ")` sobre `"Greet shrek!\n\n"`** — *"el espacio desaparece, el `!` queda pegado a `k!\n`"*, las dos mitades · **Los 40 tests de juguete no prueban corrección** — *"no estábamos probando directamente contra el modelo, así que no era verídico"*.
+
+> [!bug] El repaso guiado de los tests, cortado por él
+> Lo había pedido él el 08-17. A los dos minutos: *"no me expliques pytest, brevemente dime qué se testea y ya; el objetivo no es aprender pytest sino entender por qué el test valida mi trabajo"*. Se le dio la tabla de las 8 secciones con qué prueba cada una, y respondió *"no tengo ahorita la capacidad para entender, pasemos al siguiente bloque, estoy un poco bloqueado"*.
+> **Lección de método:** pidió *por qué el test valida su trabajo* y recibió *cómo funciona pytest*. Otra vez alcance equivocado, y esta vez la señal fue el bloqueo, no la corrección.
+
+---
+
+## Repaso 2026-08-17 — entrada de sesión, antes del bucle de merges
+
+> [!note] Lanzado el primero, por regla suya
+> Ante la duda de si arrancar por el bucle de merges o por el cuestionario, la zanjó él: *"cuestionarios siempre primero"*. Queda como regla de arranque de sesión.
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | **Por qué mypy no exige `Optional`.** Contestó *"try except resuelve eso, queda como un tipo de retorno valido"* — atribuye el efecto al `try-except`, no al `raise`, y trata la excepción como si fuera un valor devuelto: *"seria como hacer un return ERROR"*. **Tercera vez que se pregunta** (08-12, 08-14, 08-17) | Dos bloques comparados: el mismo `except` con `raise` (A) y con `print` (B), y el dato de que mypy solo se queja en B. Ahí aisló el `raise`. Después se le puso el caso que discrimina *"return de error"* de *"salida sin valor"*: `t = Tokenizer("no_existe.json"); print(t)` dentro de un `except`. Dijo que `self._vocab` *"queda vacío"* y luego *"no sé"* → respuesta directa: **`NameError`, la asignación nunca ocurrió**. No hay un `Tokenizer` con vocabulario vacío: no hay `Tokenizer`. El tipo de retorno promete *"si devuelve algo, será un `Dict`"*; el `raise` es **otra puerta de salida** | Tipado |
+| 2 | **Qué devuelve el patrón de pre-tokenización.** *"no sé en qué patrones los divide"* | Se **ejecutó** con su propio patrón: `findall("<\|im_start\|>user\nGreet<\|im_end\|>")` → `['<\|','im','_start','\|>','user','\n','Greet','<\|','im','_end','\|>']`. El especial despedazado en 4 trozos — que es justo por lo que el split de especiales va **antes**. Cuarta vez que ejecutar zanja lo que explicar no zanjaba | Pre-tokenización |
+| 3 | **Bytes de `"JosÃ©".encode("utf-8")`.** Contestó **5**, y *"quiero 4"*. Son **7** y quiere **5**. **Segunda vez** (08-14 contestó 5 también) | Se le pidió **contar por carácter** (`J o s Ã ©`) y dijo *"1"* para todos. Se ejecutó carácter a carácter: `Ã` → `b'\xc3\x83'` y `©` → `b'\xc2\xa9'`, 2 bytes cada uno por estar fuera de ASCII; total 7, frente a los 5 de `"José"`. Corolario recordado: en `decode` cada carácter pasa por `_char_byte` y el byte va al `bytearray` | `str` / `bytes` |
+| 4 | **Qué se rompe con `split(" ")` (parte a).** Saltó a la consecuencia (*"el acierto disminuye"*) en vez de a la mecánica, y añadió que *"los especiales no tienen id"* — que ya lo resuelve el otro patrón | Se le puso `"Greet shrek!\n\n"` con las dos salidas al lado (`['Greet','shrek!\n\n']` vs `['Greet',' shrek','!\n\n']`) y se preguntó qué le pasa al `!` y al espacio. Dijo *"no sé"* → respuesta directa: **el espacio se lo come el separador** (y `Ġshrek` es otra entrada del vocabulario, otro id), y **el `!` queda pegado**, así que el bucle puede fusionar `('k','!')` y producir símbolos que el modelo nunca vio | Pre-tokenización |
+
+> [!success] Correcto sin ayuda
+> **Los especiales no están en `vocab.json`** — *"solo se encuentran definidos en el archivo del tokenizer"*, a la primera. Era 🔴 y falló dos veces el 08-14 · **El split de especiales** — dio los 3 tramos exactos · **El bucle de merges corre por trozo** — *"corre 12 veces, una para cada trozo"*, y ante qué fusión sería posible con el texto pegado contestó **`40`**, el caso exacto. Era 🟡 y el 08-14 había dicho *"corre sobre todo"* · **Qué se cae con ids distintos: el acierto**, no el JSON válido · **Qué hace falta para testear la lista blanca: el vocabulario, y el modelo no** — *"lo que hace el modelo es predecir en base a vocabulario que yo le permito usar"*. Era 🔴 desde el 08-11.
+
+> [!note] Fuera de guion
+> Abolida la regla de meter `workflow/PSYCHOLOGY.md` en el `.gitignore` — decisión suya: *"ese archivo queda siempre dentro del proyecto"*. Borrada de `[[FIRST]]`, `[[PSYCHOLOGY]]` y los 4 sitios de `[[SYSTEM]]`, y anotada en `Posible mejoras al sistema.md` para aplicarla a la carpeta base al cerrar.
+
+---
+
 ## Repaso 2026-08-14 — entrada de sesión, corrección de los 4 fallos del Bloque 1
 
 > [!note] Lanzado en segundo lugar, no al abrir

@@ -1,18 +1,23 @@
 from typing import Dict, Tuple, List, Callable, Any
 import json
 import regex
+from pydantic import validate_call, FilePath
 
 
 class Tokenizer:
-    def __init__(self, vocab_path: str, merges_path: str, tokenizer_path: str):
-        self.special_ids: Dict[str, int] = {}
+    @validate_call
+    def __init__(self, vocab_path: FilePath, merges_path: FilePath,
+                 tokenizer_path: FilePath) -> None:
+        self._special_ids: Dict[str, int] = {}
         self._vocab: Dict[str, int] = self._load_vocab(vocab_path)
         self._merge_board: Dict[Tuple[str, str],
                                 int] = self._load_mergeboard(merges_path)
         self._tokenizer_pattern_compiler: regex.Pattern = regex.compile(
             self._load_tokenizer(tokenizer_path))
         self._specials_pattern_compiler: regex.Pattern = regex.compile(
-            '(' + '|'.join(regex.escape(t) for t in self.special_ids) + ')')
+            '(' + '|'.join(regex.escape(t) for t in self._special_ids) + ')')
+        self._reversed_special_ids: Dict[int, str] = {
+            id: word for word, id in self._special_ids.items()}
         self._reversed_vocab: Dict[int, str] = {
             id: word for word, id in self._vocab.items()}
         self._visible_bytes: set[int] = set(range(33, 127)) | set(
@@ -28,14 +33,14 @@ class Tokenizer:
         self._char_byte: Dict[str, int] = {
             char: byte for byte, char in self._byte_char.items()}
 
-    def _load_tokenizer(self, tokenizer_path: str) -> str:
+    def _load_tokenizer(self, tokenizer_path: FilePath) -> str:
         pattern: str = ""
         tokenizer_file: Dict[Any, Any] = {}
         try:
             with open(tokenizer_path, "r", encoding="utf-8") as file:
                 tokenizer_file = json.load(file)
-                self.special_ids = {content["content"]: content["id"]
-                                    for content in tokenizer_file["added_tokens"][:3]}
+                self._special_ids = {content["content"]: content["id"]
+                                     for content in tokenizer_file["added_tokens"]}
                 pattern = tokenizer_file["pre_tokenizer"]["pretokenizers"][0]["pattern"]["Regex"]
                 if not pattern:
                     raise ValueError
@@ -52,13 +57,13 @@ class Tokenizer:
             raise ValueError("Tokenizer's file empty")
 
     def get_special_id(self, pattern: str) -> int:
-        if pattern in self.special_ids:
-            return self.special_ids[pattern]
+        if pattern in self._special_ids:
+            return self._special_ids[pattern]
         else:
             return 0
 
     @staticmethod
-    def _load_vocab(vocab_path: str) -> Dict[str, int]:
+    def _load_vocab(vocab_path: FilePath) -> Dict[str, int]:
         vocab: Dict[str, int] = {}
         try:
             with open(vocab_path, "r", encoding="utf-8") as file:
@@ -75,7 +80,7 @@ class Tokenizer:
             raise ValueError("Vocabulary's file empty")
 
     @staticmethod
-    def _load_mergeboard(merges_path: str) -> Dict[Tuple[str, str], int]:
+    def _load_mergeboard(merges_path: FilePath) -> Dict[Tuple[str, str], int]:
         merge_board: Dict[Tuple[str, str], int] = {}
         try:
             with open(merges_path, "r", encoding="utf-8") as file:
@@ -104,6 +109,12 @@ class Tokenizer:
         token_ids: List[int] = []
         pattern_bytes: list[int] = []
         bytes_to_char: str = ""
+        index_2_merge: Tuple[int, int] = (0, 0)
+        chars_2_merge: List[str] = []
+        no_merge_found: int = 999999999999
+        loop_start: int = 9999999999999
+        priority_bpe: int = loop_start
+        priority_eval: int = 0
         split_by_specials: list[str] = [
             valid_token for valid_token in
             self._specials_pattern_compiler.split(text) if valid_token != ""]
@@ -116,20 +127,37 @@ class Tokenizer:
                     bytes_to_char = ""
                     for byte in pattern_bytes:
                         bytes_to_char += self._byte_char[byte]
-        # HASTA ESTE PUNTO, YA FUERON PARTIDOS LOS PROMPTS (TEXTO) EN
-        # TRAMOS ESPECIALES O NO. LOS TRAMOS ESPECIALES TIENEN SU ID EN 
-        # UN JSON Y NO EN EL VOCABULARIO, POR ESO SE TRATAN POR SEPARADO
-        # CUANDO NO ES ESPECIAL, SE PASA PRIMERO POR UNA SEPARACION EN PATRONES
-        # QUE EL MODELO USA POR DEFECTO, ESTOS SON TRAMOS DE TEXTO EN EL QUE EXISTE UN
-        # PATRON REGEX PARA DEFINIR COMO EL MODELO APRENDIO A LEER LOS BYTES Y PASARLOS
-        # PARA SU ID. (ESTO LO TENGO QUE REFORZAR UN MONTON). LUEGO DE HABERLO SEPARADO
-        # CADA TRAMO SE DIVIDE EN BYTES Y TENIENDO LOS BYTES SE PASA A MI TRABLA DE CHAR
-        # PARA OBTENER EN TEXTO EN BASE 256. LO SIGUIENTE AL TENER EL TEXTO EN ES BASE
-        # ES COMENZAR A DIVIDIR CADA TRAMO EN TOKENS USANDO LA MERGE TABLE QUE ES EL PUNTO
-        # DONDE SE COMENZARA EN LA SIGUIENTE SESION
-
-        
-        return [0]
+                    chars_2_merge = list(bytes_to_char)
+                    while priority_bpe != no_merge_found:
+                        priority_bpe = no_merge_found
+                        for index in range(len(chars_2_merge) - 1):
+                            priority_eval = self._merge_board.get(
+                                (chars_2_merge[index], chars_2_merge[index + 1]), no_merge_found)
+                            if priority_eval < priority_bpe:
+                                priority_bpe = priority_eval
+                                index_2_merge = (index, index + 1)
+                        if priority_bpe != no_merge_found:
+                            chars_2_merge[index_2_merge[0]] = chars_2_merge[index_2_merge[0]
+                                                                            ] + chars_2_merge[index_2_merge[1]]
+                            del chars_2_merge[index_2_merge[1]]
+                    for token in chars_2_merge:
+                        token_ids.append(self._vocab[token])
+                    priority_bpe = loop_start
+        return token_ids
 
     def decode(self, token_ids: List[int]) -> str:
-        return ""
+        text: str = ""
+        bytearr: bytearray = bytearray()
+        if len(token_ids) <= 0:
+            raise ValueError(
+                f"Error decoding token ids. Empty id's list")
+        for token_id in token_ids:
+            if token_id in self._reversed_vocab:
+                text += self._reversed_vocab[token_id]
+            elif token_id in self._reversed_special_ids:
+                pass
+            else:
+                raise ValueError(
+                    f"Error decoding token ids. {token_id} it isn't a valid id")
+        bytearr = bytearray(self._char_byte[char] for char in text)
+        return bytearr.decode("utf-8")

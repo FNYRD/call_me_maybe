@@ -54,7 +54,6 @@ tags: [42, sistema, workflow]
 1. Copiar la carpeta base completa dentro del proyecto, renombrada a `workflow/`
 2. Vaciar el `PROJECT.md` copiado si arrastra datos de otro proyecto — debe empezar limpio
 3. Crear `workflow/HANDOFF.md` con el subject traducido
-4. Añadir `workflow/PSYCHOLOGY.md` al `.gitignore` del proyecto
 
 > [!warning] Siempre desde la base, nunca desde otro proyecto
 > Copiar de un proyecto anterior arrastra su `PROJECT.md`, su `HANDOFF.md` y una `PSYCHOLOGY.md` posiblemente desactualizada. La base es la única fuente para empezar.
@@ -81,8 +80,8 @@ Orden exacto:
 > El retorno **sustituye**, no fusiona. Si dos proyectos corren en paralelo, el segundo que cierre pisa lo que escribió el primero en `PSYCHOLOGY.md` y en las mejoras.
 > Si hay que solaparlos, el cierre del segundo se hace **a mano**, comparando ambas versiones antes de sustituir.
 
-> [!warning] El perfil no se sube al repositorio
-> `workflow/PSYCHOLOGY.md` es personal. Va al `.gitignore` del proyecto desde el primer commit.
+> [!important] Todo `workflow/` se versiona — decisión del estudiante, 2026-08-17
+> **Ningún archivo de `workflow/` va al `.gitignore`, `PSYCHOLOGY.md` incluido.** Se quedan siempre dentro del proyecto y suben al repositorio.
 
 > [!tip] Por qué copiar y no enlazar
 > La copia deja el proyecto **autocontenido**: dentro están sus reglas, su diseño y su subject. Dentro de un año lo abres y todo el contexto sigue ahí, aunque la base haya cambiado diez veces.
@@ -92,7 +91,6 @@ Orden exacto:
 Al arrancar, el agente comprueba:
 
 - ¿Existe `workflow/` en el proyecto? Si no → avisar antes de trabajar
-- ¿`workflow/PSYCHOLOGY.md` está en el `.gitignore`? Si no → avisar
 - ¿`workflow/PROJECT.md` tiene datos de otro proyecto? Si sí → avisar
 
 Y en el **cierre de proyecto**, ejecuta los 4 pasos de retorno y confirma qué copió y dónde.
@@ -625,10 +623,10 @@ venv/
 
 # Proyecto
 *.log
-
-# Perfil personal — nunca al repositorio
-workflow/PSYCHOLOGY.md
 ```
+
+> [!important] `workflow/` no se ignora
+> Ningún archivo del sistema entra aquí: se versionan todos con el proyecto.
 
 > [!note] Ajuste por proyecto
 > Lo que genere el propio proyecto (logs, outputs, binarios, bases de datos locales) se añade según aparece.
@@ -737,9 +735,6 @@ El ciclo completo está en `[[SYSTEM#Mejorar el sistema entre proyectos]]`: se r
 > [!warning] Nunca dos versiones vivas
 > Durante un proyecto, la copia de `workflow/` es la única que se toca. La de la base espera.
 > Al cerrar, la de `workflow/` **sustituye** a la de la base. Ver `[[SYSTEM#La carpeta workflow]]`.
-
-> [!warning] No se sube al repositorio
-> `workflow/PSYCHOLOGY.md` es personal. Va al `.gitignore` del proyecto desde el primer commit.
 
 ### Herramienta
 
