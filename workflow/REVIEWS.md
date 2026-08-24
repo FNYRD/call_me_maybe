@@ -23,6 +23,31 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-08-24 — entrada de sesión, tras 6 días sin tocar el proyecto
+
+> [!bug] 1 limpia de 5 — ==el diseño del Bloque 2 no sobrevivió a la pausa==
+> Las tres preguntas del Bloque 2 (acordado el 08-18, **sin una línea escrita en `src/`**) fallaron las tres. Lo del Bloque 1, que sí está en código, salió limpio.
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | **Con qué `merges.txt` se prueba la prioridad.** Contestó *"nada me impide nada, la idea del test es verificar que el código se adapta al formato"*. **Segunda vez** (falló el 08-18) | Objetó con razón que la pregunta pedía escribir un test, que no es suyo — se reformuló. Lo que lo desbloqueó fue apuntar al **`assert`**: *"con el de juguete sabes qué poner porque escribiste las dos líneas; con el real, ¿de dónde sacas el resultado esperado sin ejecutar tu propio `encode`?"* → *"del encode del modelo"*. Ahí está el coste: ese test dice **coincido con Qwen**, no **aplico la regla de línea más baja**, y si falla no sabes cuál de las dos se rompió | Testing |
+| 2 | **Por qué el fallo de fichero no puede ir en `prompts`.** Acertó la clave (*"debe ser en FILES o algo así"*) y en el porqué dijo *"no sé"* | Directo: **no hay índice que poner**. El fichero revienta antes de que exista el array de prompts; los fallos de `prompts` ocurren dentro del bucle, cuando ya sabes en cuál vas. Ese nivel de fuera lo añadió él justo por eso | Bloque 2 |
+| 3 | **Quién escribe el log.** El camino lo dio bien hasta el final —*"salta un raise, lo atrapa `Chat`"*— pero remató con *"y `Chat` lo escribe en el archivo"* | Se le puso el caso de dos fallos (prompt 3 y 7): dijo *"dos veces, y lo abre `Chat`"*. Lo cerró ponerle sus **propios dos métodos** delante (`charge_logs` carga en el dict · `write_logs` escribe al final si hay datos) y preguntar *"si `Chat` abre el archivo dos veces, ¿para qué sirve `charge_logs`?"* → *"tienes razón, no recordaba eso"* | Bloque 2 |
+| 4 | **Qué comparten `validate_functions` y `validate_prompts`.** *"no recuerdo"* | Directo: se comparte **leer** (`_load_json` privado: `open` + `json.load` + los dos guards); no se comparten **las reglas de validación**, porque el catálogo mira `name`/`description`/`parameters`/`returns` y los prompts miran `{"prompt": str}` | Bloque 2 |
+
+> [!success] Correcto sin ayuda
+> **Qué valida `pydantic` y qué no** — con un `vocab.json` que existe y contiene `{}` fue directo a su propio `except ValueError: raise ValueError("Vocabulary's file empty")`. `FilePath` solo mira que la ruta exista; el resto sigue siendo de sus guards.
+
+> [!note] Objeción suya, aceptada
+> *"Los tests los escribió un agente, esta pregunta está mal planteada."* Tenía razón: la pregunta le pedía escribir un test. Reformulada apuntando al `assert` en vez de al test, contestó.
+
+> [!warning] Lección de método
+> **El Bloque 2 se diseñó entero y no se escribió nada.** Seis días después, las tres preguntas sobre él se fallaron, mientras que el Bloque 1 —que vive en `src/tokenizer.py`— salió limpio. El diseño que solo está en `PROJECT.md` se evapora; el que está en código, no.
+
+---
+
 ## Repaso 2026-08-18 — entrada de sesión, antes del Bloque 2
 
 > [!success] 4 limpias de 5 — ==los cuatro 🔴 pendientes cayeron sin ayuda==

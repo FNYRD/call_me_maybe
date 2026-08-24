@@ -441,18 +441,21 @@ def test_decode_id_invalido(tmp_path):
 
 
 def test_decode_lista_vacia(tmp_path):
-    """Decision suya: sin ids, lanza en vez de devolver una cadena vacia."""
+    """Decision suya, 2026-08-24: simetrico con `encode("") -> []`."""
     tokenizer = construir(tmp_path)
-    with pytest.raises(ValueError, match="Empty"):
-        tokenizer.decode([])
+    assert tokenizer.decode([]) == ""
 
 
 def test_encode_con_token_fuera_del_vocabulario(tmp_path):
-    """Hoy revienta con `KeyError`: queda anotado para la pasada de guards."""
+    """Vocabulario y merges que no se corresponden: mensaje propio, no `KeyError`.
+
+    La tabla permite fusionar `("a", "b")`, pero `"ab"` no est\u00e1 en el
+    vocabulario. Pasa cuando los dos archivos vienen de modelos distintos.
+    """
     tokenizer = construir(tmp_path,
                           extra_vocab=None,
                           reglas=[("a", "b")])
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError, match="ab"):
         tokenizer.encode("ab")
 
 

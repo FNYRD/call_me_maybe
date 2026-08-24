@@ -103,6 +103,15 @@ En `[[HANDOFF]]`, el final importa tanto como el principio: ahí está el **brie
 >
 > Alcance: caveman comprime **lo que le escribes a él**. Lo que va *dentro* de los `.md` mantiene el formato Obsidian completo que pide `[[SYSTEM]]`.
 
+> [!warning] No cites una sesión pasada como si él la recordara — petición suya, 2026-08-24
+> Entre sesión y sesión **pierde el contexto**. Decirle *"el 08-18 acordaste X"* no le devuelve la decisión: le pide que recuerde algo que ya no tiene, y la frase entera se le vuelve ruido.
+> **Cómo se hace:** primero se pone delante **lo acordado y su razón, escritos enteros**; la fecha va al final, como referencia, no como argumento. Si lo acordado ocupa más de una línea, se copia de `[[PROJECT]]` en vez de aludirlo.
+> Vale igual para nombres de métodos, decisiones y reglas suyas: **se citan con su contenido, nunca solo con su etiqueta.**
+>
+> ==**ANTES DE PREGUNTAR, COMPRUEBA QUE TIENE EL CONTEXTO PARA RESPONDER.**== Petición suya, 2026-08-24.
+> Una pregunta sobre algo que **acaba de conocer** no mide nada: no es que falle, es que nunca tuvo con qué contestar. Le pasó con `validate_python` — se le preguntó qué hace con una lista vacía dos mensajes después de ver la función por primera vez.
+> **Se pregunta sobre lo que ya usó**; lo que acaba de aprender se le enseña ejecutándolo, y se pregunta en la sesión siguiente.
+
 > [!important] Resumido, no verborrágico
 > Respuestas **cortas**. Una idea por mensaje, una pregunta por mensaje.
 > Nada de repasos largos, ni listas de contexto que él ya tiene, ni tres párrafos para preguntar una cosa.
@@ -124,14 +133,14 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-08-18
+> [!info] Estado — 2026-08-24
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 1 — diseño. **6 bloques** definidos; el **Bloque 1 con la construcción cerrada** y el **Bloque 2 a medio diseñar**
-> **Último hito:** ==`pydantic` aplicado al `Tokenizer`== (`@validate_call` + `FilePath`, requisito literal del subject) — **129 tests verdes** en `tests/test_bloque_1.py`
-> **En qué se estaba:** diseño del **Bloque 2** — clase `FileManager`, seis métodos, log único `logs/logs.json`, `Chat` atrapa y `FileManager` escribe
-> **Antes de nada:** el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 5 preguntas. Regla suya: *"cuestionarios siempre primero"*
-> **Después:** cerrar el Bloque 2 — atributos, firmas y los **modelos `pydantic`**; los propone él
-> **Abierto:** del Bloque 1, las pasadas de **guards** y de **estilo** (`flake8`/`mypy` **sin instalar** en el venv) · no hay `pyproject.toml` en la raíz · se implementan **los 9 bonus** · mecanismo del bonus 3 sin decidir
+> **Fase:** 1 — diseño. **6 bloques** definidos; ==**Bloque 1 CERRADO**== y **Bloque 2 a medio construir**
+> **Último hito:** Bloque 1 con las **tres pasadas** hechas (lógica → guards → estilo): `flake8` limpio, `mypy --strict` limpio, **129 tests verdes**
+> **En qué se estaba:** `src/validator.py` — clase `FileManager`. `__init__`, atributos y `_load_json` escritos y verificados con los archivos reales (5 funciones, 11 prompts). Los tres modelos `pydantic` los escribió a mano él
+> **Antes de nada:** el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas. Regla suya: *"cuestionarios siempre primero"*
+> **Después:** seguir el Bloque 2 — `charge_logs`, `write_logs`, `write_replies`, y decidir qué queda de los dos `validate_*`
+> **Abierto:** ==`properties` es una suposición, no un dato del subject== (se verifica en los tests) · renombrar `src/validator.py`, que conserva el nombre viejo · `logs/` al `.gitignore` · no hay `pyproject.toml` en la raíz · se implementan **los 9 bonus** · mecanismo del bonus 3 sin decidir
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 

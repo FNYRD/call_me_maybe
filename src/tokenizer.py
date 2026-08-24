@@ -12,9 +12,9 @@ class Tokenizer:
         self._vocab: Dict[str, int] = self._load_vocab(vocab_path)
         self._merge_board: Dict[Tuple[str, str],
                                 int] = self._load_mergeboard(merges_path)
-        self._tokenizer_pattern_compiler: regex.Pattern = regex.compile(
+        self._tokenizer_pattern_compiler: regex.Pattern[str] = regex.compile(
             self._load_tokenizer(tokenizer_path))
-        self._specials_pattern_compiler: regex.Pattern = regex.compile(
+        self._specials_pattern_compiler: regex.Pattern[str] = regex.compile(
             '(' + '|'.join(regex.escape(t) for t in self._special_ids) + ')')
         self._reversed_special_ids: Dict[int, str] = {
             id: word for word, id in self._special_ids.items()}
@@ -40,8 +40,11 @@ class Tokenizer:
             with open(tokenizer_path, "r", encoding="utf-8") as file:
                 tokenizer_file = json.load(file)
                 self._special_ids = {content["content"]: content["id"]
-                                     for content in tokenizer_file["added_tokens"]}
-                pattern = tokenizer_file["pre_tokenizer"]["pretokenizers"][0]["pattern"]["Regex"]
+                                     for content in tokenizer_file[
+                                     "added_tokens"]}
+                pattern = (
+                    tokenizer_file["pre_tokenizer"]
+                    ["pretokenizers"][0]["pattern"]["Regex"])
                 if not pattern:
                     raise ValueError
                 return pattern
@@ -50,7 +53,8 @@ class Tokenizer:
                 "ERROR: An error occurred reading the tokenizer file")
         except FileNotFoundError:
             raise FileNotFoundError(
-                f"This route {tokenizer_path} doesn't take to an existing file")
+                f"This route {tokenizer_path} doesn't take to an "
+                "existing file")
         except json.JSONDecodeError as error:
             raise ValueError(f"Corrupt JSON in {tokenizer_path}") from error
         except ValueError:
@@ -107,7 +111,7 @@ class Tokenizer:
     def encode(self, text: str) -> List[int]:
         id: int = 0
         token_ids: List[int] = []
-        pattern_bytes: list[int] = []
+        pattern_bytes: List[int] = []
         bytes_to_char: str = ""
         index_2_merge: Tuple[int, int] = (0, 0)
         chars_2_merge: List[str] = []
@@ -115,14 +119,15 @@ class Tokenizer:
         loop_start: int = 9999999999999
         priority_bpe: int = loop_start
         priority_eval: int = 0
-        split_by_specials: list[str] = [
+        split_by_specials: List[str] = [
             valid_token for valid_token in
             self._specials_pattern_compiler.split(text) if valid_token != ""]
-        for chunck in split_by_specials:
-            if id := self.get_special_id(chunck):
+        for chunk in split_by_specials:
+            if id := self.get_special_id(chunk):
                 token_ids.append(id)
             else:
-                for pattern in self._tokenizer_pattern_compiler.findall(chunck):
+                for pattern in self._tokenizer_pattern_compiler.findall(
+                        chunk):
                     pattern_bytes = list(pattern.encode("utf-8"))
                     bytes_to_char = ""
                     for byte in pattern_bytes:
@@ -132,15 +137,21 @@ class Tokenizer:
                         priority_bpe = no_merge_found
                         for index in range(len(chars_2_merge) - 1):
                             priority_eval = self._merge_board.get(
-                                (chars_2_merge[index], chars_2_merge[index + 1]), no_merge_found)
+                                (chars_2_merge[index],
+                                 chars_2_merge[index + 1]),
+                                no_merge_found)
                             if priority_eval < priority_bpe:
                                 priority_bpe = priority_eval
                                 index_2_merge = (index, index + 1)
                         if priority_bpe != no_merge_found:
-                            chars_2_merge[index_2_merge[0]] = chars_2_merge[index_2_merge[0]
-                                                                            ] + chars_2_merge[index_2_merge[1]]
+                            chars_2_merge[index_2_merge[0]] = (
+                                chars_2_merge[index_2_merge[0]]
+                                + chars_2_merge[index_2_merge[1]])
                             del chars_2_merge[index_2_merge[1]]
                     for token in chars_2_merge:
+                        if self._vocab.get(token) is None:
+                            raise ValueError(
+                                f"Text: {token} is not a valid token id")
                         token_ids.append(self._vocab[token])
                     priority_bpe = loop_start
         return token_ids
@@ -149,8 +160,7 @@ class Tokenizer:
         text: str = ""
         bytearr: bytearray = bytearray()
         if len(token_ids) <= 0:
-            raise ValueError(
-                f"Error decoding token ids. Empty id's list")
+            return ""
         for token_id in token_ids:
             if token_id in self._reversed_vocab:
                 text += self._reversed_vocab[token_id]
@@ -158,6 +168,7 @@ class Tokenizer:
                 pass
             else:
                 raise ValueError(
-                    f"Error decoding token ids. {token_id} it isn't a valid id")
+                    "Error decoding token ids. "
+                    f"{token_id} it isn't a valid id")
         bytearr = bytearray(self._char_byte[char] for char in text)
         return bytearr.decode("utf-8")

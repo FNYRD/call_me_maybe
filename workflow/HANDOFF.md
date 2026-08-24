@@ -305,7 +305,42 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 10 — activo
+> [!info] Agente 11 — activo
+> **Periodo:** cuestionario del 2026-08-24 → **Bloque 1 cerrado del todo** y **Bloque 2 con `__init__` y la lectura corriendo**.
+>
+> **Qué se hizo:**
+> - **Repaso ejecutado: ==1 limpia de 5==.** La única del Bloque 1 salió sin ayuda; **las tres del Bloque 2 fallaron**, y ese diseño lo había hecho él seis días antes sin escribir una línea. Entrada en `[[REVIEWS]]`, `[[PROJECT#🎯 Lista de refuerzo]]` con tres filas nuevas.
+> - **Bloque 1 cerrado.** Pasada de **guards** (los tres puntos) y pasada de **estilo**: `flake8` limpio, `mypy --strict` limpio, **129 tests verdes**.
+> - **Bloque 2 avanzado de verdad:** atributos cerrados, los **tres modelos `pydantic`** escritos a mano por él, y la lectura de los dos archivos corriendo contra los reales — 5 funciones y 11 prompts, ya como objetos del modelo.
+> - **Dos reglas nuevas suyas en `[[FIRST]]`**: no citar una sesión pasada como si él la recordara, y ==comprobar que tiene contexto antes de preguntarle==.
+>
+> **Dónde se quedó:** `src/validator.py`, clase `FileManager`. `__init__` y `_load_json` escritos y verificados. **Faltan `charge_logs`, `write_logs`, `write_replies`** y decidir qué queda de `validate_functions` / `validate_prompts`.
+>
+> **Decisiones tomadas:**
+> - **`decode([])` devuelve `""`** y `encode("")` devuelve `[]` — comprobado que el SDK hace lo mismo (`encode("") -> []`, `decode([]) -> ''`). Puso un guard que hacía lanzar a `encode("")` y **lo retiró él**: *"la prioridad es que devuelva lo mismo que el modelo"*.
+> - **El `KeyError` de `encode` pasa a `ValueError` con mensaje propio.** Descartó comprobar la coherencia de `vocab.json` y `merges.txt` en `__init__` con argumento propio: recorrer las ~151.000 reglas **rechazaría el `Tokenizer` por una regla que ese texto quizá no pisa nunca**.
+> - **Se quedan** los dos centinelas, `id`/`pattern` y el `lambda`: *"no causan problemas"*.
+> - **`output_path` es `Path`**, no `FilePath` (no existe la primera vez) ni `str` (habría que partir la ruta a mano).
+> - **Un solo `_load_json` con `flag`**, tras ver sus dos lectores duplicados uno al lado del otro.
+> - **Sin guard de vacío en los prompts, sí en el catálogo.** Y **`write_logs` conserva el guard** de escribir solo si hay datos — pidió recomendación y aceptó la contraria.
+>
+> **Callejones sin salida:**
+> - **Citar una decisión por su fecha.** *"El 08-18 acordaste `_load_json`"* produjo *"no entendí nada"*. Con los dos métodos puestos en dos columnas, lo vio al instante. ==Se cita el contenido, la fecha va al final.==
+> - **Preguntarle por algo que acaba de conocer.** Se le preguntó qué hace `validate_python([])` dos mensajes después de enseñarle la función. Regla suya, ya en `[[FIRST]]`.
+> - **Afirmar con más certeza de la que hay.** Se le dijo que el formato anidado *"se hereda"* de JSON Schema y dos mensajes después que era una suposición. Lo cazó y pidió la fuente.
+> - **Dar la receta en vez de la herramienta:** *"no me digas solo es así, sino enséñame a usar pydantic"*.
+>
+> **Abierto:**
+> - Bloque 2: los cuatro métodos que faltan · si sobran los `validate_*` · dónde se llama `write_logs` · `logs/` al `.gitignore` · **renombrar `src/validator.py`**, que conserva el nombre viejo.
+> - ==`properties` es una **suposición**==, no un dato del subject — la línea del bonus dice solo *"Support for complex nested function arguments"*. **Se verifica al montar los tests del bloque**, decisión suya.
+> - El `flake8` del venv `callme/` estaba roto con Python 3.14 y el `mypy` que corría era el de Homebrew; **los reparó él**.
+> - Sigue sin haber `pyproject.toml` en la raíz · mecanismo del bonus 3 sin decidir.
+>
+> **Sobre el estudiante:** lo más útil de hoy. **Aprende lo que escribe**: preguntó él mismo si estaba pensando o solo preguntando, se le respondió con la evidencia del cuestionario, y reescribió los modelos a mano en vez de pegarlos — *"los entendí mejor"*. Y **exige el origen de cada afirmación**. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas. Después, seguir el Bloque 2.
+
+> [!info]- Agente 10 — histórico
 > **Periodo:** Cuestionario de repaso del 2026-08-18 → **`pydantic` en el `Tokenizer` y el Bloque 2 a medio diseñar**.
 >
 > **Qué se hizo:**
