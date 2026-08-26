@@ -23,6 +23,22 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-08-26 — entrada de sesión, Bloques 1-3 cerrados
+
+> [!info] 5 limpias de 6 — solo el mecanismo del `\n` en la plantilla necesitó ayuda
+> Los tres 🔴 heredados (`@validate_call` antes del cuerpo, caché de Hugging Face, asimetría `write_logs`/`write_replies`) y los dos de hoy sobre `PromptBuilder`/imports salieron limpios. El único hueco fue la mecánica de por qué el `\n` importa al modelo.
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | **Por qué el `\n` en la plantilla le importa al modelo, mecánicamente.** Dio la razón general (*"así es como el modelo aprendió a usar las plantillas"*), correcta pero sin el mecanismo — no recordó qué hace distinto el `findall` con `"system You"` frente a `"system\nYou"` | Se dio directo: con espacio, `"You"` sale con `Ġ` pegado (palabra normal); con `\n`, el patrón corta ahí y `"You"` sale sin `Ġ`, otro id. Ids que el modelo no vio en su plantilla de entrenamiento | Bloque 3 · pre-tokenización |
+
+> [!success] Correcto sin ayuda
+> `@validate_call` no deja entrar al cuerpo con ruta inexistente · origen de `vocab.json`/`merges.txt` (Hugging Face) y que sin red no arranca · con `[]` solo existe `function_calling_results.json` con `[]`, sin `logs/logs.json` · la plantilla de `PromptBuilder` se construye una sola vez en `__init__`, no en cada `get_prompt` · `__package__` es lo que falta al correr el archivo suelto en vez de `-m src`.
+
+---
+
 ## Repaso 2026-08-25 — entrada de sesión, Bloque 2 en construcción
 
 > [!info] 3 limpias de 6 — ==lo que se escribió ayer en `src/` resistió; lo que solo se habló, no del todo==

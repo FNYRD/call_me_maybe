@@ -8,7 +8,7 @@ TEMPLATE_QWEN: str = (
     "in json format with the keys \"name\" for function's name and"
     " \"parameters\" for the expected parameters to execute the function"
     "<|im_end|>\n<|im_start|>user\n{PREGUNTA}<|im_end|>\n"
-    "<|im_start|>assistant\n")
+    "<|im_start|>;\n")
 
 
 class PromptBuilder:

@@ -20,7 +20,7 @@ push:
 	git commit -m "$(mensaje)"
 	git push
 
-venv:2
+venv:
 	python3 -m venv callme
 	pip3 install regex
 

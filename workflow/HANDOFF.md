@@ -305,7 +305,43 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 12 — activo
+> [!info] Agente 13 — activo
+> **Periodo:** cuestionario del 2026-08-25 → **diseño de `Guardian` (Bloque 4) a mitad, cortado por decisión suya**.
+>
+> **Qué se hizo:**
+> - **Repaso ejecutado: 5 limpias de 6.** Solo la mecánica del `\n` en la plantilla (por qué le importa al modelo, no solo que le importa) necesitó ayuda — tercera vez sobre el mismo hueco de pre-tokenización. Entrada en `[[REVIEWS]]`, `[[PROJECT#🎯 Lista de refuerzo]]` actualizada: 4 filas suben a ✅, 1 nueva en 🟡.
+> - **Bloque 4 abierto y con giro de diseño real.** Clase `Guardian`. Se acordó primero el mecanismo "clásico" (pila + FSM para estructura JSON), quedó anotado, y **él mismo lo cuestionó sin que se le pusiera un caso límite delante**: *"no le veo sentido a que el modelo tenga que escribir 'parameters' si esto es constrained decoding"*.
+> - **Verificado contra el subject** (no supuesto): las 3 claves del output (`prompt`, `name`, `parameters`) son siempre planas; el único anidamiento posible vive dentro de `parameters` vía `TypeSpec.properties`, ya decidido en Bloque 2.
+> - **Consecuencia, y es una simplificación real:** la pila y el FSM de estructura **se descartan**. Casi todo el JSON se inyecta literal (llaves, comas, y **todas las claves**, incluidas las anidadas, sacadas de `properties.keys()` recursivo). El modelo solo decide **hojas**: nombre de función y valores finales. `prompt` tampoco lo escribe el modelo — se inyecta literal desde el input.
+> - **Regla de cierre del hueco `name` cerrada:** la comilla de cierre entra en la lista de válidos en cuanto lo ya escrito **es** un nombre completo del catálogo, sin que haga falta ser el único candidato (`fn_greet` cierra aunque `fn_greeting` siga siendo prefijo válido — eso ya es acierto del modelo, no validez de la máscara).
+> - Detalle completo, con los 8 pasos del recorrido y lo pendiente en orden, en `[[PROJECT#Abierto en este bloque — cortado aquí el 2026-08-26, sin cuestionario]]`.
+>
+> **Dónde se quedó:** a mitad del hueco de valor `number`/`string`. La pregunta abierta en el momento de cortar: *para el valor de `a`, ¿el modelo elige libremente entre `,` y `}` como cierre, o `Guardian` ya sabe cuál toca (según si quedan más parámetros, dato del schema) y solo deja abierto **cuándo** usarlo?* — sin responder todavía.
+>
+> **Decisiones tomadas:**
+> - **Sin pila ni FSM para estructura JSON en `Guardian`.** Se sustituye por esqueleto literal + huecos solo en hojas. Ver arriba.
+> - **Las claves de `parameters` (incluidas anidadas) se recorren dinámicamente desde el modelo `pydantic`**, nunca hardcodeadas por función. Solo el esqueleto de arriba (`{"prompt": ..., "name": "` y `", "parameters": `) es literal fijo.
+> - **`Guardian.__init__` recibe:** `vocab`, `reversed_vocab`, `functions` (dict por nombre). Atributo propio: `_json_str`, nace con el esqueleto fijo ya inyectado.
+> - **Tres métodos acordados** (nombre y propósito, sin cuerpo ni firma): `get_valid_ids`, `add_token`, y uno de "sigue abierto" para el `while` del bucle.
+>
+> **Callejones sin salida:**
+> - **Cola de `(clave, tipo)` para llevar el hueco pendiente.** Se descartó: no explica de dónde sale la `,` entre hojas del mismo nivel ni el cierre de una `}` anidada. Se necesita algo que lleve tramos literales + huecos, no solo pares sueltos.
+> - **Confundir "hueco" con un carácter placeholder en la string.** Se aclaró: un hueco es el punto donde `Guardian` deja de inyectar y el bucle pide logits — nada se escribe ahí hasta que el modelo elige.
+> - **Pensar que las claves del `parameters` las escribe el modelo.** Se corrigió con el caso de `"a"` puesto delante: las claves siempre salen del schema.
+>
+> **Abierto:**
+> - **Primero, al retomar:** quién decide el carácter de cierre de una hoja `number`/`string` — el modelo o `Guardian`. Ver arriba, es la pregunta cortada.
+> - Mecanismo exacto de cuándo termina un `number` (sin comilla de cierre) y un `string` (con comilla, casi sin tocar).
+> - Representación interna de "en qué hueco estoy" tras descartar pila y cola simple — apunta a recorrer el modelo `pydantic` dinámicamente, falta la estructura concreta (¿iterador? ¿pila de iteradores para la recursión de `properties`?).
+> - El caso límite de "sigue abierto": distinguir *"no empezó"* de *"ya terminó"* — sin decidir si es flag o se deduce de `_json_str`.
+> - Firmas exactas y `@validate_call` donde toque. Cache de lista blanca (bonus 4), diferido, se pone encima sin tocar el cálculo.
+> - Sigue sin existir `src/__main__.py`, `pyproject.toml` en la raíz, ni regla `lint` en el `Makefile`.
+>
+> **Sobre el estudiante:** cuestionó un mecanismo ya esbozado **por iniciativa propia**, sin que se le pusiera un caso límite delante — y la objeción era correcta, con una ganancia real (menos pasos de generación). Es una variante nueva de su fortaleza ya conocida de corregir el propio diseño. Pidió también, dos veces, confirmación explícita de objetividad. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** ==pedido explícito suyo: sin cuestionario==. Retomar directo repasando `[[PROJECT#Abierto en este bloque — cortado aquí el 2026-08-26, sin cuestionario]]`, empezando por la pregunta cortada del cierre de hoja.
+
+> [!info]- Agente 12 — histórico
 > **Periodo:** cuestionario del 2026-08-25 → ==**Bloques 2 y 3 cerrados**==, 195 tests verdes.
 >
 > **Qué se hizo:**

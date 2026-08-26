@@ -22,7 +22,7 @@ tags: [42, proyecto]
 > **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
 > **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · ==**Bloques 1, 2 y 3 cerrados**== — `src/tokenizer.py` (08-24), `src/filemanager.py` y `src/promptbuilder.py` (08-25), los tres con `flake8` y `mypy --strict` limpios y **195 tests verdes** en total
-> **Siguiente paso:** abrir el **Bloque 4 — Validez de tokens**. Su diseño no está abierto: lo propone él. Es donde se decide la **máscara con pila** del bonus 7
+> **Siguiente paso:** seguir diseñando el **Bloque 4 — Validez de tokens**, clase `Guardian`. **Sin cuestionario esta vez** — se arranca repasando `[[PROJECT#Abierto en este bloque — cortado aquí el 2026-08-26, sin cuestionario]]`, pedido explícito suyo. ==La pila del bonus 7 se descartó== — el diseño gira a esqueleto+huecos, ver detalle en el bloque
 > **Del Bloque 1 no queda nada abierto** — ver `[[PROJECT#Las tres pasadas de revisión — cerradas el 2026-08-24]]`
 > **Requisito recuperado del subject el 2026-08-18:** *"All classes must use pydantic for validation"* (IV.3.1, literal). Aplicado ya al `Tokenizer` con `@validate_call` + `FilePath`; **todas las clases siguientes nacen con él**
 > **Diferido a la fase de tests:** la **hoja de evaluación** y la estrategia de medición del 90% — decisión suya, 2026-08-17. Razón: el test que zanja el Bloque 1 es `assert mi_ids == sdk_ids`, que no necesita medir acierto. Se retoma al montar los tests, y **ahí se decide qué se mantiene**
@@ -101,13 +101,14 @@ graph LR
 | **Por qué un vocabulario de juguete y no el real** | 🔍 08-17 | ✅ 08-25 | Sin preguntar. La razón es que con el de juguete **eliges qué reglas de merge existen**, y sin eso no puedes probar prioridad, fusiones encadenadas ni el muro entre trozos. El coste (1.5 GB, 6 s por carga) es secundario. · **08-18: falló de entrada** — contestó *"validar sobre los 256 bytes"*, que es el suelo que tienen los dos. Lo desbloqueó el caso discriminante: *"quiero probar que se fusiona la regla de línea más baja; con dos líneas `a b` y `b c`, ¿podrías montar ese test con el `merges.txt` real?"* → *"tendría que adaptarse a la tabla del modelo real"*. **Preguntar siempre con una regla de merge concreta que quieras forzar** · **08-24, segunda vez que falla:** *"nada me impide nada, la idea del test es verificar que el código se adapta al formato"*. Lo que por fin lo desbloqueó fue apuntar al **`assert`** y no al test: *"con el de juguete sabes qué resultado esperado poner porque escribiste las dos líneas; con el real, ¿de dónde lo sacas sin ejecutar tu propio `encode`?"* → *"del encode del modelo"*. **Preguntar por el resultado esperado, nunca por el test** · **08-25, tercera vez preguntado y primera limpia:** *"del encode de qwen"*, a la primera y sin ayuda |
 | **Las cuatro piezas de `pytest`** — `tmp_path`, `fixture`, `parametrize`, `pytest.raises` | 🙋 08-17 | ⏸️ | Lo pidió él: *"quiero revisar un poco los tests para entender cómo lo testas"*. Es un **repaso guiado** de `tests/test_bloque_1.py`. **Cortado por él el 08-18 a los dos minutos:** *"no me expliques pytest, brevemente dime qué se testea y ya; el objetivo no es aprender pytest sino entender por qué el test valida mi trabajo"*, y después *"no tengo ahorita la capacidad para entender, estoy un poco bloqueado"*. **No se re-ofrece.** Si vuelve, se hace por lo que **prueba** cada sección, nunca por la herramienta |
 
-| **Qué es la caché de Hugging Face** — dónde viven de verdad `vocab.json`, `merges.txt` y `tokenizer.json` | 🙋 08-25 | 🔴 | **Lo pidió él**: *"al finalizar la sesión me explicas qué es porque no me acuerdo"*. Salió al verificar los `\n` de la plantilla de chat: el `tokenizer_config.json` está **en la caché pero el SDK no expone su ruta** — solo da vocab, merges y tokenizer. Explicar: qué carpeta es (`~/.cache/huggingface/hub`), quién la llena (`hf_hub_download` la primera vez, por eso la primera ejecución necesita red), y por qué los archivos **no están en el repo** |
-| **Las dos familias de fallo del log** — por qué el fichero ausente no puede ir en `prompts` | ❌ 08-24 · ❌ 08-25 | 🟡 | Acertó la clave (`files`) y en el porqué dijo *"no sé"* → directo: **no hay índice que poner**, el fichero revienta antes de que exista el array de prompts. Ese nivel de fuera lo añadió él el 08-18. Preguntar con la entrada delante: `"prompts": {"3": "msg"}` — *"¿qué número le pones al fichero que falta?"* · **08-25, segunda vez:** la clave otra vez bien, el porqué otra vez circular (*"no es un error de los prompts"*). Con la entrada delante dijo *"ninguno porque no tiene"*, y al preguntarle **en qué momento revienta** lo cerró solo y mejor: *"lanza error en `FileManager` al instanciar, con `validate_call` y `FilePath`"* — antes de que exista el array. **La pregunta buena es el momento, no la clave** |
-| **`charge_logs` vs `write_logs`** — quién acumula y quién abre el archivo | ❌ 08-24 · ❌ 08-25 | 🟡 | Dio el camino bien (`Tokenizer` lanza → `Chat` atrapa) y remató con *"`Chat` lo escribe en el archivo"*. Con dos fallos (prompt 3 y 7) dijo *"dos veces, y lo abre `Chat`"*. Lo cerró ponerle **sus dos métodos** delante y preguntar *"si `Chat` abre el archivo dos veces, ¿para qué sirve `charge_logs`?"*. **Preguntar por el número de aperturas, no por quién escribe** · **08-25:** el número ya lo tiene — *"1, porque primero se registra todo en el atributo y solo al final, caso existan logs, se abre el archivo"*— pero volvió a adjudicar el `open` a `Chat`. Lo cerró poner los dos métodos **con la clase delante** (`class FileManager:`) y preguntar quién ejecuta el `open`. **Lo que se le va es de qué clase es el método, no el mecanismo** |
+| **Qué es la caché de Hugging Face** — dónde viven de verdad `vocab.json`, `merges.txt` y `tokenizer.json` | 🙋 08-25 | ✅ 08-26 | **08-26, sin ayuda:** *"se descargan de hugging face, en máquina sin red no arranca"*. **Lo pidió él**: *"al finalizar la sesión me explicas qué es porque no me acuerdo"*. Salió al verificar los `\n` de la plantilla de chat: el `tokenizer_config.json` está **en la caché pero el SDK no expone su ruta** — solo da vocab, merges y tokenizer |
+| **Mecánica del `\n` en la plantilla** — qué hace el `findall` distinto con `"system You"` frente a `"system\nYou"` | 🔍 08-26 | 🟡 | Dio la razón general (*"así es como el modelo aprendió a usar las plantillas"*), correcta pero sin el mecanismo — *"no recuerdo"* al pedirle el `findall`. Directo: con espacio, `"You"` sale con `Ġ` pegado; con `\n`, el patrón corta ahí y sale sin `Ġ`, otro id. Engancha con la pre-tokenización del Bloque 1, ya trabajada varias veces — reforzar con el mismo formato que funcionó ahí: dos salidas del `findall` puestas al lado |
+| **Las dos familias de fallo del log** — por qué el fichero ausente no puede ir en `prompts` | ❌ 08-24 · ❌ 08-25 | ✅ 08-26 | **08-26, sin ayuda (`[]` en `function_calling_tests.json`):** *"output con `[]` y logs no"* — sabe que sin fallos no hay `logs/logs.json`. Acertó la clave (`files`) y en el porqué dijo *"no sé"* → directo: **no hay índice que poner**, el fichero revienta antes de que exista el array de prompts. Ese nivel de fuera lo añadió él el 08-18 · **08-25, segunda vez:** la clave otra vez bien, el porqué otra vez circular. Con la entrada delante dijo *"ninguno porque no tiene"*, y al preguntarle **en qué momento revienta** lo cerró solo y mejor: *"lanza error en `FileManager` al instanciar, con `validate_call` y `FilePath`"* |
+| **`charge_logs` vs `write_logs`** — quién acumula y quién abre el archivo | ❌ 08-24 · ❌ 08-25 | ✅ 08-26 | **08-26, sin ayuda:** distinguió que con `[]` no hay fallos que loguear, así que `write_logs` no se dispara — la asimetría con `write_replies` (que sí escribe siempre) ya la tiene clara · **08-25:** el número de aperturas ya lo tenía — *"1, porque primero se registra todo en el atributo y solo al final, caso existan logs, se abre"*— pero adjudicó el `open` a `Chat`. Lo cerró poner los dos métodos **con la clase delante** (`class FileManager:`) y preguntar quién ejecuta el `open`. **Lo que se le iba era de qué clase es el método, no el mecanismo** |
 | **Qué comparten `validate_functions` y `validate_prompts`** — `_load_json` privado | ❌ 08-24 | 🔴 | *"no recuerdo"* → directo: se comparte **leer** (`open` + `json.load` + los dos guards); no se comparten **las reglas**, porque el catálogo mira `name`/`description`/`parameters`/`returns` y los prompts `{"prompt": str}` |
 
 | **`FilePath` vs `Path` vs `str`** — cuál exige que el archivo exista | 🔍 08-24 | 🟡 | Enseñado ejecutando: la misma ruta inexistente pasa por `Path` y la rechaza `FilePath` (`path_not_file`). Y `Path(...).parent` da la carpeta lista para `mkdir`, donde su `split("/")` daba una lista que hay que reunir. Preguntar con la ruta de salida la primera vez que se corre el programa |
-| **Qué hace `@validate_call`** — sin él la anotación no comprueba nada, y valida **antes** del cuerpo | 🔍 08-24 · ❌ 08-25 · 🙋 08-25 | 🔴 | Enseñado con la misma función con y sin decorador: sin él entra al cuerpo con una ruta inexistente. Preguntar por qué `FilePath` solo no basta · **08-25:** sabe que revienta, pero dijo que revienta **después** de entrar al cuerpo. Se ejecutó una función decorada con un `print("ENTRE AL CUERPO")` dentro y ruta inexistente → `ValidationError: path_not_file` y **el `print` no salió**. **Preguntar por el momento (antes/después del cuerpo), no por si falla** · **Pedido por él el 08-25 para el próximo cuestionario**, al ver que el `PromptBuilder` nacía sin el decorador |
+| **Qué hace `@validate_call`** — sin él la anotación no comprueba nada, y valida **antes** del cuerpo | 🔍 08-24 · ❌ 08-25 · 🙋 08-25 | ✅ 08-26 | **08-26, sin ayuda:** con la función del `print("ENTRE AL CUERPO")` delante, contestó directo que **no** se imprime — ya tiene el momento, no solo el hecho de que falla · **08-25:** sabía que revienta, pero dijo que revienta **después** de entrar al cuerpo. Se ejecutó y se vio: `ValidationError: path_not_file` y **el `print` no salió** |
 | **`TypeSpec` referenciándose a sí mismo** — el campo opcional absorbe la varianza | 🔍 08-24 | ✅ 08-25 | Es lo que sostiene el bonus 7. **08-25, sin ayuda:** *"se llama recursivamente… si anidan más, la estructura deja de ser `None` y crea `TypeSpec` on demand dependiendo de la cantidad de anidaciones"*. Matiz corregido en el momento: dijo *"siguiendo el estándar de JSON"* — `properties` es **convención de JSON Schema**, no dato del subject |
 
 | **Qué valida `pydantic` y qué no** — tipo y forma sí; contenido del archivo no | 🔍 08-18 | ✅ 08-24 | **08-24, sin ayuda:** con el `vocab.json` que existe y contiene `{}` fue directo a su propio `except ValueError: raise ValueError("Vocabulary's file empty")`. `FilePath` cubre existencia; *vocab vacío*, *JSON corrupto* y *falta la clave del patrón* siguen siendo de sus guards |
@@ -1400,6 +1401,88 @@ Y `mypy` es el mismo problema sin ejecutar: como no corre el programa, no hay `_
 
 - [ ] **El formato del prompt es una perilla, no una decisión cerrada** — se mide cuando el `[[PROJECT#Bloques|Bloque 5]]` permita comparar aciertos. Ver `[[PROJECT#A analizar en esta fase]]`
 - [ ] **Qwen trae su propio formato de herramientas** *(hallazgo del 08-25)* — la plantilla de `tokenizer_config.json` mete las funciones en un bloque `# Tools` con las firmas dentro de `<tools>...</tools>`. Es lo que el modelo vio en el entrenamiento, así que es la primera alternativa a probar cuando se mida el acierto
+
+---
+
+### Bloque 4 — Validez de tokens
+
+> [!info] Estado — 2026-08-26 · 🔵 en diseño, empieza el código
+> Mecanismo acordado el mismo día. Faltan los cuerpos de los métodos — se define construyendo.
+
+**Descripción:** dado el estado del JSON que se está escribiendo y el schema de la función, decide qué ids del vocabulario son válidos para el siguiente token. Se calcula **sin llamar al modelo**.
+
+**Depende de:** `[[PROJECT#Bloque 1 — Tokenizer|Bloque 1]]` — vocab y vocab invertido · `[[PROJECT#Bloque 2 — I/O de archivos|Bloque 2]]` — catálogo `List[Function]` ya validado.
+**Qué recibe:** vocab, vocab invertido y catálogo en el constructor; el token elegido en cada paso.
+**Qué entrega:** la lista de ids válidos para el paso actual, y aviso de cuándo el JSON quedó cerrado.
+**Dónde vive:** `src/guardian.py` (tentativo) — clase `Guardian`.
+
+#### El mecanismo, en una escena
+
+El bucle de generación (Bloque 5) pide logits al modelo, le pregunta a `Guardian` qué ids valen **antes** de elegir nada, pone `-inf` a los demás, hace `argmax` — por construcción solo puede salir uno de los ya aprobados — y le avisa a `Guardian` cuál salió, para que actualice su estado. `Guardian` nunca toca logits ni llama al modelo.
+
+> [!success] Giro de diseño — 2026-08-26: esqueleto + huecos, sin pila
+> Salió de él, cuestionando por qué el modelo tendría que "escribir" estructura que ya conocemos. Verificado contra el subject: las 3 claves del output (`prompt`, `name`, `parameters`) son **siempre las mismas**; el único anidamiento posible vive dentro de `parameters`, vía `TypeSpec.properties` — y esas claves internas también salen del schema, no las inventa el modelo.
+>
+> **Consecuencia:** casi todo el JSON se **inyecta literal**, sin pasar por el modelo ni por máscara — `prompt` (ya lo tienes del input), las llaves, comas, dos puntos, y **todas las claves**, incluidas las de un objeto anidado (se sacan de `properties.keys()`, recursivo). Lo único que de verdad genera el modelo son las **hojas**: el nombre de función, y el valor final de cada campo (número o string), a cualquier profundidad.
+>
+> **La pila y el FSM de estructura JSON ya no hacen falta.** Lo que reemplaza el mecanismo:
+> 1. Se inyecta directo: `{"prompt": "<prompt copiado>", "name": "`
+> 2. Máscara de **nombre**: válido si el texto ya escrito + el token siguen siendo prefijo de algún nombre del catálogo. **La comilla de cierre entra en la lista en cuanto lo ya escrito es, tal cual, un nombre completo del catálogo** — no hace falta que sea el único candidato (`fn_greet` cierra aunque `fn_greeting` siga siendo candidato; el modelo decide, y eso es acierto, no validez)
+> 3. Con el nombre cerrado, se busca la función en `_functions` y se inyecta literal `, "parameters": {` + las claves del primer nivel (de `parameters` del schema)
+> 4. Por cada clave: si su `TypeSpec.properties` existe, se abre `{` y se repite el paso 3 con esas claves (recursivo); si no, es una **hoja** — se enmascara por `type` (`number`: dígitos/`-`/`.` · `string`: cualquier cosa hasta la comilla) y ahí sí decide el modelo
+> 5. Se van inyectando las comas y llaves de cierre según se agota cada nivel, hasta cerrar el objeto raíz
+
+#### ==`Guardian`==
+
+| Campo | Valor |
+|---|---|
+| Descripción | Arma el esqueleto del output desde el schema, e inyecta o enmascara según el paso — nombre de función y valores hoja son lo único que decide el modelo |
+| Archivo | `src/guardian.py` |
+| Estado | en construcción |
+
+**Atributos:**
+
+| Nombre | Tipo | ¿Argumento? | Descripción | Hecho |
+|---|---|---|---|---|
+| `_vocab` | `Dict[str, int]` | ✅ | Del `Tokenizer`, `get_vocab()` | ☐ |
+| `_reversed_vocab` | `Dict[int, str]` | ✅ | Para traducir el id elegido a texto y acumularlo en el estado | ☐ |
+| `_functions` | `Dict[str, Function]` | ✅ | Catálogo indexado por nombre, para no recorrer la lista cada vez | ☐ |
+| `_json_str` | `str` | ❌ | La string del JSON que se va escribiendo — nace con el esqueleto fijo ya inyectado (`{"prompt": "...", "name": "`) | ☐ |
+
+**Métodos (firmas y cuerpo por definir):**
+
+| Qué hace | Descripción | Hecho |
+|---|---|---|
+| `get_valid_ids` | Según en qué hueco esté (nombre o una hoja de `parameters`), devuelve los ids permitidos. Fuera de un hueco, no se llama — se inyecta directo | ☐ |
+| `add_token` | Añade el id elegido a `_json_str`. Si eso cierra un hueco, inyecta el siguiente tramo literal del esqueleto | ☐ |
+| método de "sigue abierto" | Expone si falta cerrar el JSON. **Abierto:** distinguir *"no empezó"* de *"ya terminó"* — ver más abajo | ☐ |
+
+#### Abierto en este bloque — cortado aquí el 2026-08-26, sin cuestionario
+
+> [!warning] Cómo arranca la próxima sesión — pedido explícito suyo, 2026-08-26
+> **Sin cuestionario de repaso.** Se arranca repasando esto — lo decidido y lo pendiente — para seguir cerrando el diseño de `Guardian`, no con preguntas de verificación.
+
+**Camino recorrido, en orden, para no perder el hilo:**
+
+1. Cuestionó por qué el modelo tendría que "escribir" estructura que ya se conoce de antemano
+2. Verificado contra el subject: el único anidamiento posible vive dentro de `parameters` (`TypeSpec.properties`); las 3 claves de arriba son siempre planas
+3. Ahí salió el giro: casi todo el JSON se **inyecta literal** (llaves, comas, dos puntos, y **todas las claves**, incluidas las anidadas — se sacan de `properties.keys()`, recursivo). El modelo solo decide **hojas**: nombre de función y valores finales
+4. **`prompt` tampoco lo escribe el modelo** — se inyecta literal, viene del input
+5. Cerrado el detalle del hueco `name`: la comilla de cierre entra en la lista de válidos en cuanto lo ya escrito **es** un nombre completo del catálogo — no hace falta ser el único candidato (`fn_greet` puede cerrar aunque `fn_greeting` siga siendo candidato; el modelo decide cuál, y eso es acierto, no validez)
+6. Intentó una "cola de `(clave, tipo)`" para llevar el hueco pendiente — **descartada**: no explica de dónde sale la `,` entre hojas del mismo nivel ni el cierre de una `}` anidada. Se movió a construir tramos literales + huecos **dinámicamente**, recorriendo el modelo `pydantic` de la función (nunca hardcodeado por función)
+7. Aclarado: un "hueco" no es un carácter placeholder en la string — es el punto donde `Guardian` deja de inyectar y el bucle pide logits/enmascara/deja escribir al modelo. Nada se escribe ahí hasta que el modelo elige
+8. **Se cortó aquí, sin resolver:** para el valor de `a` (`number`), ¿el modelo elige libremente entre `,` y `}` como cierre, o `Guardian` ya sabe cuál de los dos toca (según si quedan más parámetros en ese nivel, dato que sale del schema) y solo deja abierto **cuándo** usarlo?
+
+**Pendiente, en el orden en que conviene retomarlo:**
+
+- [ ] **Primero:** cerrar la pregunta del punto 8 — quién elige el carácter de cierre de una hoja `number`/`string`, el modelo o `Guardian`
+- [ ] Mecanismo exacto de cuándo termina un `number` (no tiene comilla de cierre como el `string` — cuántos dígitos hasta que toca ofrecer la salida)
+- [ ] Mecanismo de cuándo termina un `string` — casi no se tocó todavía
+- [ ] Representación interna de "en qué hueco estoy" tras descartar la pila y la cola simple — apunta a recorrer el modelo `pydantic` dinámicamente, pero falta la estructura concreta (¿iterador? ¿pila de iteradores para la recursión de `properties`?)
+- [ ] El caso límite del método de "sigue abierto": distinguir *"no empezó"* de *"ya terminó"* — se habló de una flag o de usar `_json_str`, sin decidir cuál
+- [ ] Firmas exactas de los tres métodos, y `@validate_call` donde toque
+- [ ] Cache de la lista blanca por estado (bonus 4) — se decidió que se pone **encima** de `get_valid_ids` sin tocarlo, cuando llegue
+- [ ] Verificar que el `prompt` inyectado literal no necesita pasar por `encode`/`decode` — es texto plano, no tokens que el modelo tenga que "ver" generándose
 
 ---
 
