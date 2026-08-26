@@ -21,8 +21,8 @@ tags: [42, proyecto]
 > [!info] Dónde estamos
 > **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
-> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · ==**Bloque 1 cerrado del todo el 2026-08-24**== — las tres pasadas hechas y `src/tokenizer.py` con `flake8` y `mypy --strict` limpios · **Bloque 2 con los métodos y el formato del log acordados** *(2026-08-18)*
-> **Siguiente paso:** seguir el **Bloque 2** — `charge_logs`, `write_logs` y `write_replies`, y decidir qué queda de los dos `validate_*`. Ver `[[PROJECT#Bloque 2 — I/O de archivos]]`
+> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · ==**Bloques 1, 2 y 3 cerrados**== — `src/tokenizer.py` (08-24), `src/filemanager.py` y `src/promptbuilder.py` (08-25), los tres con `flake8` y `mypy --strict` limpios y **195 tests verdes** en total
+> **Siguiente paso:** abrir el **Bloque 4 — Validez de tokens**. Su diseño no está abierto: lo propone él. Es donde se decide la **máscara con pila** del bonus 7
 > **Del Bloque 1 no queda nada abierto** — ver `[[PROJECT#Las tres pasadas de revisión — cerradas el 2026-08-24]]`
 > **Requisito recuperado del subject el 2026-08-18:** *"All classes must use pydantic for validation"* (IV.3.1, literal). Aplicado ya al `Tokenizer` con `@validate_call` + `FilePath`; **todas las clases siguientes nacen con él**
 > **Diferido a la fase de tests:** la **hoja de evaluación** y la estrategia de medición del 90% — decisión suya, 2026-08-17. Razón: el test que zanja el Bloque 1 es `assert mi_ids == sdk_ids`, que no necesita medir acierto. Se retoma al montar los tests, y **ahí se decide qué se mantiene**
@@ -47,10 +47,11 @@ graph LR
 |---|---|---|---|---|
 | 1 — Tokenizer | `encode`/`decode` propios desde `vocab.json` y `merges.txt` | ✅ | Rutas del SDK | Texto ↔ ids, y el `dict` string → id |
 | ↳ | *cerrado el 08-24: las tres pasadas hechas, `flake8` y `mypy --strict` limpios, 129 tests verdes* | | | |
-| 2 — I/O de archivos | Leer y validar los JSON de entrada, escribir salida y log | 🔵 | Rutas de los argumentos | Catálogo y prompts validados |
-| ↳ | *08-24: atributos, los tres modelos `pydantic` y la lectura de los dos archivos, escritos y corriendo. Faltan los cuatro métodos de escritura y registro* | | | |
-| 3 — Construcción del prompt | Plantilla de chat y tokens especiales del modelo | ⚪ | Catálogo + prompt del usuario | Un string listo para tokenizar |
-| 4 — Validez de tokens | FSM/PDA + schema + cache de lista blanca | ⚪ | Estado del JSON y schema | Ids permitidos en ese estado |
+| 2 — I/O de archivos | Leer y validar los JSON de entrada, escribir salida y log | ✅ | Rutas de los argumentos | Catálogo y prompts validados, el archivo de resultados y el log |
+| ↳ | *cerrado el 08-25: los seis métodos y los tres getters escritos, 46 tests verdes, `mypy --strict` limpio* | | | |
+| 3 — Construcción del prompt | Plantilla de chat y tokens especiales del modelo | ✅ | Catálogo + prompt del usuario | Un string listo para tokenizar |
+| ↳ | *cerrado el 08-25: `PromptBuilder` con la plantilla de Qwen y el catálogo en JSON, 20 tests verdes* | | | |
+| 4 — Validez de tokens | FSM/PDA + schema + cache de lista blanca | 🔵 | Estado del JSON y schema | Ids permitidos en ese estado |
 | 5 — Bucle de generación | Logits, máscara, `argmax`, parada, validación `pydantic` | ⚪ | Todo lo anterior | Un resultado por prompt |
 | 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | ⚪ | Los bloques ya construidos | N resultados + registro de fallos |
 
@@ -97,16 +98,17 @@ graph LR
 | **Determinismo de greedy** | ❌ 08-10 | ✅ 08-11 | — |
 
 | **Qué prueba un test de juguete y qué no** — coherencia interna vs coincidir con Qwen | 🔍 08-17 | ✅ 08-18 | Sin preguntar todavía. Los 40 tests de juguete pasaban con el modelo sin instalar; el `assert mi_ids == sdk_ids` es lo único que dice que los ids son los de Qwen. Preguntar con la escena real: *"esta mañana pasaban 40 tests y el modelo no existía"*. · **08-18, correcto:** *"no estábamos probando directamente contra el modelo, así que no era verídico"* |
-| **Por qué un vocabulario de juguete y no el real** | 🔍 08-17 | 🟡 | Sin preguntar. La razón es que con el de juguete **eliges qué reglas de merge existen**, y sin eso no puedes probar prioridad, fusiones encadenadas ni el muro entre trozos. El coste (1.5 GB, 6 s por carga) es secundario. · **08-18: falló de entrada** — contestó *"validar sobre los 256 bytes"*, que es el suelo que tienen los dos. Lo desbloqueó el caso discriminante: *"quiero probar que se fusiona la regla de línea más baja; con dos líneas `a b` y `b c`, ¿podrías montar ese test con el `merges.txt` real?"* → *"tendría que adaptarse a la tabla del modelo real"*. **Preguntar siempre con una regla de merge concreta que quieras forzar** · **08-24, segunda vez que falla:** *"nada me impide nada, la idea del test es verificar que el código se adapta al formato"*. Lo que por fin lo desbloqueó fue apuntar al **`assert`** y no al test: *"con el de juguete sabes qué resultado esperado poner porque escribiste las dos líneas; con el real, ¿de dónde lo sacas sin ejecutar tu propio `encode`?"* → *"del encode del modelo"*. **Preguntar por el resultado esperado, nunca por el test** |
+| **Por qué un vocabulario de juguete y no el real** | 🔍 08-17 | ✅ 08-25 | Sin preguntar. La razón es que con el de juguete **eliges qué reglas de merge existen**, y sin eso no puedes probar prioridad, fusiones encadenadas ni el muro entre trozos. El coste (1.5 GB, 6 s por carga) es secundario. · **08-18: falló de entrada** — contestó *"validar sobre los 256 bytes"*, que es el suelo que tienen los dos. Lo desbloqueó el caso discriminante: *"quiero probar que se fusiona la regla de línea más baja; con dos líneas `a b` y `b c`, ¿podrías montar ese test con el `merges.txt` real?"* → *"tendría que adaptarse a la tabla del modelo real"*. **Preguntar siempre con una regla de merge concreta que quieras forzar** · **08-24, segunda vez que falla:** *"nada me impide nada, la idea del test es verificar que el código se adapta al formato"*. Lo que por fin lo desbloqueó fue apuntar al **`assert`** y no al test: *"con el de juguete sabes qué resultado esperado poner porque escribiste las dos líneas; con el real, ¿de dónde lo sacas sin ejecutar tu propio `encode`?"* → *"del encode del modelo"*. **Preguntar por el resultado esperado, nunca por el test** · **08-25, tercera vez preguntado y primera limpia:** *"del encode de qwen"*, a la primera y sin ayuda |
 | **Las cuatro piezas de `pytest`** — `tmp_path`, `fixture`, `parametrize`, `pytest.raises` | 🙋 08-17 | ⏸️ | Lo pidió él: *"quiero revisar un poco los tests para entender cómo lo testas"*. Es un **repaso guiado** de `tests/test_bloque_1.py`. **Cortado por él el 08-18 a los dos minutos:** *"no me expliques pytest, brevemente dime qué se testea y ya; el objetivo no es aprender pytest sino entender por qué el test valida mi trabajo"*, y después *"no tengo ahorita la capacidad para entender, estoy un poco bloqueado"*. **No se re-ofrece.** Si vuelve, se hace por lo que **prueba** cada sección, nunca por la herramienta |
 
-| **Las dos familias de fallo del log** — por qué el fichero ausente no puede ir en `prompts` | ❌ 08-24 | 🔴 | Acertó la clave (`files`) y en el porqué dijo *"no sé"* → directo: **no hay índice que poner**, el fichero revienta antes de que exista el array de prompts. Ese nivel de fuera lo añadió él el 08-18. Preguntar con la entrada delante: `"prompts": {"3": "msg"}` — *"¿qué número le pones al fichero que falta?"* |
-| **`charge_logs` vs `write_logs`** — quién acumula y quién abre el archivo | ❌ 08-24 | 🔴 | Dio el camino bien (`Tokenizer` lanza → `Chat` atrapa) y remató con *"`Chat` lo escribe en el archivo"*. Con dos fallos (prompt 3 y 7) dijo *"dos veces, y lo abre `Chat`"*. Lo cerró ponerle **sus dos métodos** delante y preguntar *"si `Chat` abre el archivo dos veces, ¿para qué sirve `charge_logs`?"*. **Preguntar por el número de aperturas, no por quién escribe** |
+| **Qué es la caché de Hugging Face** — dónde viven de verdad `vocab.json`, `merges.txt` y `tokenizer.json` | 🙋 08-25 | 🔴 | **Lo pidió él**: *"al finalizar la sesión me explicas qué es porque no me acuerdo"*. Salió al verificar los `\n` de la plantilla de chat: el `tokenizer_config.json` está **en la caché pero el SDK no expone su ruta** — solo da vocab, merges y tokenizer. Explicar: qué carpeta es (`~/.cache/huggingface/hub`), quién la llena (`hf_hub_download` la primera vez, por eso la primera ejecución necesita red), y por qué los archivos **no están en el repo** |
+| **Las dos familias de fallo del log** — por qué el fichero ausente no puede ir en `prompts` | ❌ 08-24 · ❌ 08-25 | 🟡 | Acertó la clave (`files`) y en el porqué dijo *"no sé"* → directo: **no hay índice que poner**, el fichero revienta antes de que exista el array de prompts. Ese nivel de fuera lo añadió él el 08-18. Preguntar con la entrada delante: `"prompts": {"3": "msg"}` — *"¿qué número le pones al fichero que falta?"* · **08-25, segunda vez:** la clave otra vez bien, el porqué otra vez circular (*"no es un error de los prompts"*). Con la entrada delante dijo *"ninguno porque no tiene"*, y al preguntarle **en qué momento revienta** lo cerró solo y mejor: *"lanza error en `FileManager` al instanciar, con `validate_call` y `FilePath`"* — antes de que exista el array. **La pregunta buena es el momento, no la clave** |
+| **`charge_logs` vs `write_logs`** — quién acumula y quién abre el archivo | ❌ 08-24 · ❌ 08-25 | 🟡 | Dio el camino bien (`Tokenizer` lanza → `Chat` atrapa) y remató con *"`Chat` lo escribe en el archivo"*. Con dos fallos (prompt 3 y 7) dijo *"dos veces, y lo abre `Chat`"*. Lo cerró ponerle **sus dos métodos** delante y preguntar *"si `Chat` abre el archivo dos veces, ¿para qué sirve `charge_logs`?"*. **Preguntar por el número de aperturas, no por quién escribe** · **08-25:** el número ya lo tiene — *"1, porque primero se registra todo en el atributo y solo al final, caso existan logs, se abre el archivo"*— pero volvió a adjudicar el `open` a `Chat`. Lo cerró poner los dos métodos **con la clase delante** (`class FileManager:`) y preguntar quién ejecuta el `open`. **Lo que se le va es de qué clase es el método, no el mecanismo** |
 | **Qué comparten `validate_functions` y `validate_prompts`** — `_load_json` privado | ❌ 08-24 | 🔴 | *"no recuerdo"* → directo: se comparte **leer** (`open` + `json.load` + los dos guards); no se comparten **las reglas**, porque el catálogo mira `name`/`description`/`parameters`/`returns` y los prompts `{"prompt": str}` |
 
 | **`FilePath` vs `Path` vs `str`** — cuál exige que el archivo exista | 🔍 08-24 | 🟡 | Enseñado ejecutando: la misma ruta inexistente pasa por `Path` y la rechaza `FilePath` (`path_not_file`). Y `Path(...).parent` da la carpeta lista para `mkdir`, donde su `split("/")` daba una lista que hay que reunir. Preguntar con la ruta de salida la primera vez que se corre el programa |
-| **Qué hace `@validate_call`** — sin él la anotación no comprueba nada | 🔍 08-24 | 🟡 | Enseñado con la misma función con y sin decorador: sin él entra al cuerpo con una ruta inexistente. Preguntar por qué `FilePath` solo no basta |
-| **`TypeSpec` referenciándose a sí mismo** — el campo opcional absorbe la varianza | 🔍 08-24 | 🟡 | Es lo que sostiene el bonus 7. Preguntar por qué el mismo modelo vale para el catálogo plano y para uno de tres niveles |
+| **Qué hace `@validate_call`** — sin él la anotación no comprueba nada, y valida **antes** del cuerpo | 🔍 08-24 · ❌ 08-25 · 🙋 08-25 | 🔴 | Enseñado con la misma función con y sin decorador: sin él entra al cuerpo con una ruta inexistente. Preguntar por qué `FilePath` solo no basta · **08-25:** sabe que revienta, pero dijo que revienta **después** de entrar al cuerpo. Se ejecutó una función decorada con un `print("ENTRE AL CUERPO")` dentro y ruta inexistente → `ValidationError: path_not_file` y **el `print` no salió**. **Preguntar por el momento (antes/después del cuerpo), no por si falla** · **Pedido por él el 08-25 para el próximo cuestionario**, al ver que el `PromptBuilder` nacía sin el decorador |
+| **`TypeSpec` referenciándose a sí mismo** — el campo opcional absorbe la varianza | 🔍 08-24 | ✅ 08-25 | Es lo que sostiene el bonus 7. **08-25, sin ayuda:** *"se llama recursivamente… si anidan más, la estructura deja de ser `None` y crea `TypeSpec` on demand dependiendo de la cantidad de anidaciones"*. Matiz corregido en el momento: dijo *"siguiendo el estándar de JSON"* — `properties` es **convención de JSON Schema**, no dato del subject |
 
 | **Qué valida `pydantic` y qué no** — tipo y forma sí; contenido del archivo no | 🔍 08-18 | ✅ 08-24 | **08-24, sin ayuda:** con el `vocab.json` que existe y contiene `{}` fue directo a su propio `except ValueError: raise ValueError("Vocabulary's file empty")`. `FilePath` cubre existencia; *vocab vacío*, *JSON corrupto* y *falta la clave del patrón* siguen siendo de sus guards |
 
@@ -126,7 +128,56 @@ graph LR
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
 
+### Para la sesión siguiente al 2026-08-25
+
+> [!info] Seis preguntas — dos pedidas por él, cuatro de lo de hoy
+> Las dos primeras las **pidió él** al final de la sesión. Las otras cuatro son de lo trabajado hoy: el cierre del Bloque 2 y el Bloque 3 entero.
+> Cada pregunta lleva su escenario escrito: sin encuadre se pierde.
+
+1. Tienes esta función delante y le pasas una ruta que no existe:
+
+```python
+@validate_call
+def crear(output_path: FilePath) -> None:
+    print("ENTRE AL CUERPO")
+```
+
+   ¿Se imprime `ENTRE AL CUERPO`? *(pedida por él el 08-25 · refuerzo 🔴 — el 08-25 contestó que el error salta **después** de entrar al cuerpo. **Preguntar por el momento, nunca por si falla**: que falla ya lo sabe)*
+
+2. `vocab.json` y `merges.txt` no están en el repositorio y aun así tus 129 tests del Bloque 1 corren contra los archivos reales de Qwen. ¿De dónde salen esos archivos y qué pasaría la primera vez en una máquina sin red? *(pedida por él el 08-25: "al finalizar la sesión me explicas qué es porque no me acuerdo" — se le explicó al cerrar; esto comprueba que quedó)*
+
+3. Corres el programa con `function_calling_tests.json` conteniendo `[]`. Al terminar, ¿qué archivos existen en disco y qué hay dentro de cada uno? *(lo de hoy — es la asimetría que decidió: `write_logs` lleva guard y `write_replies` no)*
+
+4. Tu `PromptBuilder` recibe la lista de funciones en el `__init__` y tiene un `get_prompt` que llamas 11 veces. ¿Qué parte del texto se construye una sola vez, y qué pasaría si la armaras dentro de `get_prompt`? *(lo de hoy — la decisión que sostiene el diseño del bloque)*
+
+5. Escribiste la plantilla con **espacios** entre los tramos (`<|im_start|>system You have...`) y se cambió a `\n`. El texto se lee igual. ¿Por qué le importa al modelo? *(lo de hoy — engancha con la pre-tokenización del Bloque 1, que ya trabajó. Si se atasca: preguntarle qué le hace el `findall` a `"system You"` frente a `"system\nYou"`)*
+
+6. Este archivo corre bien con `python -m src` y revienta con `python src/promptbuilder.py`:
+
+```python
+from .filemanager import Function
+```
+
+   ¿Qué es lo que Python no sabe en el segundo caso? *(lo de hoy — el tema que él aplazó el 08-07 y se reforzó al aparecer el primer import relativo. La respuesta es `__package__`)*
+
+> [!note] Banco para la sesión siguiente
+> Por qué `exclude_none=True` al serializar el catálogo · por qué las marcas de chat se escriben en vez de sacarlas de `added_tokens` · qué aporta `@validate_call` en el `PromptBuilder` si `mypy` ya caza el tipo · por qué la salida es un array y no un dict por índice · por qué `batching` no aplica y en qué se diferencia de paralelizar llamadas · qué es la caché de Hugging Face.
+
+> [!important] Orden de la próxima sesión
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Cuestionario de repaso** | Regla suya: *"cuestionarios siempre primero"* |
+> | 2 | **Bloque 4 — Validez de tokens** | Siguiente en orden de dependencia. Su diseño lo propone él, y es donde nace la **máscara con pila** del bonus 7 |
+>
+> ==Los Bloques 1, 2 y 3 están cerrados.== Fuera de los bloques siguen sin existir `src/__main__.py`, el `pyproject.toml` de la raíz y la regla `lint` del `Makefile`.
+> **El repaso guiado de `pytest` no se re-ofrece.**
+
+---
+
 ### Para la sesión siguiente al 2026-08-24
+
+> [!success] Lanzado y cerrado el 2026-08-25 — entrada en `[[REVIEWS]]`
+> **3 limpias de 6.** Lo escrito ayer en `src/` resistió (`TypeSpec`, `validate_python([])`); los tres 🔴 heredados necesitaron el caso concreto otra vez.
 
 > [!info] Seis preguntas — tres de refuerzo, tres de lo de hoy
 > Los tres 🔴 vienen del repaso de hoy, que salió 1 de 5. Los tres de hoy son del `FileManager` y de `pydantic`, y se preguntan ahora **porque ayer los conoció por primera vez** — preguntarlos el mismo día no habría medido nada.
@@ -701,7 +752,16 @@ Gana `"` con 3.1 aunque `{` tenía 8.2 y `Sure` 7.9: no compiten, valen `-inf`.
 
 - [ ] **Campo `reasoning` en el JSON generado** *(propuesto por el estudiante, 2026-08-06)* — dejar que el modelo escriba su razonamiento antes de `name` y `parameters`. Motivo: el modelo solo "piensa" generando tokens; con el razonamiento ya en su contexto, la atención se apoya en él al elegir la función, en vez de acertar en frío al primer token.
   **A resolver:** el output exige exactamente `prompt`, `name`, `parameters` — habría que generarlo y descartarlo antes de escribir. Y cada token de razonamiento es una llamada más al modelo, contra el límite de 5 minutos. Pendiente de medir si compensa.
-- [ ] **Formato del texto del prompt** — cómo se convierte `functions_definition.json` (dict) en el string que recibe `encode`. Redacción, orden y si se incluyen las descripciones. Afecta directamente al acierto del modelo.
+- [x] **Formato del texto del prompt** — ==decidido el 2026-08-25: el catálogo va como **JSON tal cual**==, sin reescribirlo en prosa, precedido de una descripción en la parte de sistema.
+  **Por qué:** Qwen fue entrenado con las herramientas en JSON; cuanto más se parezca el texto a lo que vio en el entrenamiento, mejores logits. Se descartó la prosa (`fn_add_numbers(a: number, b: number) — Add two numbers...`), que había elegido antes, al aparecer ese dato.
+  **Ventaja que salió después:** pasando el JSON tal cual **no hay nada que redactar**, así que un catálogo anidado del bonus 7 se copia igual y este bloque no se toca.
+  **Queda como perilla, no como decisión cerrada:** *"si no conseguimos alcanzar el porcentaje de acierto, ahí hacemos backtracking"*. El formato **se mide**, no se discute — 11 prompts y dos formatos, gana el que acierte más. Medir necesita el bucle del `[[PROJECT#Bloques|Bloque 5]]`.
+  **Ya cerrado también:** el catálogo se monta **una sola vez** y se le pega la línea del usuario en cada vuelta — es idéntico en los 11 prompts.
+  **El texto de sistema, redactado por él el 08-25:**
+  > You have access to the following functions: {Functions} and must answer to the prompt in the user section, in json format with the keys "name" for function's name and "parameters" for the expected parameters to execute the function
+  
+  Llegó ahí en dos vueltas. La primera decía solo *"must answer in json format"*, y lo que la movió fue el caso de las **dos formas habituales de function calling** — `{"function":..., "arguments":...}` frente a `{"name":..., "parameters":...}`: las dos son JSON válido, y sin nombrar las claves los logits del modelo pueden venir apuntando a la equivocada. **La máscara lo forzaría igual, pero entonces eliges entre lo que sobrevive en vez de entre lo que el modelo quería escribir.**
+  Descartado darle un **rol** elaborado (*"eres un asistente experto que..."*): suposición del agente, no dato — en 0.6B gasta contexto sin añadir capacidad.
 - [ ] **Mecanismo de recuperación del bonus 3** *(abierto, 2026-08-10)* — qué se hace cuando un resultado no pasa la validación. Nada decidido todavía.
   **Restricción que acota el problema:** con greedy (`np.argmax`) reintentar sin cambiar nada devuelve una copia idéntica, así que un simple contador de intentos no arregla nada — algo tiene que cambiar entre intento e intento.
   **Palancas sobre la mesa, sin elegir:** reformular el prompt · inyectar el error anterior como contexto · pasar a sampling solo en el reintento (se pierde reproducibilidad en ese caso) · registrar el fallo y seguir con el resto de prompts.
@@ -1055,21 +1115,23 @@ Aplicado a los dos textos reales del proyecto:
 
 ### Bloque 2 — I/O de archivos
 
-> [!info] Estado — 2026-08-24 · ==construyéndose: `__init__` y la lectura, en verde==
-> **Cerrado el 08-18:** nombre de la clase, los seis métodos, la forma del log y quién lo alimenta.
-> **Cerrado el 08-24:** los **atributos**, los **tres modelos `pydantic`** y la **lectura de los dos archivos**. Escrito y corriendo en `src/validator.py`.
-> **Verificado en ejecución con los archivos reales:** construye, `5 funciones` y `11 prompts`, cada uno ya como objeto del modelo (`fn_add_numbers -> {'a': TypeSpec(type='number', properties=None), ...}`).
-> **Falta:** los cuatro métodos que quedan — `validate_functions`, `validate_prompts`, `charge_logs`, `write_logs`, `write_replies` — y decidir si los dos `validate_*` siguen existiendo ↓.
+> [!success] Estado — 2026-08-25 · ==bloque cerrado==
+> **Cerrado el 08-18:** nombre de la clase, los métodos, la forma del log y quién lo alimenta.
+> **Cerrado el 08-24:** los **atributos**, los **tres modelos `pydantic`** y la **lectura de los dos archivos**.
+> **Cerrado el 08-25:** `charge_logs`, `write_logs`, `charge_replies`, `write_replies`, los **tres getters**, el guard de la ruta de salida y el renombrado del archivo.
+> **Completo y verificado:** `src/filemanager.py` construye con los archivos reales (5 funciones, 11 prompts, ya como objetos del modelo) · **46 tests** en `tests/test_bloque_2.py`, todos verdes · **`mypy --strict` limpio** · `flake8` limpio.
+> **Pendiente fuera del bloque:** el `pyproject.toml` de la raíz.
 
-> [!warning] El archivo se llama `validator.py` y la clase `FileManager`
-> Quedó del nombre viejo. **Sin decidir** si se renombra el archivo.
+> [!warning] Llamar a las herramientas con el intérprete del venv
+> `mypy --strict filemanager.py` a secas usa el `mypy` del sistema, que **no ve el venv** y por tanto no encuentra `pydantic`: `BaseModel` le queda como `Any` y salen 5 errores falsos (tres clases que "no pueden heredar" y el decorador "untyped").
+> Con `./callme/bin/python -m mypy --strict src/filemanager.py` → *Success*. Mismo enredo que el 08-24 con `flake8`.
 
 **Descripción:** leer y validar los dos JSON de entrada, escribir el JSON de resultados y el log de errores. Sin crashear ante archivo ausente, vacío o corrupto.
 
 **Depende de:** nada del código propio — es el segundo en orden de dependencia.
 **Qué recibe:** las **tres rutas ya resueltas**.
 **Qué entrega:** catálogo y prompts validados, el archivo de resultados y el log.
-**Dónde vive:** `src/validator.py` — clase `FileManager`.
+**Dónde vive:** `src/filemanager.py` — clase `FileManager`. *(Renombrado el 08-25; hasta entonces conservaba el nombre viejo `validator.py`.)*
 
 #### Atributos — cerrados el 2026-08-24
 
@@ -1126,9 +1188,11 @@ Es **un solo método** con un `flag` (`"prompts"` / `"functions"`) que elige qu�
 | `_load_json` | **Privado.** `open` + `json.load` + los dos guards (`FileNotFoundError`, `JSONDecodeError`). Existe porque las dos lecturas son idénticas y las dos validaciones no |
 | `validate_functions` | Llama a `_load_json` y valida el **catálogo** (`name`, `description`, `parameters`, `returns`) |
 | `validate_prompts` | Llama a `_load_json` y valida los **prompts** (`{"prompt": str}`) |
-| `charge_logs` | Recibe del `Chat` el índice y el mensaje de un fallo, y los carga en el dict |
-| `write_logs` | Al final, si el dict tiene datos, lo escribe en `logs/logs.json` |
-| `write_replies` | Escribe el array de N resultados en `function_calling_results.json` |
+| `charge_logs` | Recibe el índice (o el nombre del archivo), el mensaje y la categoría, y los añade a `self._logs[categoria]` |
+| `write_logs` | Al final, **si hay datos**, escribe `logs/logs.json`. Una sola vez, con el guard `_n_logs` |
+| `charge_replies` | Recibe un resultado ya montado y lo añade a `self._replies`. **Sin guards**, decisión suya: quien valida el contenido es el constrained decoding y el Bloque 5 |
+| `write_replies` | Escribe el array de N resultados en la ruta de salida. **Siempre**, con o sin datos. Una sola vez, con el guard `_n_replies` |
+| `get_logs` · `get_functions` · `get_prompts` | Los tres getters, uno por estructura, cada uno con su tipo real |
 
 #### Decisiones cerradas el 2026-08-18
 
@@ -1152,17 +1216,30 @@ Es **un solo método** con un `flag` (`"prompts"` / `"functions"`) que elige qu�
 | **`write_logs` conserva el guard: escribe solo si hay datos** | Propuso escribir siempre, *"más unificado y fijo"*. Pidió recomendación y se le dio la contraria con su razón: **la existencia del archivo es la señal** — se ve si hubo fallos sin abrir nada, y en el peer review un `logs.json` presente se lee como *"aquí falló algo"*. Cuesta un `if`. Consecuencia: el guard no puede ser `if self._logs:` (el dict arranca con dos claves y siempre es verdadero), tiene que mirar **los dos valores** |
 | **`extra="forbid"` en `Prompt`** | Salió de la prueba: `[{'prompt': 'ok', 'extra': 1}]` **pasa** por defecto. Con `ConfigDict(extra="forbid")` da `('extra',) Extra inputs are not permitted` |
 
+#### Decisiones cerradas el 2026-08-25
+
+| Decisión | Por qué |
+|---|---|
+| **Los `validate_*` mueren; nacen tres getters** — `get_logs`, `get_functions`, `get_prompts` | Leer, validar y el guard de catálogo vacío ya ocurren en `_load_json`, que corre en el `__init__`. Lo único que quedaba de esos métodos era entregar la estructura. Coherente con `Tokenizer.get_vocab()` |
+| **Un getter por estructura, no uno con `flag`** | Su primera versión era `get_function(name: str)` con un `match` y `-> Any`. Dos costes: el `case _` **devolvía un string** donde el que llama espera una lista — con una errata en la flag, `for p in get_function("promts")` recorre el mensaje carácter a carácter y le pasa `"T"`, `"h"`, `"e"` al tokenizer, que es su propia regla del 08-11 (*nunca devolver un valor de relleno*) — y el `-> Any` dejaba al Bloque 3 sin tipo. Llegó él: *"voy a crear un get por cada uno y ya"* |
+| **El guard de la salida mira `suffix`, no el `bool`** | `if output_path:` no puede ser falso nunca: `Path` no define `__bool__`, y `Path("")` no es vacío — es `PosixPath('.')`. Ejecutado delante: las cuatro rutas probadas dan `bool=True`. Descartó también `parent != "."`, al ver que `--output resultados.json` es una ruta válida cuyo `parent` **es** `.`. Quedó `if output_path.suffix == ".json"` |
+| **La salida es un array, no un dict por índice** | Propuso `{índice: respuesta}` creyendo que el formato era opcional. El subject fija array de N objetos con **exactamente** `prompt`, `name`, `parameters`. Dentro de la clase puede acumular como quiera; lo que no cambia es lo que acaba en el archivo |
+| **`charge_replies` + `write_replies`, no una sola llamada con la lista hecha** | Eligió el par para **mantener el estilo de los logs**: acumular en memoria y una sola apertura al final |
+| **`write_replies` escribe siempre; `write_logs` solo si hay datos** | No son simétricos a propósito. En los logs **la existencia del archivo es la señal**. En la salida, su regla de que se escriban siempre N objetos obliga a escribir incluso con `[]`: si el archivo no existe, el corrector no encuentra la entrega |
+| **`charge_replies` sin guards** | Decisión suya: *"el guard será el constrained decoding y el modelo que evalúa la respuesta"*. Sigue en pie que el resultado generado se valide con `pydantic` en el Bloque 5 |
+| **El archivo pasa a `src/filemanager.py`** | Arrastraba el nombre viejo `validator.py` con la clase `FileManager` dentro |
+
 > [!bug] Los dos fallos de la primera pasada, cerrados el mismo día
 > · `self._load_json(prompts_path, "functions")` — pasaba **la ruta de prompts dos veces**, así que el catálogo no se leía nunca y el archivo de prompts se validaba contra `List[Function]`.
 > · `raise ValidationError("...")` — no se puede construir a mano: `TypeError: ValidationError.__new__() missing 1 required positional argument: 'line_errors'`. La lanza pydantic con la lista de errores dentro. Quedó relanzando un `ValueError` con mensaje propio, como en el resto de la clase.
 
 #### Abierto en este bloque
 
-- [x] **Atributos** — cerrados el 08-24, con tipos, en `src/validator.py`
+- [x] **Atributos** — cerrados el 08-24, con tipos, en `src/filemanager.py`
 - [x] **Los modelos `pydantic`** — `Prompt`, `TypeSpec` y `Function`, escritos a mano por él el 08-24. `parameters` **no queda atado a un nivel**: `TypeSpec` se referencia a sí mismo
-- [ ] **Las firmas de los cuatro métodos que faltan** — `charge_logs`, `write_logs`, `write_replies`, y lo que quede de los dos `validate_*`
-- [ ] **Si `validate_functions` y `validate_prompts` siguen existiendo** — la validación ya la hacen los modelos dentro de `_load_json`; puede que queden como getters o que sobren
-- [ ] **Renombrar `src/validator.py`** — el archivo conserva el nombre viejo, la clase es `FileManager`
+- [x] **Los métodos que faltaban** — `charge_logs`, `write_logs`, `charge_replies` y `write_replies`, escritos por él el 08-25
+- [x] **Los dos `validate_*` desaparecen** — la validación ya la hacen los modelos dentro de `_load_json`, así que lo único que quedaba era entregar la estructura. Quedaron como **`get_logs`, `get_functions` y `get_prompts`**, un getter por estructura, cada uno con su tipo real
+- [x] **Renombrado a `src/filemanager.py`** — 08-25
 > [!warning] `properties` es una **suposición**, no un dato del subject — 2026-08-24
 > El subject dice exactamente esto, y nada más (sección VII, *Bonus Part*):
 > > • Support for complex nested function arguments
@@ -1196,10 +1273,133 @@ Verificado en ejecución: el mismo `Function` traga el catálogo plano y uno ani
 > · `validate_python([])` **pasa**: una lista vacía es una lista válida. El archivo vacío sigue siendo cosa de sus guards — y decidió **no ponerlos**: catálogo vacío y prompts vacíos se tratan igual, 0 entradas → 0 resultados.
 > · Las **claves de más se ignoran** por defecto. Se rechazan con `model_config = ConfigDict(extra="forbid")`.
 
-- [ ] **Qué devuelven `validate_functions` y `validate_prompts`** — quedó preguntado, sin contestar
-- [ ] **Dónde se llama a `write_logs`** — al final del `Chat`, presumiblemente; sin decidir
-- [ ] `logs/` en el `.gitignore`
-- [ ] **Pasada de estilo del bloque, sin empezar** — `flake8 src/validator.py` da 6 avisos al cerrar el 08-24: `Union` importado y sin usar · la línea del `import` de pydantic a 97 caracteres · tres clases con una sola línea en blanco delante (E302) · un comentario inline con un solo espacio. `mypy` no se ha pasado todavía a este archivo
+- [x] **Qué devuelven los `validate_*`** — cerrado el 08-25: desaparecen, y en su lugar quedan `get_functions()` y `get_prompts()`, que devuelven `List[Function]` y `List[Prompt]`
+- [x] `logs/` y `data/output/` en el `.gitignore` — 08-25
+- [x] **Pasada de estilo** — 08-25: `flake8` limpio y `mypy --strict` limpio, corriéndolos con el intérprete del venv
+- [ ] **Dónde se llama a `write_logs` y `write_replies`** — al final del `Chat`, presumiblemente; sin decidir. Es lo único que queda del bloque, y se cierra al diseñar el `[[PROJECT#Bloques|Bloque 6]]`
+
+#### Dónde viven los tests
+
+> [!important] `tests/test_bloque_2.py` — 46 tests, escrito por el agente el 2026-08-25
+> Se corre con `make test` (todos) o `make testN test=2` (solo este bloque).
+>
+> | # | Sección | Cuántos | Qué garantiza |
+> |---|---|---|---|
+> | 1 | Creación correcta | 6 | Construye · crea la carpeta de salida y aguanta la segunda ejecución · lo leído son objetos del modelo, no `dict` · los archivos **reales** de `data/input/` construyen: 5 funciones, 11 prompts |
+> | 2 | Catálogo | 6 | Anidado de **dos y tres niveles** con `properties` (el bonus 7) · falta `description` · falta `type` dentro de un parámetro · `[]` → *"Function's file is empty"* · un objeto donde se espera una lista |
+> | 3 | Prompts | 4 | `[]` **pasa** y deja la lista vacía · clave de más rechazada por `extra="forbid"` · falta `prompt` · `prompt` numérico |
+> | 4 | Archivos y rutas | 7 | Archivo ausente y carpeta como ruta → `ValidationError` de pydantic · JSON corrupto y archivo de 0 bytes → *"Corrupt JSON"* · **cada archivo contra su modelo** · ruta de salida sin `.json` |
+> | 5 | `charge_logs` | 7 | Las dos familias de fallo · dos índices conviven · **dos fallos del mismo índice no se pisan** (lo que ganó la lista frente al dict) · los dos guards |
+> | 6 | `write_logs` | 5 | Sin fallos **el archivo no se crea** · crea `logs/` · lo escrito es lo que hay en memoria · dos `charge` y una llamada = una apertura · llamarlo dos veces no reescribe |
+> | 7 | Límite y stress | 3 | 500 fallos · mensaje con acentos y comillas · catálogo de 100 funciones |
+> | 8 | `charge_replies` / `write_replies` | 8 | **Array, no dict** · las tres claves exactas · el orden se conserva · **con 0 respuestas el archivo existe con `[]`** · los `number` siguen siendo `float` · los acentos sobreviven |
+>
+> **Ningún test escribe en el repositorio.** Los archivos de juguete y las salidas caen en `tmp_path`; los de logs usan `monkeypatch.chdir(tmp_path)`, porque `logs/logs.json` es una ruta **relativa** y se resuelve contra donde esté parado el proceso.
+
+---
+
+### Bloque 3 — Construcción del prompt
+
+> [!success] Estado — 2026-08-25 · ==bloque cerrado==
+> **Diseñado y construido el mismo día.** `src/promptbuilder.py`, clase `PromptBuilder`.
+> **Verificado en ejecución** con el catálogo real: el prompt sale con el JSON de las 5 funciones, los `\n` en su sitio y terminando en `assistant\n`.
+> **20 tests** en `tests/test_bloque_3.py`, todos verdes. `flake8` limpio y `mypy --strict src/` limpio.
+
+**Descripción:** el modelo no recibe estructuras, recibe **un solo texto seguido**. Este bloque redacta ese texto a partir del catálogo de funciones y de la frase del usuario, con la plantilla de chat y las marcas de Qwen.
+
+**Depende de:** `[[PROJECT#Bloque 2 — I/O de archivos|Bloque 2]]` — necesita el catálogo ya validado.
+**Qué recibe:** `List[Function]` en el constructor; el prompt del usuario en cada llamada.
+**Qué entrega:** un `str` listo para pasar a `Tokenizer.encode`.
+**Dónde vive:** `src/promptbuilder.py` — clase `PromptBuilder`.
+
+#### ==`PromptBuilder`==
+
+| Campo | Valor |
+|---|---|
+| Descripción | Arma el bloque de sistema una vez y le pega la línea del usuario en cada llamada |
+| Archivo | `src/promptbuilder.py` |
+| Estado | implementada y testeada |
+
+**Atributos:**
+
+| Nombre | Tipo | ¿Argumento? | Descripción | Hecho |
+|---|---|---|---|---|
+| `_functions` | `List[Function]` | ✅ | El catálogo tal como lo entrega el `FileManager` | ☑ |
+| `_functions_template` | `str` | ❌ | El catálogo ya serializado a JSON. Se arma **una sola vez** en el `__init__` porque es idéntico en los N prompts | ☑ |
+
+**Métodos:**
+
+| Firma | Descripción | Hecho |
+|---|---|---|
+| `__init__(self, functions: List[Function]) -> None` | Con `@validate_call`. Serializa el catálogo y lo guarda | ☑ |
+| `get_prompt(self, prompt: str) -> str` | Pega la línea del usuario a la plantilla y devuelve el texto listo | ☑ |
+
+**La plantilla, constante del módulo:**
+
+```python
+TEMPLATE_QWEN: str = (
+    "<|im_start|>system\nYou have access to the following functions: "
+    "{FUNCTION} and must answer to the prompt in the user section, "
+    "in json format with the keys \"name\" for function's name and \"parameters\" "
+    "for the expected parameters to execute the function<|im_end|>\n"
+    "<|im_start|>user\n{PREGUNTA}<|im_end|>\n<|im_start|>assistant\n")
+```
+
+#### Decisiones cerradas el 2026-08-25
+
+| Decisión | Por qué |
+|---|---|
+| **El catálogo va como JSON tal cual, no en prosa** | Ver el detalle y las dos vueltas en `[[PROJECT#A analizar en esta fase]]`. Resumen: Qwen fue entrenado con las herramientas en JSON, y pasarlo tal cual hace que un catálogo anidado del bonus 7 no toque este bloque |
+| **La plantilla vive en un solo sitio** | Es la costura del **bonus 1**: cambiar de modelo es cambiar esa constante. Empezó proponiendo concatenar dentro del método; se movió al ver los dos bloques al lado — misma string, pero con la concatenación hay que buscar los `<\|im_` por toda la clase |
+| **Las marcas se escriben, no se piden** | Se evaluó sacarlas de `added_tokens`. Se descartó con el dato delante: los 26 especiales de Qwen son solo una lista de textos, **nada dice cuáles son las de chat**. Para coger `<\|im_start\|>` hay que saber su nombre, que ya es de Qwen — pedirlas no ahorra el acoplamiento, solo lo esconde |
+| **Los `\n` van pegados al `<\|im_end\|>`** | Sacado literal de la plantilla de Qwen (`tokenizer_config.json` de la caché): `'<\|im_start\|>' + role + '\n' + content + '<\|im_end\|>' + '\n'` y `'<\|im_start\|>assistant\n'`. Su primera versión usaba **espacios**: el partido de la pre-tokenización cambia y los ids dejan de ser los que el modelo vio en el entrenamiento |
+| **`exclude_none=True` al serializar** | Sin él, cada parámetro arrastra `"properties":null` — tres `null` en el catálogo real que no significan nada para el modelo |
+| **`@validate_call` aquí es cumplimiento, no descubrimiento** | Lo levantó él: *"pero ahí pydantic no está sumando nada"*. Cierto — el `FileManager` ya entregó `List[Function]` y `mypy` caza el tipo equivocado. Lo que aporta es el borde (un test o un `Chat` que pase `dict` sin convertir) y que **el subject lo exige para todas las clases** |
+| **El import a `src.filemanager` queda absoluto** | Salió al reforzar los imports relativos ↓ |
+
+> [!bug]- Los tres fallos de la primera pasada, cerrados el mismo día
+> · **La extensión del archivo era `.pyt`**, no `.py` — Python no lo importaba.
+> · **`get_prompt` formateaba con `self._functions`**, la lista de objetos `Function`: al prompt le llegaba `[Function(name='fn_add_numbers', ...)]` en vez del JSON. El `_functions_template` del `__init__` no se usaba.
+> · **La plantilla llevaba espacios donde Qwen usa `\n`.**
+>
+> Y un cuarto de camino: el `src/__init__.py` que creó salió con un **espacio al final del nombre** (`"__init__.py "`), así que Python no lo veía. Segundo del día — el primero fue `"logs/logs.json "`.
+
+#### Los imports relativos — reforzado el 2026-08-25
+
+> [!important] El tema que él mismo aplazó el 08-07, retomado al aparecer el primero
+> Petición suya de entonces: *"quiero que se refuerce en el momento en el que se toque en una fase futura"*. El primer import relativo del proyecto fue `from .filemanager import Function`.
+
+El punto de `from .filemanager` significa **"el paquete al que pertenezco"**, y Python lo saca de `__package__`:
+
+```bash
+python src/promptbuilder.py
+→ ImportError: attempted relative import with no known parent package
+
+python -c "import src.promptbuilder"
+→ ok, __package__ = 'src'
+```
+
+Con una **ruta de archivo**, Python no sabe de qué paquete forma parte: `__package__` queda en `None` y el punto no apunta a nada. Con un **nombre de módulo** (`python -m src`), el nombre ya lleva el paquete dentro. **Por eso el subject exige `uv run python -m src` y no `python src/__main__.py`.**
+
+Y `mypy` es el mismo problema sin ejecutar: como no corre el programa, no hay `__package__` que mirar. Se arregla con `--explicit-package-bases` o con un `src/__init__.py`. **Se hizo lo segundo**, y `mypy --strict src/` pasa limpio sobre los 4 archivos.
+
+#### Dónde viven los tests
+
+> [!important] `tests/test_bloque_3.py` — 20 tests, escrito por el agente el 2026-08-25
+> Ninguno necesita el modelo ni la red: el bloque solo arma una string. Se corre con `make testN test=3`.
+>
+> | # | Sección | Cuántos | Qué garantiza |
+> |---|---|---|---|
+> | 1 | Creación correcta | 4 | Construye con `List[Function]` · el catálogo vacío **no** lanza aquí (ese guard es del Bloque 2) · `@validate_call` corta lo que no es lista y la lista de strings |
+> | 2 | El catálogo dentro del prompt | 5 | Entra como **JSON**, no como `repr` de objetos · sin `properties: null` · todas las funciones y en orden · las descripciones llegan · **un catálogo anidado entra igual** (bonus 7) |
+> | 3 | La plantilla de chat | 5 | Abre con `system\n` · termina en `assistant\n` · **los dos `<\|im_end\|>` llevan su `\n`** · la frase del usuario entra sin tocar · el prompt nombra las claves `name` y `parameters` |
+> | 4 | Flujo normal | 4 | **Dos prompts comparten toda la cabecera** (el catálogo se monta una vez) · no arrastra estado · prompt vacío · acentos y comillas |
+> | 5 | Límite y stress | 2 | Catálogo de 100 funciones · prompt de 5.000 caracteres |
+
+#### Abierto en este bloque
+
+- [ ] **El formato del prompt es una perilla, no una decisión cerrada** — se mide cuando el `[[PROJECT#Bloques|Bloque 5]]` permita comparar aciertos. Ver `[[PROJECT#A analizar en esta fase]]`
+- [ ] **Qwen trae su propio formato de herramientas** *(hallazgo del 08-25)* — la plantilla de `tokenizer_config.json` mete las funciones en un bloque `# Tools` con las firmas dentro de `<tools>...</tools>`. Es lo que el modelo vio en el entrenamiento, así que es la primera alternativa a probar cuando se mida el acierto
 
 ---
 

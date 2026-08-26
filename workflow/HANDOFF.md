@@ -305,7 +305,46 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 11 — activo
+> [!info] Agente 12 — activo
+> **Periodo:** cuestionario del 2026-08-25 → ==**Bloques 2 y 3 cerrados**==, 195 tests verdes.
+>
+> **Qué se hizo:**
+> - **Repaso ejecutado: 3 limpias de 6.** Lo que él escribió en `src/` el día anterior (`TypeSpec`, `validate_python([])`) resistió; los tres 🔴 heredados necesitaron el caso concreto otra vez. Entrada en `[[REVIEWS]]`, `[[PROJECT#🎯 Lista de refuerzo]]` actualizada.
+> - **Bloque 2 cerrado.** Escribió `charge_logs`, `write_logs`, `charge_replies`, `write_replies` y los **tres getters**. Renombrado a `src/filemanager.py`. `flake8` y `mypy --strict` limpios. **46 tests** en `tests/test_bloque_2.py`, escritos por el agente en 8 secciones.
+> - **Bloque 3 diseñado y construido el mismo día.** `src/promptbuilder.py`: plantilla de chat de Qwen en una constante, catálogo en JSON con `dump_json(exclude_none=True)`, y `get_prompt` pegando la línea del usuario. **20 tests**.
+> - **Imports relativos reforzados** — el tema que él aplazó el 08-07, retomado al aparecer el primero. Detalle en `[[PROJECT#Los imports relativos — reforzado el 2026-08-25]]`.
+> - **Regla nueva suya sobre cómo presentar tests:** la frase de qué garantiza va al chat, **el código solo al archivo**.
+>
+> **Dónde se quedó:** los tres primeros bloques cerrados. El **Bloque 4 — Validez de tokens** no está abierto: su diseño lo propone él, y es donde se decide la máscara con pila del bonus 7.
+>
+> **Decisiones tomadas:**
+> - **El catálogo va al prompt como JSON tal cual**, no en prosa. Había elegido prosa; se movió con el dato de que Qwen fue entrenado con las herramientas en JSON. Ventaja que salió después: un catálogo anidado del bonus 7 no toca el bloque. ==Queda como **perilla**: *"si no conseguimos alcanzar el porcentaje de acierto, ahí hacemos backtracking"*.==
+> - **Los `\n` de la plantilla van pegados al `<\|im_end\|>`**, sacado literal del `chat_template` de Qwen. Su primera versión usaba espacios.
+> - **Las marcas se escriben, no se piden**: los 26 especiales de `added_tokens` son solo textos, nada dice cuáles son las de chat.
+> - **La salida sigue siendo un array**, no un dict por índice — lo propuso y se retiró con el formato del subject delante.
+> - **`write_replies` escribe siempre; `write_logs` solo si hay datos.** No son simétricos a propósito.
+> - **Los `validate_*` mueren** y nacen `get_logs`/`get_functions`/`get_prompts`, uno por estructura.
+> - **El guard de la ruta de salida mira `suffix`**, no el `bool` — `Path("")` no es vacío, es `PosixPath('.')`.
+> - **`src/__init__.py` creado**, así `mypy --strict src/` pasa sin `--explicit-package-bases`.
+>
+> **Callejones sin salida:**
+> - **Apilar herramienta + concepto + ejemplo.** Con `format`, la constante y la plantilla en mensajes seguidos soltó *"no entendí nada"*, *"¿qué plantilla?"*, *"¿qué constante?"*. Se cerró bajando a **una pieza por mensaje** con su salida real.
+> - **Volcarle 20 tests al chat**, aunque cada uno llevara su frase. *"Déjalo solo en file"*.
+> - **Atribuirme introspección sobre Qwen** — preguntó *"tú eres un modelo, deberías saber"*. Hay que decir qué es dato, qué es suposición, y que el formato **se mide**.
+> - **Llamar a `mypy`/`flake8` por su nombre suelto:** usa los del sistema, que no ven el venv, y salen 5 errores falsos de `pydantic`. Siempre `./callme/bin/python -m ...`.
+>
+> **Abierto:**
+> - **No existe `src/__main__.py`** — el subject exige `uv run python -m src`, y ahí va `argparse`. Tampoco hay `pyproject.toml` en la raíz ni regla `lint` en el `Makefile`.
+> - Dónde se llaman `write_logs` y `write_replies` — se cierra con el Bloque 6.
+> - ==`properties` sigue siendo una **suposición**==, no un dato del subject.
+> - **Qwen trae su propio formato de herramientas** (bloque `# Tools` con `<tools>`): primera alternativa a probar cuando se mida el acierto.
+> - Mecanismo del bonus 3, sin decidir.
+>
+> **Sobre el estudiante:** cerró dos bloques en un día, y la razón es la misma que explicaba el desastre del 08-24: **lo que está escrito en código sobrevive; lo que solo se habló, no**. Objeta las reglas que no le suman y acepta la razón honesta. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas. Después, el Bloque 4.
+
+> [!info]- Agente 11 — histórico
 > **Periodo:** cuestionario del 2026-08-24 → **Bloque 1 cerrado del todo** y **Bloque 2 con `__init__` y la lectura corriendo**.
 >
 > **Qué se hizo:**

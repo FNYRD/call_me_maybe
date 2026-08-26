@@ -23,6 +23,27 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-08-25 — entrada de sesión, Bloque 2 en construcción
+
+> [!info] 3 limpias de 6 — ==lo que se escribió ayer en `src/` resistió; lo que solo se habló, no del todo==
+> Las tres preguntas de lo trabajado el 08-24 (`TypeSpec`, `validate_python([])`, `FilePath` en la salida) salieron mucho mejor que los tres 🔴 heredados, que necesitaron el caso concreto otra vez.
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | **Por qué el fallo de fichero no puede ir en `prompts`.** Acertó la clave (`files`) y el porqué fue circular: *"sencillamente porque no es un error de los prompts"*. **Segunda vez** (falló el 08-24) | Se le puso una entrada real delante —`"prompts": {"3": "..."}`— y se le preguntó qué número le pondría al fichero que falta: *"ninguno porque no tiene"*. Al preguntar **en qué momento revienta**, lo cerró él y mejor de lo esperado: *"lanza error en `FileManager` al instanciar el objeto, con `validate_call` y `FilePath`"* — es decir, **antes de que exista el array de prompts** | Bloque 2 |
+| 2 | **Quién abre `logs/logs.json`.** La apertura única salió limpia y con su razón (*"primero se registra todo en el atributo y solo al final, caso existan logs, se abre"*), pero adjudicó el `open` a `Chat`. **Segunda vez** el mismo desliz | Se le pusieron sus **dos métodos** con la clase delante (`class FileManager: charge_logs / write_logs`) y se preguntó quién ejecuta el `open` → *"FileManager"*. El número de aperturas ya lo tiene; lo que se le va es **de qué clase es el método** | Bloque 2 |
+| 3 | **Cuándo valida `@validate_call`.** Ante *"¿qué pasa si `output_path` fuera `FilePath`?"* dijo *"revienta error"* — correcto pero sin momento. Preguntado si revienta antes o después de entrar al cuerpo, contestó **"después"** | Se **ejecutó** delante de él con su venv `callme/`: una función decorada con un `print("ENTRE AL CUERPO")` dentro y una ruta inexistente → `ValidationError: path_not_file` y **el `print` no se imprimió**. El `mkdir` que crearía `data/output/` nunca llegaría a correr. Enésima confirmación de que ejecutar zanja lo que argumentar no | Bloque 2 · pydantic |
+
+> [!success] Correcto sin ayuda
+> **De dónde sale el resultado esperado del `assert` con el `merges.txt` real** — *"del encode de qwen"*, a la primera. ==Tercera vez preguntado, primera limpia== (falló el 08-18 y el 08-24); lo que cambió fue preguntar por el **resultado esperado** y no por el test · **`TypeSpec` recursivo** — *"se llama recursivamente… si anidan más, la estructura deja de ser `None` y crea `TypeSpec` on demand dependiendo de la cantidad de anidaciones"*, con el bonus 7 implícito · **`validate_python([])`** — pasa, devuelve `[]`, y sin guard salen 0 resultados, coherente con su regla de que la salida lleve siempre N objetos.
+
+> [!note] Matiz corregido durante el repaso
+> Al explicar `TypeSpec` dijo *"siguiendo el estándar de JSON"*. Se le recordó que **`properties` es convención de JSON Schema, no un dato del subject** — la línea del bonus dice solo *"Support for complex nested function arguments"*. Sigue anotado como suposición a verificar al montar los tests del bloque.
+
+---
+
 ## Repaso 2026-08-24 — entrada de sesión, tras 6 días sin tocar el proyecto
 
 > [!bug] 1 limpia de 5 — ==el diseño del Bloque 2 no sobrevivió a la pausa==

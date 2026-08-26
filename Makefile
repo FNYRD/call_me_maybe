@@ -10,6 +10,11 @@ testN:
 install-model:
 	./callme/bin/pip install -e llm_sdk
 
+clean-files:
+	rm -rf data/output logs
+	rm -rf .pytest_cache .mypy_cache
+	find . -type d -name __pycache__ -not -path "./callme/*" -exec rm -rf {} +
+
 push:
 	git add .
 	git commit -m "$(mensaje)"
@@ -19,4 +24,4 @@ venv:2
 	python3 -m venv callme
 	pip3 install regex
 
-.PHONY: push test testN install-model push venv
+.PHONY: push test testN install-model push venv clean-files

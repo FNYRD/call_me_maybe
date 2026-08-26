@@ -133,14 +133,15 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-08-24
+> [!info] Estado — 2026-08-25
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 1 — diseño. **6 bloques** definidos; ==**Bloque 1 CERRADO**== y **Bloque 2 a medio construir**
-> **Último hito:** Bloque 1 con las **tres pasadas** hechas (lógica → guards → estilo): `flake8` limpio, `mypy --strict` limpio, **129 tests verdes**
-> **En qué se estaba:** `src/validator.py` — clase `FileManager`. `__init__`, atributos y `_load_json` escritos y verificados con los archivos reales (5 funciones, 11 prompts). Los tres modelos `pydantic` los escribió a mano él
-> **Antes de nada:** el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas. Regla suya: *"cuestionarios siempre primero"*
-> **Después:** seguir el Bloque 2 — `charge_logs`, `write_logs`, `write_replies`, y decidir qué queda de los dos `validate_*`
-> **Abierto:** ==`properties` es una suposición, no un dato del subject== (se verifica en los tests) · renombrar `src/validator.py`, que conserva el nombre viejo · `logs/` al `.gitignore` · no hay `pyproject.toml` en la raíz · se implementan **los 9 bonus** · mecanismo del bonus 3 sin decidir
+> **Fase:** 1 — diseño. **6 bloques** definidos; ==**Bloques 1, 2 y 3 CERRADOS**==
+> **Último hito:** `src/filemanager.py` y `src/promptbuilder.py` cerrados el mismo día — `flake8` y `mypy --strict` limpios, ==**195 tests verdes**== (129 + 46 + 20)
+> **En qué se estaba:** nada a medias. Los tres primeros bloques cerrados y testeados
+> **Antes de nada:** el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas, dos pedidas por él. Regla suya: *"cuestionarios siempre primero"*
+> **Después:** abrir el **Bloque 4 — Validez de tokens**. Lo propone él, y es donde nace la **máscara con pila** del bonus 7
+> **Abierto:** ==no existe `src/__main__.py`== y el subject exige `uv run python -m src` · sin `pyproject.toml` en la raíz · sin regla `lint` en el `Makefile` · ==`properties` es una suposición, no un dato del subject== · dónde se llaman `write_logs` y `write_replies` · mecanismo del bonus 3 sin decidir · el formato del prompt es una **perilla** que se mide con el Bloque 5
+> **Herramientas:** llamarlas siempre con `./callme/bin/python -m mypy` / `-m flake8`. Por su nombre suelto usan las del sistema, que no ven el venv, y salen errores falsos de `pydantic`
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
