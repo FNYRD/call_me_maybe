@@ -305,7 +305,45 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 13 — activo
+> [!info] Agente 14 — activo
+> **Periodo:** contextualización del 2026-08-27 → **diseño del Bloque 4 cerrado entero, guía en PDF escrita, y los cuatro primeros métodos de `Guardian` escritos por él**.
+>
+> **Qué se hizo:**
+> - ==**Sin cuestionario**==, por decisión suya del 08-26. Se arrancó repasando lo pendiente del Bloque 4 y se cerró.
+> - **Cerrados los cuatro huecos que quedaban del diseño**: reglas de hoja `number`/`string`, quién pone el carácter de cierre, la **pila de posiciones** (nodo + índice por nivel) y la **capa de tokens** sobre las reglas por carácter. Detalle en `[[PROJECT#Bloque 4 — Validez de tokens]]`.
+> - **Cerradas además las ocho decisiones de implementación** a petición suya (*"debe faltar 0 por decidir, es una guía para implementar, no para pensar"*): `start(prompt)`, `json.dumps` para escapar, `_done` en vez de contar llaves, `List[int]`, sin escapado en hojas `string`, conversión de `np.int64` en el Bloque 5, `parameters` vacío, y el presupuesto de tokens fuera del bloque. **Marcadas como revocables.**
+> - **`block_mockup/bloque_4_guardian.pdf`** — una sección por método, con firma, qué recibe, qué devuelve y pasos; dos recorridos completos y una tabla de lo que es de otros bloques. Llegó a la forma buena en **cuatro iteraciones**, todas por corrección suya: demasiado verborrágica → reorganizar por método → cero pendientes → identificadores en inglés.
+> - **Construcción arrancada:** `__init__`, `start`, `is_open` y `_closing_char` escritos por él y **verificados en ejecución** contra los archivos reales. `_char_ok` a medias.
+> - **Regla nueva del sistema, `code mockup`**, reescrita entera con la mecánica de tres tiempos que se usó hoy. En `Posible mejoras al sistema.md`.
+>
+> **Dónde se quedó:** `src/guardian.py`, dentro de `_char_ok`, con solo la rama `"name"` escrita y **sin la regla de la comilla de cierre**. Es exactamente el siguiente paso.
+>
+> **Decisiones tomadas:**
+> - **El atajo del nombre único, suyo:** si tras un token solo queda **un** candidato en el catálogo, se inyecta el nombre completo en vez de dejar que el modelo lo deletree. Va en `add_token`. Condición: solo con `_written` no vacío — el subject (línea 310) exige que la función la elija el LLM, y con un carácter suyo delante la elección ya está hecha. **Sin escribir todavía.**
+> - **`is_open` no cuenta llaves de `_json_str`.** Corrige lo acordado esa misma mañana: un prompt con `{` mete llaves dentro de una string. Se usa `_done`, que enciende `_close_level`.
+> - **Se caen tres atributos:** `has_digit`, `dot_used` y `quote_closed` se deducen de `_written`.
+> - **Un token no escribe nada después del carácter de cierre** — así `",` es válido en una hoja `string` cuyo cierre sea la coma, y `", ` no.
+> - **Identificadores en inglés, descripciones en español**, en el PDF y en `[[PROJECT]]`.
+>
+> **Callejones sin salida:**
+> - **La primera versión del PDF.** 17 páginas con alegorías y secciones de *cómo lo compruebas*: *"demasiada verborrea que me cansa… poco práctico"*. La forma que sirve es una sección por método con la firma delante.
+> - **Dejarle decisiones abiertas en la guía.** Los recuadros *DECIDIR* le sobraban: *"llegados a este punto es solo escribir mecánicamente"*.
+> - **Remitirle al PDF mientras teclea.** En el tiempo (3) no lo está leyendo. Cuando pregunta qué es una variable, se le explica ahí mismo.
+> - **Explicar de más una pregunta cerrada.** Pidió qué función mira si un trozo está en una string, se le dio la tabla `in` vs `startswith`, y cortó: *"no enredes, aquí sirve `.startswith` y ya"*.
+>
+> **Abierto:**
+> - `_char_ok`: la regla de la comilla y las ramas `"number"` y `"string"`. Después, los seis métodos restantes.
+> - El atajo del nombre único, decidido y sin escribir.
+> - **`flake8` del venv roto otra vez** — `pycodestyle` no casa con Python 3.14. Se arregla en la pasada de estilo.
+> - Sigue sin existir `src/__main__.py` ni la regla `lint` del `Makefile`. **`pyproject.toml` ya existe**, lo creó él el 08-27.
+> - `[[FLOW]]` estaba desactualizado y se corrigió hoy.
+>
+> **Sobre el estudiante:** dos cosas grandes. **Propuso una optimización real mientras escribía código**, no diseñando — el atajo del nombre único salió de teclear la rama `"name"`. Y **volvió a plantear si merece la pena escribir código** dado que profesionalmente dirigirá agentes; la conversación quedó abierta con un experimento acordado: `Guardian` lo escribe él, y un bloque de orquestación (5 o 6) se corre en su modo —el agente implementa, él diseña los tests de estrés y explica el código— con bugs plantados para medir. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas. Después, seguir escribiendo `Guardian` con el PDF delante, un paso por mensaje.
+
+
+> [!info]- Agente 13 — histórico
 > **Periodo:** cuestionario del 2026-08-25 → **diseño de `Guardian` (Bloque 4) a mitad, cortado por decisión suya**.
 >
 > **Qué se hizo:**

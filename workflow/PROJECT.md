@@ -22,7 +22,9 @@ tags: [42, proyecto]
 > **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
 > **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · ==**Bloques 1, 2 y 3 cerrados**== — `src/tokenizer.py` (08-24), `src/filemanager.py` y `src/promptbuilder.py` (08-25), los tres con `flake8` y `mypy --strict` limpios y **195 tests verdes** en total
-> **Siguiente paso:** seguir diseñando el **Bloque 4 — Validez de tokens**, clase `Guardian`. **Sin cuestionario esta vez** — se arranca repasando `[[PROJECT#Abierto en este bloque — cortado aquí el 2026-08-26, sin cuestionario]]`, pedido explícito suyo. ==La pila del bonus 7 se descartó== — el diseño gira a esqueleto+huecos, ver detalle en el bloque
+> **Siguiente paso:** seguir **escribiendo `Guardian`** con la guía delante. Van escritos y verificados en ejecución `__init__`, `start`, `is_open` y `_closing_char`; ==`_char_ok` está a medias, solo el caso `"name"`==
+> **Guía de construcción del Bloque 4:** `block_mockup/bloque_4_guardian.pdf` — **una sección por método**, con firma, qué recibe, qué devuelve y pasos. Cero decisiones abiertas. Escrita el 2026-08-27 a petición suya
+> **Cómo se está trabajando desde el 2026-08-27:** el agente **conduce paso a paso** y **verifica ejecutando**, no leyendo. Un paso por mensaje. La mecánica completa está en `Posible mejoras al sistema.md` → *`code mockup`*
 > **Del Bloque 1 no queda nada abierto** — ver `[[PROJECT#Las tres pasadas de revisión — cerradas el 2026-08-24]]`
 > **Requisito recuperado del subject el 2026-08-18:** *"All classes must use pydantic for validation"* (IV.3.1, literal). Aplicado ya al `Tokenizer` con `@validate_call` + `FilePath`; **todas las clases siguientes nacen con él**
 > **Diferido a la fase de tests:** la **hoja de evaluación** y la estrategia de medición del 90% — decisión suya, 2026-08-17. Razón: el test que zanja el Bloque 1 es `assert mi_ids == sdk_ids`, que no necesita medir acierto. Se retoma al montar los tests, y **ahí se decide qué se mantiene**
@@ -113,6 +115,13 @@ graph LR
 
 | **Qué valida `pydantic` y qué no** — tipo y forma sí; contenido del archivo no | 🔍 08-18 | ✅ 08-24 | **08-24, sin ayuda:** con el `vocab.json` que existe y contiene `{}` fue directo a su propio `except ValueError: raise ValueError("Vocabulary's file empty")`. `FilePath` cubre existencia; *vocab vacío*, *JSON corrupto* y *falta la clave del patrón* siguen siendo de sus guards |
 
+| **Qué es un "hueco" (`_slot`)** — los tres únicos puntos donde escribe el modelo | ❌ 08-27 | 🔴 | Preguntó *"¿a qué te refieres con huecos?"* con el diseño ya cerrado. Se le dieron los tres congelados (`"name": "` · `{"a": ` · `{"s": "`) y que todo lo demás lo inyecta `Guardian`. **Preguntar señalando un `_json_str` a medias**: *"¿aquí le toca al modelo o inyectas tú?"* |
+| **Qué entra a `start`: un `str`, no el `dict` del archivo** | ❌ 08-27 | 🟡 | Dijo *"lo que entra es el dict, ¿no?"*. Lo desbloqueó la cadena entera puesta en cuatro líneas: el JSON → `FileManager` → `List[Prompt]` → `Chat` coge uno → `"Greet shrek"`. **`pydantic` ya deshizo el dict en el Bloque 2** |
+| **De dónde sale `written` en `_char_ok`** — lo pasa quien llama, no se lee del atributo | ❌ 08-27 | 🟡 | Dos preguntas seguidas (*"¿recibe written?"*, *"¿el contexto viene de dónde?"*). Lo cerró la traza de `_token_ok(".5")` con la copia creciendo `"40"` → `"40."` mientras `self._written` no se mueve. **Preguntar por qué es un parámetro y no `self._written`** |
+| **Cuándo avanza el índice de un nivel de `_stack`** | 🙋 08-27 | 🟡 | Preguntó *"¿esos índices avanzan a medida de qué?"*. Son dos momentos y solo dos: cuando el modelo cierra con `,` y quedan claves, y cuando se vuelve de un nivel anidado. **Nunca lo mueve el modelo** |
+| **`_closing_char` informa, no muta** — el `pop` vive en `_close_level` | ❌ 08-27 | 🟡 | Preguntó *"si devuelvo `}` ahí mismo hago pop, ¿no?"*. La razón que lo cierra: `_closing_char` se llama desde `get_valid_ids`, **antes** de que el modelo elija, y miles de veces por paso; si hiciera `pop` desmontaría la pila probando tokens que no se usan |
+| **`startswith` vs `in`** — prefijo, no contención | 🔍 08-27 | ✅ 08-27 | Lo pidió directo y cortó la explicación de más: *"aquí sirve `.startswith` y ya"*. Tenía razón |
+
 > [!warning] Regla de reincidencia
 > Un tema que falla **tres veces** baja de ✅ a 🟡 en el `[[PROJECT#Cuestionario de verificación]]`, y la explicación que se usó las veces anteriores se busca en `[[REVIEWS]]` — para no repetir la que ya no funcionó.
 
@@ -128,6 +137,44 @@ graph LR
 > **Cómo se construye:** mitad de la `[[PROJECT#🎯 Lista de refuerzo]]` (lo que está en 🔴), mitad de lo trabajado en la sesión que se cierra.
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
+
+### Para la sesión siguiente al 2026-08-27
+
+> [!info] Seis preguntas — cuatro de los 🔴/🟡 de hoy, dos de lo escrito
+> La sesión fue de **construcción guiada**, así que casi todo lo pendiente salió tecleando. Las cuatro primeras son los huecos que aparecieron mientras escribía; las dos últimas, sobre el código que dejó hecho.
+> **No se pregunta por `_token_ok`, `add_token` ni los tres de inyección:** los conoció hoy y aún no los ha escrito. Se preguntan cuando estén en `src/`.
+
+1. Tienes `_json_str` congelado así:
+
+```
+{"prompt": "Greet shrek", "name": "fn_greet", "parameters": {"a": 4
+```
+
+   Señálame los puntos de esa línea que escribió el **modelo** y los que inyectó `Guardian`. *(refuerzo 🔴 — el 08-27 preguntó "¿a qué te refieres con huecos?" con el diseño ya cerrado. **Preguntar señalando un `_json_str`, nunca en abstracto**)*
+
+2. Al `FileManager` le llega `[{"prompt": "Greet shrek"}]` y en algún momento se llama a `start`. ¿Qué tipo exacto recibe `start` como argumento, y quién deshizo el resto? *(refuerzo 🟡 — el 08-27 dijo que entraba el dict. La respuesta es `str`, y lo deshizo `pydantic` en el Bloque 2)*
+
+3. `_char_ok` recibe `written` como parámetro y no lo lee de `self._written`. Con el estado real en `"40"` y el token `".5"` llegando, ¿qué vale `written` en la segunda llamada, y qué vale `self._written` en ese mismo instante? *(refuerzo 🟡 — dos preguntas seguidas el 08-27. La respuesta: `"40."` y `"40"`)*
+
+4. `_closing_char` devuelve `}`. ¿Puede hacer el `pop` ahí mismo? *(refuerzo 🟡 — el 08-27 propuso justo eso. **Si se atasca:** preguntarle cuántas veces se llama a `_closing_char` en un solo paso de generación, y quién lo llama)*
+
+5. En tu `start` escribiste `self._json_str = (...)` en vez de `self._json_str += (...)`. Corres 11 prompts seguidos. ¿Qué habría pasado con el prompt 2 usando `+=`? *(lo de hoy — fue uno de los cuatro tropiezos, y es el único que no habría dado error, solo salida mala)*
+
+6. Tu `_char_ok` de hoy aprueba un carácter si algún nombre del catálogo empieza por lo escrito. Con el catálogo `fn_greet` y `fn_greeting`, y `written = "fn_greet"`, llega una comilla. ¿La aprueba tu código tal como está ahora? *(lo de hoy — es la regla que **falta** en la rama `"name"`, y engancha directo con lo primero que toca escribir)*
+
+> [!note] Banco para la sesión siguiente
+> Cuándo avanza el índice de un nivel de `_stack` · por qué la simulación usa una copia y no `self._written` · por qué `Guardian` no conoce `numpy` · por qué el escapado del prompt lo hace `json.dumps` y no él · por qué la barra invertida no entra en la lista blanca de una hoja `string` · qué es la caché de Hugging Face.
+
+> [!important] Orden de la próxima sesión
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Cuestionario de repaso** | Regla suya: *"cuestionarios siempre primero"* |
+> | 2 | **Seguir escribiendo `Guardian`** | Con `block_mockup/bloque_4_guardian.pdf` delante y el agente conduciendo **un paso por mensaje**, verificando **ejecutando**. Se retoma en `_char_ok`: cerrar la rama `"name"` con la regla de la comilla, y luego `"number"` y `"string"` |
+>
+> ==El diseño del Bloque 4 está cerrado del todo.== No se reabre nada mientras se escribe: lo que aparezca se anota y se decide después.
+> **`flake8` del venv vuelve a estar roto** — `pycodestyle` no casa con Python 3.14. Se arregla en la pasada de estilo, no ahora.
+
+---
 
 ### Para la sesión siguiente al 2026-08-25
 
@@ -1406,15 +1453,18 @@ Y `mypy` es el mismo problema sin ejecutar: como no corre el programa, no hay `_
 
 ### Bloque 4 — Validez de tokens
 
-> [!info] Estado — 2026-08-26 · 🔵 en diseño, empieza el código
-> Mecanismo acordado el mismo día. Faltan los cuerpos de los métodos — se define construyendo.
+> [!info] Estado — 2026-08-27 · 🔵 diseño cerrado, construcción empezada
+> El **2026-08-26** se acordó el giro a esqueleto + huecos. El **2026-08-27** se cerró **todo lo que quedaba** —reglas de hoja, quién pone el cierre, la pila de posiciones, la capa de tokens, las firmas y los tipos— y se empezó a escribir.
+> **Escrito y verificado en ejecución:** `__init__` · `start` · `is_open` · `_closing_char`.
+> **A medias:** `_char_ok`, con solo la rama `"name"` y sin la regla de la comilla.
 
 **Descripción:** dado el estado del JSON que se está escribiendo y el schema de la función, decide qué ids del vocabulario son válidos para el siguiente token. Se calcula **sin llamar al modelo**.
 
 **Depende de:** `[[PROJECT#Bloque 1 — Tokenizer|Bloque 1]]` — vocab y vocab invertido · `[[PROJECT#Bloque 2 — I/O de archivos|Bloque 2]]` — catálogo `List[Function]` ya validado.
 **Qué recibe:** vocab, vocab invertido y catálogo en el constructor; el token elegido en cada paso.
 **Qué entrega:** la lista de ids válidos para el paso actual, y aviso de cuándo el JSON quedó cerrado.
-**Dónde vive:** `src/guardian.py` (tentativo) — clase `Guardian`.
+**Dónde vive:** `src/guardian.py` — clase `Guardian`.
+**Guía de construcción:** `block_mockup/bloque_4_guardian.pdf` — instructivo paso a paso en 10 fases, generado el 2026-08-27 a partir de esta sesión. Es el mapa para escribir el código; el diseño vivo sigue siendo este archivo.
 
 #### El mecanismo, en una escena
 
@@ -1448,6 +1498,8 @@ El bucle de generación (Bloque 5) pide logits al modelo, le pregunta a `Guardia
 | `_reversed_vocab` | `Dict[int, str]` | ✅ | Para traducir el id elegido a texto y acumularlo en el estado | ☐ |
 | `_functions` | `Dict[str, Function]` | ✅ | Catálogo indexado por nombre, para no recorrer la lista cada vez | ☐ |
 | `_json_str` | `str` | ❌ | La string del JSON que se va escribiendo — nace con el esqueleto fijo ya inyectado (`{"prompt": "...", "name": "`) | ☐ |
+| pila de posiciones | por decidir | ❌ | **Nuevo el 2026-08-27.** Un nivel por entrada, cada uno con el **nodo del schema** y el **índice de clave** por el que va. `push` al bajar a un `properties`, `pop` al agotar el nivel | ☐ |
+| estado de la hoja actual | por decidir | ❌ | **Nuevo el 2026-08-27.** Lo escrito dentro de la hoja en curso: si ya hay un dígito y si ya se usó el punto. Puede derivarse de `_json_str` en vez de guardarse — decisión suya | ☐ |
 
 **Métodos (firmas y cuerpo por definir):**
 
@@ -1455,34 +1507,152 @@ El bucle de generación (Bloque 5) pide logits al modelo, le pregunta a `Guardia
 |---|---|---|
 | `get_valid_ids` | Según en qué hueco esté (nombre o una hoja de `parameters`), devuelve los ids permitidos. Fuera de un hueco, no se llama — se inyecta directo | ☐ |
 | `add_token` | Añade el id elegido a `_json_str`. Si eso cierra un hueco, inyecta el siguiente tramo literal del esqueleto | ☐ |
-| método de "sigue abierto" | Expone si falta cerrar el JSON. **Abierto:** distinguir *"no empezó"* de *"ya terminó"* — ver más abajo | ☐ |
+| método de "sigue abierto" | Expone si falta cerrar el JSON, contando **llaves abiertas** de `_json_str`. Cerrado el 2026-08-27: sin flag, porque `_json_str` nunca nace vacío | ☐ |
 
-#### Abierto en este bloque — cortado aquí el 2026-08-26, sin cuestionario
+#### Cerrado el 2026-08-27 — las reglas de la lista blanca
 
-> [!warning] Cómo arranca la próxima sesión — pedido explícito suyo, 2026-08-26
-> **Sin cuestionario de repaso.** Se arranca repasando esto — lo decidido y lo pendiente — para seguir cerrando el diseño de `Guardian`, no con preguntas de verificación.
+> [!important] La regla de fondo
+> Una lista blanca sale siempre de **dos cosas y solo dos**: el **texto ya escrito dentro de la hoja actual** y el **schema**. Todas las reglas de abajo son casos particulares de eso.
+> Engancha con la fila *De qué depende la lista blanca* de `[[PROJECT#🎯 Lista de refuerzo]]`, que llevaba dos fallos — aquí la sacó él solo, aplicada.
 
-**Camino recorrido, en orden, para no perder el hilo:**
+**Hoja `number`:**
 
-1. Cuestionó por qué el modelo tendría que "escribir" estructura que ya se conoce de antemano
-2. Verificado contra el subject: el único anidamiento posible vive dentro de `parameters` (`TypeSpec.properties`); las 3 claves de arriba son siempre planas
-3. Ahí salió el giro: casi todo el JSON se **inyecta literal** (llaves, comas, dos puntos, y **todas las claves**, incluidas las anidadas — se sacan de `properties.keys()`, recursivo). El modelo solo decide **hojas**: nombre de función y valores finales
-4. **`prompt` tampoco lo escribe el modelo** — se inyecta literal, viene del input
-5. Cerrado el detalle del hueco `name`: la comilla de cierre entra en la lista de válidos en cuanto lo ya escrito **es** un nombre completo del catálogo — no hace falta ser el único candidato (`fn_greet` puede cerrar aunque `fn_greeting` siga siendo candidato; el modelo decide cuál, y eso es acierto, no validez)
-6. Intentó una "cola de `(clave, tipo)`" para llevar el hueco pendiente — **descartada**: no explica de dónde sale la `,` entre hojas del mismo nivel ni el cierre de una `}` anidada. Se movió a construir tramos literales + huecos **dinámicamente**, recorriendo el modelo `pydantic` de la función (nunca hardcodeado por función)
-7. Aclarado: un "hueco" no es un carácter placeholder en la string — es el punto donde `Guardian` deja de inyectar y el bucle pide logits/enmascara/deja escribir al modelo. Nada se escribe ahí hasta que el modelo elige
-8. **Se cortó aquí, sin resolver:** para el valor de `a` (`number`), ¿el modelo elige libremente entre `,` y `}` como cierre, o `Guardian` ya sabe cuál de los dos toca (según si quedan más parámetros en ese nivel, dato que sale del schema) y solo deja abierto **cuándo** usarlo?
+| Carácter | Cuándo entra |
+|---|---|
+| Dígitos `0`–`9` | Siempre |
+| `.` | Solo si ya se escribió **al menos un dígito** y **no hay otro punto** en esa hoja |
+| Cierre (`,` o `}`) | Solo si ya se escribió al menos un dígito |
 
-**Pendiente, en el orden en que conviene retomarlo:**
+Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cierre sin dígito) · `{"a": .5` (el punto abre la hoja) · `{"a": 40.5.3` (dos puntos).
 
-- [ ] **Primero:** cerrar la pregunta del punto 8 — quién elige el carácter de cierre de una hoja `number`/`string`, el modelo o `Guardian`
-- [ ] Mecanismo exacto de cuándo termina un `number` (no tiene comilla de cierre como el `string` — cuántos dígitos hasta que toca ofrecer la salida)
-- [ ] Mecanismo de cuándo termina un `string` — casi no se tocó todavía
-- [ ] Representación interna de "en qué hueco estoy" tras descartar la pila y la cola simple — apunta a recorrer el modelo `pydantic` dinámicamente, pero falta la estructura concreta (¿iterador? ¿pila de iteradores para la recursión de `properties`?)
-- [ ] El caso límite del método de "sigue abierto": distinguir *"no empezó"* de *"ya terminó"* — se habló de una flag o de usar `_json_str`, sin decidir cuál
-- [ ] Firmas exactas de los tres métodos, y `@validate_call` donde toque
-- [ ] Cache de la lista blanca por estado (bonus 4) — se decidió que se pone **encima** de `get_valid_ids` sin tocarlo, cuando llegue
-- [ ] Verificar que el `prompt` inyectado literal no necesita pasar por `encode`/`decode` — es texto plano, no tokens que el modelo tenga que "ver" generándose
+**Hoja `string`:** contenido libre hasta la comilla; la comilla siempre disponible; el cierre **solo después** de la comilla.
+
+> [!success] No se fuerza el decimal — verificado en ejecución el 2026-08-27
+> Se evaluó obligar al modelo a escribir el número entrecomillado (`"40"`) para unificar todas las hojas bajo la regla de la comilla. **Descartado:** no hace falta.
+> `json.loads('{"a": 40}')` → `40` (`int`) → `pydantic` con el campo `float` → `40.0` → `json.dumps` → `{"a": 40.0}`. **El `.0` lo pone la salida, no el modelo.**
+> El punto sigue **permitido**, deja de ser **obligatorio**: si la respuesta es `0.5`, el modelo la escribe igual.
+
+> [!important] Quién pone el carácter de cierre — la pregunta que quedó cortada el 08-26
+> **`Guardian` decide cuál** (`,` si quedan más claves en ese nivel, `}` si no — dato del schema): solo uno de los dos entra en la lista blanca.
+> **El modelo decide cuándo** usarlo, y eso es justo lo que dice que el valor terminó — sin ese carácter no sabrías si tras `2` venía `2.2`.
+> Todo lo demás (claves, dos puntos, comas entre niveles, llaves de cierre de los niveles de arriba) lo **inyecta** `Guardian`, y por eso no hay nada que verificar en ello: es correcto por construcción.
+
+#### Cerrado el 2026-08-27 — la pila de posiciones y la capa de tokens
+
+> [!success] "En qué hueco estoy" — una pila, propuesta por él
+> Un contador único no basta: con un `properties` anidado, *"voy por la clave 2"* no dice de qué nivel.
+> **Solución:** una lista donde cada entrada es un nivel abierto y guarda **dos cosas** — el **nodo** del schema del que salen las claves de ese nivel (`function.parameters` arriba, `spec.properties` más adentro) y el **índice** de la clave por la que va. `push` al bajar a un `properties`, `pop` al agotar el nivel. La posición en la lista **es** el nivel, así que no se guarda aparte.
+> Llegó él: *"puede ser una lista de int. se agrega un contador cada que se baja a un nivel y cuando se cierra por completo, se le hace pop()"*. El ajuste que se le añadió: con solo el `int` hay que recorrer el schema desde la raíz en cada paso; guardando también el nodo, no.
+> ==**No es la pila que se descartó el 08-26.**== Aquella llevaba la **estructura del JSON**; esta lleva la **posición dentro del schema**. Mismo nombre, problema distinto.
+
+> [!warning] La capa de tokens — el hueco que se detectó y se cerró el mismo día
+> Todas las reglas están escritas **por carácter**, pero el modelo elige **tokens**, que traen varios caracteres pegados.
+> **Dato verificado sobre el `vocab.json` real de Qwen:** hay **1.344 tokens que contienen una comilla**, y muchos no son solo la comilla (`",` · `":` · `"]` · `")` · `."`). Congelado en `{"s": "hello`, el token `",` cerraría la string **y** escribiría la coma en un solo paso.
+> **Alivio, también verificado:** los dígitos son siempre token suelto, y **ningún** token de Qwen mezcla un dígito con `"`, `,` o `}` — en las hojas `number` el problema no aparece.
+> **La regla no es "que contenga caracteres permitidos".** Con `{"a": 40.5` el token `.5` tiene sus dos caracteres en la lista y aun así es inválido, porque el punto ya se usó.
+> ==**`Guardian` recorre el texto del token carácter a carácter, arrastrando el estado.** Si un carácter no pasa, el token entero se cae.== Las reglas por carácter no cambian: el token es un bucle por encima.
+
+> [!success] "Sigue abierto" — resuelto sin flag, propuesto por él
+> Se cuentan las **llaves abiertas** de `_json_str`. Como `_json_str` **nace con el esqueleto ya inyectado**, nunca vale `""`: el contador arranca en 1, no en 0, y el caso *"no empezó"* —que a simple vista es el mismo cero que *"ya terminó"*— **no existe**. Sin flag.
+> Caso límite anotado, sin resolver: una llave **dentro de una string** (un prompt que contenga `{`) descuadra un conteo hecho a lo bruto.
+
+> [!bug] Descartado el 2026-08-27 — dejar generar libre y verificar al final
+> Propuesta suya: inyectar el principio y desde ahí *"a la de dios"*, comprobando el formato al final. **Choca de frente con el subject**, literal: *"Prompting + esperanza no es la técnica que este proyecto evalúa"*. Generar-y-comprobar no es constrained decoding, y es la pieza que se evalúa. Retirada en el momento.
+
+#### Decisiones de implementación — 2026-08-27
+
+> [!important] Cerradas para que la guía no tenga huecos
+> Las tomó el agente a petición suya (*"debe faltar 0 por decidir, es una guía para implementar, no para pensar"*). **Se pueden revocar**: si alguna no le convence, se cambia y se regenera `block_mockup/bloque_4_guardian.pdf`.
+
+| Asunto | Decisión |
+|---|---|
+| El `prompt` cambia en cada vuelta | Método **`start(prompt)`** que reinicia `_json_str`, `_stack`, `_slot`, `_written` y `_done`. El `__init__` no se toca: vocab y catálogo no cambian entre prompts. `_done` nace en `True`, para que `is_open` sea `False` antes del primer `start` |
+| Escapado del prompt | **`json.dumps(prompt)`**, que ya devuelve la string entrecomillada y escapada |
+| ==Cómo se sabe que el JSON cerró== | **No se cuentan llaves sobre `_json_str`** — un prompt con `{` mete llaves dentro de una string y descuadra el conteo, y el prompt lo escribe el usuario. Se usa **`_done`**, que enciende 8.d al inyectar la `}` de la raíz. **Corrige lo acordado esa misma mañana** |
+| Tipo de la lista blanca | **`List[int]`** — sirve directo como índice de `numpy` en el Bloque 5 |
+| Escapado en hoja `string` | La barra invertida y los caracteres de control **no entran en la lista blanca**. Lo que no puede escribirse, no se ofrece: no hay escapado que manejar |
+| `np.int64` de `argmax` | La firma es `int`; **convierte el Bloque 5** con `int(...)`. `Guardian` no conoce `numpy` |
+| `parameters` vacío | 8.a inyecta `}}`, enciende `_done` y para. Al modelo no se le pide nada |
+| Presupuesto de tokens agotado | **Fuera de este bloque** — el bucle es del Bloque 5, `Guardian` no cuenta pasos |
+
+**Firmas cerradas:**
+
+| Método | Firma | `@validate_call` | Qué hace |
+|---|---|---|---|
+| `__init__` | `(self, vocab: Dict[str, int], reversed_vocab: Dict[int, str], functions: List[Function]) -> None` | ✅ ya puesto | Guarda vocab y catálogo; los de sesión, en reposo |
+| `start` | `(self, prompt: str) -> None` | ✅ | Monta el esqueleto y reinicia la sesión |
+| `is_open` | `(self) -> bool` | ❌ | Lo contrario de `_done` |
+| `_closing_char` | `(self) -> str` | ❌ | `,` o `}` según quede clave en el nivel |
+| `_char_ok` | `(self, char: str, escrito: str) -> bool` | ❌ | Las tres tablas de reglas. **El núcleo** |
+| `_token_ok` | `(self, texto: str) -> bool` | ❌ | Simula el token entero sobre una **copia** de `_written` |
+| `get_valid_ids` | `(self) -> List[int]` | ❌ | Recorre el vocab y filtra con `_token_ok` |
+| `add_token` | `(self, token_id: int) -> None` | ✅ | Pega el token y despacha al cierre que toque |
+| `_close_name` | `(self) -> None` | ❌ | Inyecta `, "parameters": {` y abre la primera clave |
+| `_open_key` | `(self) -> None` | ❌ | Inyecta la clave; recursivo si hay `properties` |
+| `_close_level` | `(self) -> None` | ❌ | `pop`, y encadena comas o llaves hasta la raíz |
+
+**Atributos cerrados:** `_json_str: str` · `_stack: List[Tuple[Dict[str, TypeSpec], int]]` · `_slot: Optional[str]` · `_written: str` · `_done: bool`.
+
+> [!success] Simplificación del 2026-08-27, ya en la guía
+> ==Se caen `hay_digito`, `punto_usado` y `comilla_cerrada` como atributos.== Los tres **se deducen de `_written`**: hay dígito si alguno de sus caracteres lo es · el punto se usó si está dentro · la comilla cerró si está dentro.
+> Consecuencia: la simulación de un token es **una sola string que crece**, y `_char_ok` necesita solo el carácter y esa string.
+
+> [!important] Un token no escribe nada después del cierre
+> Regla que faltaba y cierra el caso de los tokens con comilla: al simular, en cuanto un carácter cierra el hueco, **cualquier carácter posterior del mismo token lo invalida**.
+> Así `",` es **válido** en una hoja `string` cuyo cierre sea la coma —cierra contenido y hueco, y ahí acaba—, mientras que `", ` o `",\n` no lo son.
+
+#### Construcción — arrancada el 2026-08-27
+
+> [!info] Cómo se está escribiendo
+> Con `block_mockup/bloque_4_guardian.pdf` delante y el **agente conduciendo un paso por mensaje**, verificando cada paso **ejecutándolo** contra los archivos reales de `data/input/`. Mecánica completa en `Posible mejoras al sistema.md` → *`code mockup`*.
+
+| Método | Estado | Verificado con |
+|---|---|---|
+| `__init__` | ✅ | Importa y construye; los cinco de sesión nacen en reposo |
+| `start` | ✅ | Dos prompts seguidos: el segundo **pisa** al primero, no acumula. Escapado correcto con `Greet "shrek"` |
+| `is_open` | ✅ | `False` recién construido · `True` tras `start` |
+| `_closing_char` | ✅ | Con `fn_add_numbers`: en `a` da `,` y en `b` da `}` |
+| `_char_ok` | 🔵 a medias | Solo la rama `"name"`. **Falta la regla de la comilla** y las ramas `"number"` y `"string"` |
+| `_token_ok` · `get_valid_ids` · `add_token` · `_close_name` · `_open_key` · `_close_level` | ⚪ | — |
+
+**Tropiezos de la sesión, ya resueltos:** `TypeSpec` importado de `promptbuilder` en vez de `filemanager` · un `validate_calldef` inventado a partir de una errata · `+=` sobre `_json_str`, que acumularía el JSON del prompt anterior · la string del esqueleto guardada en una **variable local** en vez de en `self._json_str`.
+
+> [!success] Decisión nueva del 2026-08-27 — el atajo del nombre único, propuesto por él
+> Al escribir la rama `"name"` se le ocurrió: **si solo queda un candidato en el catálogo, se inyecta el nombre completo** en vez de dejar que el modelo lo deletree. Ahorra pasos de generación y elimina el único error posible del hueco.
+> **Condición que lo mantiene legal:** solo se aplica con `_written` **no vacío** (él propuso `> 1`, aún más conservador). El subject dice, literal (línea 310): *"The function to call should be chosen using the LLM, not with heuristics or any other sort of medieval magic"* — con al menos un carácter suyo delante, la elección ya la hizo el modelo y lo que se completa es ortografía.
+> **Dónde va:** en `add_token`, nunca en `_char_ok` (devuelve `bool`) ni en `get_valid_ids` (no toca el estado). Tras inyectar el nombre se inyecta también la comilla y se sigue directo a `_close_name`.
+> ==Pendiente de escribir.==
+
+#### Abierto en este bloque — actualizado el 2026-08-27
+
+> [!info] El camino recorrido, para no perder el hilo
+> El **08-26** salió el giro a esqueleto + huecos (puntos 1–7 del histórico: el modelo solo escribe hojas; las claves, incluidas las anidadas, salen del schema; `prompt` se inyecta literal; se descartó la cola de `(clave, tipo)`; un "hueco" es el punto donde `Guardian` deja de inyectar, no un carácter placeholder).
+> El **08-27** se cerró todo lo que quedaba — ver las dos secciones de arriba.
+
+**Resuelto el 2026-08-27:**
+
+- [x] Quién elige el carácter de cierre de una hoja — `Guardian` cuál, el modelo cuándo
+- [x] Cuándo termina un `number` — dígitos siempre, `.` con dos condiciones, cierre solo con un dígito ya escrito
+- [x] Cuándo termina un `string` — la comilla la escribe el modelo; el cierre solo después
+- [x] Representación de "en qué hueco estoy" — **pila de niveles**, cada entrada con nodo del schema + índice de clave
+- [x] El caso *"no empezó"* vs *"ya terminó"* — no existe: `_json_str` nace con el esqueleto, el contador de llaves arranca en 1. Sin flag
+- [x] La capa de tokens sobre las reglas por carácter — se valida el texto del token entero, carácter a carácter, arrastrando el estado
+
+**Pendiente:** solo un paso antes de teclear — borrar `_state` y `_stack` de `src/guardian.py`, que son del diseño viejo. Todo lo demás quedó cerrado arriba; el resto de esta lista es histórico de cómo se llegó.
+
+**Histórico de lo que estuvo abierto:**
+
+- [ ] **Primero, antes de escribir nada:** borrar `_state` y `_stack` de `src/guardian.py` — son restos del diseño con pila de estructura JSON que se descartó el 08-26. La pila vuelve, pero guardando otra cosa y con otro tipo
+- [ ] **Firmas exactas** de los tres métodos (`get_valid_ids`, `add_token`, el de "sigue abierto") y dónde va `@validate_call` además del `__init__`
+- [ ] El tipo de la lista blanca: `List[int]`, `Set[int]` o array de `numpy` — lo decide cómo la vaya a usar el Bloque 5 para poner los `-inf`
+- [ ] `np.argmax` devuelve `np.int64`, no un `int` de Python: ver qué dice `@validate_call` en `add_token` la primera vez que se corra
+- [ ] Escapado dentro de una hoja `string`: decidir si los caracteres que rompen el JSON (`"`, `\`, saltos de línea) se prohíben en la lista blanca o se manejan. Prohibirlos es defendible y se anota como decisión
+- [ ] El prompt inyectado puede traer comillas dobles — quién lo escapa al montar el esqueleto
+- [ ] Contar llaves abiertas cuando una llave viene **dentro de una string** (un prompt con `{`)
+- [ ] Función sin parámetros (`parameters` vacío): qué JSON sale y si se le pide algo al modelo
+- [ ] Qué pasa si el modelo deja el JSON a medias por agotar el presupuesto de tokens
+- [ ] Cache de la lista blanca por estado (bonus 4) — se pone **encima** de `get_valid_ids` sin tocarlo por dentro, cuando llegue
+- [x] ~~Verificar que el `prompt` inyectado necesita pasar por `encode`/`decode`~~ — **no**: `Guardian` traduce con `_vocab` y `_reversed_vocab`, que son diccionarios. El tokenizer es cosa del Bloque 5 (decisión suya, 2026-08-27: *"sería mezclar responsabilidades"*)
 
 ---
 

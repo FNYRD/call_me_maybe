@@ -23,6 +23,28 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-08-27 — NO HUBO
+
+> [!info] Sin cuestionario, por decisión suya del 2026-08-26
+> *"Para la próxima sesión sin cuestionario, arrancamos repasando lo decidido y lo que falta por decidir"* — el diseño de `Guardian` había quedado a mitad y quiso seguir ahí en vez de interrumpir con verificación.
+> **Excepción puntual.** La regla general (*"cuestionarios siempre primero"*) sigue en pie: el de la sesión siguiente ya está escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]`.
+
+**Lo que ocupó la sesión en su lugar:** cerrar el diseño del Bloque 4, escribir la guía `block_mockup/bloque_4_guardian.pdf` y arrancar la construcción de `Guardian`.
+
+**Huecos detectados mientras escribía** — todos anotados en `[[PROJECT#🎯 Lista de refuerzo]]`, ninguno preguntado en frío:
+
+| Salió al | Hueco | Cómo se cerró |
+|---|---|---|
+| Explicar `_written` | Qué es un **hueco** (`_slot`) — preguntó *"¿a qué te refieres con huecos?"* con el diseño ya cerrado | Los tres congelados puestos delante (`"name": "` · `{"a": ` · `{"s": "`) y que todo lo demás lo inyecta `Guardian` |
+| Escribir `start` | Creía que entraba el **dict** del archivo | La cadena en cuatro líneas: JSON → `FileManager` → `List[Prompt]` → `Chat` coge uno → `"Greet shrek"` |
+| Escribir `_char_ok` | De dónde sale `written` — dos preguntas seguidas | La traza de `_token_ok(".5")` con la copia creciendo `"40"` → `"40."` mientras `self._written` no se mueve |
+| Escribir `_closing_char` | Propuso hacer el `pop` dentro | Que se llama **antes** de que el modelo elija, y miles de veces por paso: haría `pop` probando tokens que no se usan |
+| Escribir `_char_ok` | Preguntó cuándo avanzan los índices de `_stack` | Los dos únicos momentos, con el JSON congelado en cada uno |
+
+**Salió limpio sin ayuda:** la regla de `_closing_char` completa (`,` si quedan claves, `}` si es la última), escrita y verificada a la primera con su catálogo real.
+
+---
+
 ## Repaso 2026-08-26 — entrada de sesión, Bloques 1-3 cerrados
 
 > [!info] 5 limpias de 6 — solo el mecanismo del `\n` en la plantilla necesitó ayuda

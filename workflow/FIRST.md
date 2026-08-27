@@ -133,16 +133,44 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-08-25
+> [!info] Estado — 2026-08-27
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 1 — diseño. **6 bloques** definidos; ==**Bloques 1, 2 y 3 CERRADOS**==
-> **Último hito:** `src/filemanager.py` y `src/promptbuilder.py` cerrados el mismo día — `flake8` y `mypy --strict` limpios, ==**195 tests verdes**== (129 + 46 + 20)
-> **En qué se estaba:** nada a medias. Los tres primeros bloques cerrados y testeados
-> **Antes de nada:** el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas, dos pedidas por él. Regla suya: *"cuestionarios siempre primero"*
-> **Después:** abrir el **Bloque 4 — Validez de tokens**. Lo propone él, y es donde nace la **máscara con pila** del bonus 7
-> **Abierto:** ==no existe `src/__main__.py`== y el subject exige `uv run python -m src` · sin `pyproject.toml` en la raíz · sin regla `lint` en el `Makefile` · ==`properties` es una suposición, no un dato del subject== · dónde se llaman `write_logs` y `write_replies` · mecanismo del bonus 3 sin decidir · el formato del prompt es una **perilla** que se mide con el Bloque 5
-> **Herramientas:** llamarlas siempre con `./callme/bin/python -m mypy` / `-m flake8`. Por su nombre suelto usan las del sistema, que no ven el venv, y salen errores falsos de `pydantic`
+> **Fase:** 1→2. **6 bloques**; ==**Bloques 1, 2 y 3 CERRADOS**== · **Bloque 4 con el diseño cerrado y la construcción arrancada**
+> **Último hito:** diseño del Bloque 4 cerrado entero, `block_mockup/bloque_4_guardian.pdf` escrita, y `__init__`, `start`, `is_open` y `_closing_char` de `Guardian` escritos por él y verificados en ejecución
+> **En qué se estaba:** `src/guardian.py`, dentro de ==`_char_ok`==, con solo la rama `"name"` y **sin la regla de la comilla de cierre**
+> **Antes de nada:** el **cuestionario** ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas. Regla suya: *"cuestionarios siempre primero"*
+> **Después:** seguir escribiendo `Guardian` con `block_mockup/bloque_4_guardian.pdf` delante. ==**Un paso por mensaje, y se verifica ejecutando, no leyendo.**== Mecánica completa en `Posible mejoras al sistema.md` → *`code mockup`*
+> **Abierto:** el **atajo del nombre único** decidido y sin escribir · ==`flake8` del venv roto otra vez== (`pycodestyle` vs Python 3.14) · no existe `src/__main__.py` ni la regla `lint` del `Makefile` · `properties` sigue siendo una suposición
+> **Herramientas:** llamarlas siempre con `./callme/bin/python -m mypy` / `-m flake8`
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
+
+
+---
+
+## Instrucción para el próximo agente — escrita el 2026-08-27
+
+> [!important] Dónde quedamos
+> Sesión de **construcción guiada** del Bloque 4. El diseño de `Guardian` se cerró **entero** —no queda ni una decisión abierta— y se empezó a escribir el código con la guía delante.
+> **Escritos por él y verificados en ejecución:** `__init__` · `start` · `is_open` · `_closing_char`.
+> **A medias:** ==`_char_ok`, con solo la rama `"name"` y **sin la regla de la comilla de cierre**==. Ese es el punto exacto donde se cortó.
+> **Decidido y sin escribir:** el **atajo del nombre único** — si tras un token solo queda un candidato en el catálogo, se inyecta el nombre completo en vez de dejar que el modelo lo deletree. Va en `add_token`, y solo con `_written` no vacío.
+
+> [!important] Por dónde empezar, en este orden
+> **1 · El cuestionario**, que ya está escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas, una por mensaje. Regla suya: *"cuestionarios siempre primero"*.
+> **2 · Seguir escribiendo `Guardian`**, retomando en `_char_ok`: cerrar la rama `"name"` con la regla de la comilla, y después `"number"` y `"string"`. La guía es `block_mockup/bloque_4_guardian.pdf`, una sección por método.
+
+> [!warning] Cómo se trabaja mientras escribe — no lo improvises
+> ==**Un paso por mensaje, y lo verificas ejecutando, no leyendo.**== Él escribe, avisa (*"ya"*, *"done"*), y tú abres el archivo, corres el trozo con los datos reales de `data/input/` y le enseñas **la salida**. Un fallo se demuestra con lo que imprime.
+> **Un solo fallo por mensaje**, y por orden: lógica primero; estilo y guards se anotan y esperan su pasada.
+> **Si pregunta qué es una variable, se lo explicas ahí mismo** — no le remitas al PDF: mientras teclea no lo está leyendo.
+> **Tú no escribes su código.** Ni cuando el paso es de una línea y va lento.
+> La mecánica completa está en `Posible mejoras al sistema.md` → *`code mockup`*.
+
+> [!bug] Con lo que te vas a tropezar
+> **`flake8` del venv está roto** — `pycodestyle` no casa con Python 3.14. No lo arregles ahora: es de la pasada de estilo.
+> Llama siempre a las herramientas con `./callme/bin/python -m ...`; por su nombre suelto usan las del sistema y salen errores falsos de `pydantic`.
+
+---
 
 *(lo rellena el agente saliente en su cierre; el detalle largo va en el briefing de `[[HANDOFF]]`)*

@@ -99,9 +99,9 @@ graph LR
 | # | Bloque | Diseño | Implementación | Tests |
 |---|---|---|---|---|
 | 1 | Tokenizer | ✅ | ✅ | ✅ |
-| 2 | I/O de archivos | ⚪ | ⚪ | ⚪ |
-| 3 | Construcción del prompt | ⚪ | ⚪ | ⚪ |
-| 4 | Validez de tokens | ⚪ | ⚪ | ⚪ |
+| 2 | I/O de archivos | ✅ | ✅ | ✅ |
+| 3 | Construcción del prompt | ✅ | ✅ | ✅ |
+| 4 | Validez de tokens | ✅ | 🔵 | ⚪ |
 | 5 | Bucle de generación | ⚪ | ⚪ | ⚪ |
 | 6 | `Chat` orquestador | ⚪ | ⚪ | ⚪ |
 
@@ -109,6 +109,13 @@ graph LR
 
 > [!note] Se actualiza al cerrar cada bloque
 > Este archivo es la vista rápida. La fuente de verdad sigue siendo `[[PROJECT]]`.
+
+> [!success] Bloques 2 y 3 — cerrados (2026-08-25)
+> `src/filemanager.py` con los seis métodos y los tres getters (**46 tests**), y `src/promptbuilder.py` con la plantilla de chat de Qwen y el catálogo en JSON (**20 tests**). `flake8` y `mypy --strict` limpios en los dos.
+
+> [!info] Bloque 4 — en construcción (2026-08-27)
+> **Diseño cerrado del todo:** esqueleto + huecos, sin pila de estructura JSON. El modelo solo escribe **hojas** —nombre de función y valores—; el resto lo inyecta `Guardian`.
+> Guía de construcción en `block_mockup/bloque_4_guardian.pdf`, una sección por método. Escritos y verificados `__init__`, `start`, `is_open` y `_closing_char`; `_char_ok` a medias.
 
 > [!success] Bloque 1 — dónde va (2026-08-17)
 > **Construcción cerrada** en `src/tokenizer.py`: `encode` y `decode` completos, con el bucle de fusiones de BPE y los 26 tokens especiales cargados de `added_tokens`.
