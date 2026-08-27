@@ -41,9 +41,10 @@ class Guardian:
     def _char_ok(self, text: str, candidate2add: str) -> bool:
         match self._slot:
             case "name":
-                if sum(
-                    1 for function_name in self._functions
-                    if function_name.startswith(candidate2add)):
+                if any(
+                    function_name.startswith(candidate2add)
+                    for function_name in self._functions
+                    ):
                         return True
                 return False
             
