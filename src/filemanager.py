@@ -76,8 +76,8 @@ class FileManager:
         if (self._logs["prompts"] or self._logs["files"]) and not self._n_logs:
             log_path: Path = Path("logs/logs.json")
             log_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(log_path, "w", encoding="utf-8") as archivo:
-                json.dump(self._logs, archivo, ensure_ascii=False, indent=4)
+            with open(log_path, "w", encoding="utf-8") as file:
+                json.dump(self._logs, file, ensure_ascii=False, indent=4)
             self._n_logs = 1
 
     def charge_replies(
@@ -87,8 +87,8 @@ class FileManager:
 
     def write_replies(self) -> None:
         if not self._n_replies:
-            with open(self._output_path, "w", encoding="utf-8") as archivo:
-                json.dump(self._replies, archivo, ensure_ascii=False, indent=4)
+            with open(self._output_path, "w", encoding="utf-8") as file:
+                json.dump(self._replies, file, ensure_ascii=False, indent=4)
             self._n_replies = 1
 
     def get_logs(self) -> Dict[str, List[Dict[str, str]]]:

@@ -23,7 +23,7 @@ graph TD
     B1["<b>1 · Tokenizer</b><br/>texto ↔ token ids"]
     B2["<b>2 · I/O de archivos</b><br/>leer, validar, escribir"]
     B3["<b>3 · Construcción del prompt</b><br/>plantilla del modelo"]
-    B4["<b>4 · Validez de tokens</b><br/>FSM · PDA · lista blanca"]
+    B4["<b>4 · Validez de tokens</b><br/>esqueleto + huecos · lista blanca"]
     B5["<b>5 · Bucle de generación</b><br/>logits · máscara · argmax"]
     B6["<b>6 · Chat — orquestador</b><br/>recorre los N prompts"]
 
@@ -101,7 +101,7 @@ graph LR
 | 1 | Tokenizer | ✅ | ✅ | ✅ |
 | 2 | I/O de archivos | ✅ | ✅ | ✅ |
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
-| 4 | Validez de tokens | ✅ | 🔵 | ⚪ |
+| 4 | Validez de tokens | ✅ | ✅ | ✅ |
 | 5 | Bucle de generación | ⚪ | ⚪ | ⚪ |
 | 6 | `Chat` orquestador | ⚪ | ⚪ | ⚪ |
 
@@ -113,9 +113,15 @@ graph LR
 > [!success] Bloques 2 y 3 — cerrados (2026-08-25)
 > `src/filemanager.py` con los seis métodos y los tres getters (**46 tests**), y `src/promptbuilder.py` con la plantilla de chat de Qwen y el catálogo en JSON (**20 tests**). `flake8` y `mypy --strict` limpios en los dos.
 
-> [!info] Bloque 4 — en construcción (2026-08-27)
-> **Diseño cerrado del todo:** esqueleto + huecos, sin pila de estructura JSON. El modelo solo escribe **hojas** —nombre de función y valores—; el resto lo inyecta `Guardian`.
-> Guía de construcción en `block_mockup/bloque_4_guardian.pdf`, una sección por método. Escritos y verificados `__init__`, `start`, `is_open` y `_closing_char`; `_char_ok` a medias.
+> [!success] Bloque 4 — cerrado (2026-08-31)
+> **`src/guardian.py` completo y verificado:** once métodos, **64 tests verdes**, `flake8` y `mypy --strict` limpios.
+> Los tests los escribió un **agente ciego** que nunca abrió `src/`. De sus 5 rojos salieron **dos errores reales del código** —el cero a la izquierda y el cierre tras un punto—, los dos en la rama `number` de `_char_ok` y corregidos por él.
+> **Diseño:** esqueleto + huecos, sin pila de estructura JSON. El modelo solo escribe **hojas** —nombre de función y valores—; el resto lo inyecta `Guardian`.
+> ==El contrato en PDF se borró al cerrar el bloque, por decisión suya.==
+
+> [!important] Método refundado (2026-08-31)
+> El ciclo de un bloque: **lista de requisitos cerrada** → **él teclea y el agente verifica ejecutando** → **contrato escrito después** → **agente de tests ciego** → **él diagnostica los rojos** → **correcciones entre los dos** → **tres pasadas y cierre**.
+> ==Los nombres, atributos y firmas ya no se cierran en el diseño: salen mientras se escribe.== Detalle en `[[SYSTEM]]`, plantilla del PDF en `[[contract]]`.
 
 > [!success] Bloque 1 — dónde va (2026-08-17)
 > **Construcción cerrada** en `src/tokenizer.py`: `encode` y `decode` completos, con el bucle de fusiones de BPE y los 26 tokens especiales cargados de `added_tokens`.

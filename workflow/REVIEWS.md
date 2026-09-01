@@ -23,6 +23,49 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-08-31 — entrada de sesión, `Guardian` implementada y sin tests
+
+> [!info] 4 limpias de 5 · una pregunta retirada por mal redactada
+> El cuestionario traía **seis**. La **2** —qué comparten catálogo y prompts en `_load_json`— la retiró el agente tras cortarla él (*"esa pregunta es muy estúpida, paso"*): se contestaba leyendo el `if`/`elif` que se le había puesto delante en el mismo mensaje. ==Tenía razón: una pregunta cuya respuesta está en el artefacto que la acompaña no mide nada.==
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 3 | **`str.isdigit()` y los superíndices.** Los tokens los identificó (*"los tokens de números minúsculos"*), pero dijo que fallaría **`pydantic`** | Se le puso el `raw` congelado con `40²` dentro y las dos líneas separadas —`json.loads(raw)` y `Reply.model_validate(d)`— preguntando en cuál revienta. Contestó `json.loads` a la primera. **Revienta antes de llegar a `pydantic`** | Bloque 4 |
+| 5 | **Contrato sin pasos numerados: el lado del implementador.** Dio entera la razón del que testea (*"que ninguno tuviera manera de hacer trampa… ni testar basado en lo que existe"*), pero del implementador no dijo nada | Se le puso el mismo requisito en dos formas —paso numerado `4.b` vs invariante— y se preguntó qué trabajo le queda con el paso delante. Dijo *"no sé, tu pregunta es confusa"* → directo: **ninguno, transcribir**; y si el paso está mal, el código sale mal sin que nadie lo note. Es lo que él mismo nombró el 08-29 escribiendo `_char_ok`: *"es casi copiar código"* | Sistema |
+
+> [!success] Correcto sin ayuda
+> **`copia` vs `self._written` en la simulación** — con la traza de `_token_ok` delante contestó *"`self._written = "40"` y copia `"40."`, aún no aprobamos el 5"*. ==Cae por fin: llevaba dos fallos, 08-27 y 08-29.== · **El atajo del nombre único** — *"debe elegir por lo menos la mínima cantidad de caracteres para que la única opción que quede sea 1, de esa manera él la eligió, nosotros autocompletamos"* · **Por qué el agente de tests no abre `src/`** — *"testaría basado en código, no sería una caja negra de test"*.
+
+> [!note] Lo que confirmó el formato
+> Las tres limpias tenían **un artefacto congelado delante** —la traza de `_token_ok`, el `raw` con `40²`, el enunciado de la regla—. La única que hubo que dar directa (la 5) estaba planteada como comparación abstracta entre dos formas de escribir un contrato. Mismo patrón que el 08-29, ya en `[[PSYCHOLOGY]]`.
+
+---
+
+## Repaso 2026-08-29 — entrada de sesión, `Guardian` a medias
+
+> [!info] 3 limpias de 6
+> Sesión corta, con la meta puesta en terminar la clase. Las tres limpias son sobre **lo que él escribió ayer**; los tres fallos, sobre **lo que aún no ha tecleado** — mismo patrón ya registrado: lo que está en código sobrevive, lo que solo se habló, no.
+
+**Fallos:**
+
+| # | Fallo | Corrección | Tema |
+|---|---|---|---|
+| 1 | **Qué recibe `start`.** El tipo lo acertó (`str`), pero dijo que el contenido era `{"prompt": "Greet shrek"}` entero | Se **ejecutó su propio `start`** con esa entrada: salió `{"prompt":"{\"prompt\": \"Greet shrek\"}", "name": "`. Comparado con el `_json_str` de la pregunta 1, lo corrigió solo: entra `"Greet shrek"` | Bloque 4 |
+| 2 | **Quién deshace el dict.** Contestó *"el bloque siguiente, que lo va a llamar por prompt"* (quién lo pasa, no quién lo deshizo), y después señaló `json.dumps` dentro de `start` | Se ejecutó `src/filemanager.py:48` por partes: `json.load` → `dict`, `validate_python` → `Prompt`, `.prompt` → `str`. **Lo deshizo `pydantic` en el Bloque 2**; `json.dumps` corre después y solo escapa | Bloque 2 |
+| 3 | **`written` vs `self._written`.** Con `self._written = "40"` y el token `".5"`, dijo que en la segunda llamada `written` valía `"40"` | Dijo *"no entiendo"* dos veces → directo: `written = "40."` (la copia ya creció con el punto) y `self._written = "40"`, que no se mueve hasta `add_token` | Bloque 4 |
+| 4 | **Por qué `_closing_char` no hace `pop`.** El "no" lo tenía, pero la razón fue *"decidimos dejar esa responsabilidad a otra función"* — la regla, no la causa | Dijo *"no entendí la pregunta"* → directo: `get_valid_ids` prueba ~151.000 tokens por paso y consulta el cierre en cada uno; **solo uno se escribe**. Un `pop` ahí desmontaría la pila 151.000 veces por paso | Bloque 4 |
+
+> [!success] Correcto sin ayuda
+> **Modelo vs `Guardian` en un `_json_str` congelado** — señaló `fn_greet`, la **comilla de cierre** y el `4`, todo lo demás inyectado. Es la pregunta que el 08-27 no supo ni formular (*"¿a qué te refieres con huecos?"*) · **El `+=` en `start`** — *"el prompt anterior"* quedaría pegado delante, sin lanzar error · **La regla que falta en `_char_ok`** — con `written = "fn_greet"` y catálogo `fn_greet`/`fn_greeting`, su código **no** aprueba la comilla.
+
+> [!warning] Se quejó de la redacción de las preguntas
+> *"estas preguntas están saliendo mal porque no sabes redactarlas. las redactas como una máquina y yo no lo soy… realmente me confundo mucho con tus preguntas"*.
+> Lo que sí funcionó fue **poner la traza delante** (la copia creciendo línea a línea) y **ejecutar su propio código** en vez de describir el escenario en prosa. Anotado en `[[PSYCHOLOGY]]`.
+
+---
+
 ## Repaso 2026-08-27 — NO HUBO
 
 > [!info] Sin cuestionario, por decisión suya del 2026-08-26

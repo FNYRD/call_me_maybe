@@ -18,22 +18,20 @@ tags: [42, proyecto]
 
 ## 🗺️ Mapa de flujo
 
-> [!info] Dónde estamos
-> **Fase actual:** `FASE 1` — diseño. Arrancada el 2026-08-10
-> **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**, todos cerrados por el estudiante
-> **Hecho en Fase 1:** lista de **responsabilidades sueltas completa** (14 obligatorias + 7 de bonus) · **6 bloques identificados y ordenados** por dependencia · ==**Bloques 1, 2 y 3 cerrados**== — `src/tokenizer.py` (08-24), `src/filemanager.py` y `src/promptbuilder.py` (08-25), los tres con `flake8` y `mypy --strict` limpios y **195 tests verdes** en total
-> **Siguiente paso:** seguir **escribiendo `Guardian`** con la guía delante. Van escritos y verificados en ejecución `__init__`, `start`, `is_open` y `_closing_char`; ==`_char_ok` está a medias, solo el caso `"name"`==
-> **Guía de construcción del Bloque 4:** `block_mockup/bloque_4_guardian.pdf` — **una sección por método**, con firma, qué recibe, qué devuelve y pasos. Cero decisiones abiertas. Escrita el 2026-08-27 a petición suya
-> **Cómo se está trabajando desde el 2026-08-27:** el agente **conduce paso a paso** y **verifica ejecutando**, no leyendo. Un paso por mensaje. La mecánica completa está en `Posible mejoras al sistema.md` → *`code mockup`*
-> **Del Bloque 1 no queda nada abierto** — ver `[[PROJECT#Las tres pasadas de revisión — cerradas el 2026-08-24]]`
-> **Requisito recuperado del subject el 2026-08-18:** *"All classes must use pydantic for validation"* (IV.3.1, literal). Aplicado ya al `Tokenizer` con `@validate_call` + `FilePath`; **todas las clases siguientes nacen con él**
-> **Diferido a la fase de tests:** la **hoja de evaluación** y la estrategia de medición del 90% — decisión suya, 2026-08-17. Razón: el test que zanja el Bloque 1 es `assert mi_ids == sdk_ids`, que no necesita medir acierto. Se retoma al montar los tests, y **ahí se decide qué se mantiene**
+> [!info] Dónde estamos — actualizado el 2026-08-31
+> ==**Método refundado el 2026-08-31.**== El ciclo de un bloque queda: **lista de requisitos cerrada** → **él teclea y el agente verifica ejecutando** → **contrato en PDF escrito después** → **agente de tests ciego** → **él diagnostica los rojos** → **correcciones entre los dos** → **tres pasadas y cierre**. Detalle en `[[SYSTEM#FASE 2 — CONSTRUCCIÓN (por bloque)]]`; la plantilla del PDF, en `[[contract]]`.
+> **Fase actual:** `FASE 2` — construcción
+> **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**
+> **Bloques cerrados:** ==**1, 2, 3 y 4**== — `src/tokenizer.py` (08-24), `src/filemanager.py` y `src/promptbuilder.py` (08-25), `src/guardian.py` (08-31). Los cuatro con `flake8` y `mypy --strict` limpios y **259 tests verdes** en total
+> **Siguiente paso:** ==**Bloque 5 — bucle de generación**==, empezando por su **lista de requisitos**. No se teclea nada hasta cerrarla
+> ==**El `flake8` del venv ya no está roto**== — el culpable era `flake9`, un fork viejo instalado en `callme/` que rompía el plugin de `pycodestyle`. Desinstalado y `flake8` reinstalado el 08-31. **No era Python 3.14**
+> **Requisito del subject, vigente:** *"All classes must use pydantic for validation"* (IV.3.1, literal)
+> **Diferido a la fase de tests final:** la hoja de evaluación y la estrategia de medición del 90%
 > **Vista rápida de los bloques:** `[[FLOW]]`
 > **Bloqueos abiertos:** ninguno
-> **Al abrir sesión:** lanzar el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — una pregunta por mensaje
-> **Alcance:** se van a implementar **los 9 bonus** (decisión del estudiante, 2026-08-07) — ver `[[PROJECT#Alcance — bonus]]`
-> **Arrastrado a Fase 2:** reforzar los **imports relativos** del Tema 3 en el momento en que aparezca el primero, sin esperar a que él lo pida
-> **A reforzar:** todo lo pendiente está en una sola tabla — `[[PROJECT#🎯 Lista de refuerzo]]`. El histórico de los repasos vive en `[[REVIEWS]]` y **no se lee** salvo que haga falta
+> **Al abrir sesión:** el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — una pregunta por mensaje
+> **Alcance:** los **9 bonus** — ver `[[PROJECT#Alcance — bonus]]`
+> **A reforzar:** todo lo pendiente está en `[[PROJECT#🎯 Lista de refuerzo]]`. El histórico vive en `[[REVIEWS]]` y **no se lee**
 
 ```mermaid
 graph LR
@@ -53,11 +51,19 @@ graph LR
 | ↳ | *cerrado el 08-25: los seis métodos y los tres getters escritos, 46 tests verdes, `mypy --strict` limpio* | | | |
 | 3 — Construcción del prompt | Plantilla de chat y tokens especiales del modelo | ✅ | Catálogo + prompt del usuario | Un string listo para tokenizar |
 | ↳ | *cerrado el 08-25: `PromptBuilder` con la plantilla de Qwen y el catálogo en JSON, 20 tests verdes* | | | |
-| 4 — Validez de tokens | FSM/PDA + schema + cache de lista blanca | 🔵 | Estado del JSON y schema | Ids permitidos en ese estado |
+| 4 — Validez de tokens | Esqueleto inyectado + huecos, lista blanca por token | ✅ | Estado del JSON y schema | Ids permitidos en ese estado |
+| ↳ | *cerrado el 08-31: **64 tests verdes** escritos por un agente ciego, `flake8` y `mypy --strict` limpios, las tres pasadas hechas salvo docstrings* | | | |
 | 5 — Bucle de generación | Logits, máscara, `argmax`, parada, validación `pydantic` | ⚪ | Todo lo anterior | Un resultado por prompt |
 | 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | ⚪ | Los bloques ya construidos | N resultados + registro de fallos |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
+
+> [!bug] Decisión abierta del `[[PROJECT#Bloque 6 — `Chat` orquestador|Bloque 6]]` — anotada el 2026-08-31
+> **Un prompt vacío (`""`) no tiene respuesta posible**, y hoy no lo filtra nadie: el `FileManager` rechaza el **catálogo** vacío (`raise ValueError("Function's file is empty")`) pero no pone guard a los prompts —decisión suya del 08-24— y `""` es un `str` válido para el modelo `Prompt`. `Guardian` tampoco lo juzga: `start` recibe un `str` y monta el esqueleto, sin mirar el contenido.
+> **Consecuencia si nadie lo filtra:** el modelo elige función a ciegas y sale una llamada **válida en formato pero inventada**.
+> **Salida propuesta, sin cerrar:** es un **fallo de prompt** —tiene índice—, así que va a `logs/logs.json` bajo la clave `prompts`, y quien lo atrapa es `Chat`. Mismo camino que un prompt que revienta dentro del tokenizer.
+> **Lo que NO se toca por esto:** el contrato del Bloque 4. `start("")` sigue aceptado — filtrar es del orquestador, no del `Guardian`.
+> *(salió al proponer el test 3 del Bloque 4, que cubre `start("")` como borde declarado)*
 
 > [!note] Se actualiza al cerrar cada bloque
 > Las flechas del diagrama llevan **qué le entrega un bloque al siguiente**. Sin eso el diagrama solo muestra orden; con eso muestra el contrato entre bloques.
@@ -107,7 +113,7 @@ graph LR
 | **Mecánica del `\n` en la plantilla** — qué hace el `findall` distinto con `"system You"` frente a `"system\nYou"` | 🔍 08-26 | 🟡 | Dio la razón general (*"así es como el modelo aprendió a usar las plantillas"*), correcta pero sin el mecanismo — *"no recuerdo"* al pedirle el `findall`. Directo: con espacio, `"You"` sale con `Ġ` pegado; con `\n`, el patrón corta ahí y sale sin `Ġ`, otro id. Engancha con la pre-tokenización del Bloque 1, ya trabajada varias veces — reforzar con el mismo formato que funcionó ahí: dos salidas del `findall` puestas al lado |
 | **Las dos familias de fallo del log** — por qué el fichero ausente no puede ir en `prompts` | ❌ 08-24 · ❌ 08-25 | ✅ 08-26 | **08-26, sin ayuda (`[]` en `function_calling_tests.json`):** *"output con `[]` y logs no"* — sabe que sin fallos no hay `logs/logs.json`. Acertó la clave (`files`) y en el porqué dijo *"no sé"* → directo: **no hay índice que poner**, el fichero revienta antes de que exista el array de prompts. Ese nivel de fuera lo añadió él el 08-18 · **08-25, segunda vez:** la clave otra vez bien, el porqué otra vez circular. Con la entrada delante dijo *"ninguno porque no tiene"*, y al preguntarle **en qué momento revienta** lo cerró solo y mejor: *"lanza error en `FileManager` al instanciar, con `validate_call` y `FilePath`"* |
 | **`charge_logs` vs `write_logs`** — quién acumula y quién abre el archivo | ❌ 08-24 · ❌ 08-25 | ✅ 08-26 | **08-26, sin ayuda:** distinguió que con `[]` no hay fallos que loguear, así que `write_logs` no se dispara — la asimetría con `write_replies` (que sí escribe siempre) ya la tiene clara · **08-25:** el número de aperturas ya lo tenía — *"1, porque primero se registra todo en el atributo y solo al final, caso existan logs, se abre"*— pero adjudicó el `open` a `Chat`. Lo cerró poner los dos métodos **con la clase delante** (`class FileManager:`) y preguntar quién ejecuta el `open`. **Lo que se le iba era de qué clase es el método, no el mecanismo** |
-| **Qué comparten `validate_functions` y `validate_prompts`** — `_load_json` privado | ❌ 08-24 | 🔴 | *"no recuerdo"* → directo: se comparte **leer** (`open` + `json.load` + los dos guards); no se comparten **las reglas**, porque el catálogo mira `name`/`description`/`parameters`/`returns` y los prompts `{"prompt": str}` |
+| **Qué comparten `validate_functions` y `validate_prompts`** — `_load_json` privado | ❌ 08-24 | 🔴 | **08-31: pregunta retirada, no fallada.** Se le puso el cuerpo de `_load_json` delante con su `if`/`elif` y se le pidió señalar el `if`/`elif` — se contestaba leyendo. Cortó con *"esa pregunta es muy estúpida, paso"* y tenía razón. **Volver a preguntarlo sin el cuerpo delante**, o no preguntarlo | *"no recuerdo"* → directo: se comparte **leer** (`open` + `json.load` + los dos guards); no se comparten **las reglas**, porque el catálogo mira `name`/`description`/`parameters`/`returns` y los prompts `{"prompt": str}` |
 
 | **`FilePath` vs `Path` vs `str`** — cuál exige que el archivo exista | 🔍 08-24 | 🟡 | Enseñado ejecutando: la misma ruta inexistente pasa por `Path` y la rechaza `FilePath` (`path_not_file`). Y `Path(...).parent` da la carpeta lista para `mkdir`, donde su `split("/")` daba una lista que hay que reunir. Preguntar con la ruta de salida la primera vez que se corre el programa |
 | **Qué hace `@validate_call`** — sin él la anotación no comprueba nada, y valida **antes** del cuerpo | 🔍 08-24 · ❌ 08-25 · 🙋 08-25 | ✅ 08-26 | **08-26, sin ayuda:** con la función del `print("ENTRE AL CUERPO")` delante, contestó directo que **no** se imprime — ya tiene el momento, no solo el hecho de que falla · **08-25:** sabía que revienta, pero dijo que revienta **después** de entrar al cuerpo. Se ejecutó y se vio: `ValidationError: path_not_file` y **el `print` no salió** |
@@ -115,11 +121,19 @@ graph LR
 
 | **Qué valida `pydantic` y qué no** — tipo y forma sí; contenido del archivo no | 🔍 08-18 | ✅ 08-24 | **08-24, sin ayuda:** con el `vocab.json` que existe y contiene `{}` fue directo a su propio `except ValueError: raise ValueError("Vocabulary's file empty")`. `FilePath` cubre existencia; *vocab vacío*, *JSON corrupto* y *falta la clave del patrón* siguen siendo de sus guards |
 
-| **Qué es un "hueco" (`_slot`)** — los tres únicos puntos donde escribe el modelo | ❌ 08-27 | 🔴 | Preguntó *"¿a qué te refieres con huecos?"* con el diseño ya cerrado. Se le dieron los tres congelados (`"name": "` · `{"a": ` · `{"s": "`) y que todo lo demás lo inyecta `Guardian`. **Preguntar señalando un `_json_str` a medias**: *"¿aquí le toca al modelo o inyectas tú?"* |
-| **Qué entra a `start`: un `str`, no el `dict` del archivo** | ❌ 08-27 | 🟡 | Dijo *"lo que entra es el dict, ¿no?"*. Lo desbloqueó la cadena entera puesta en cuatro líneas: el JSON → `FileManager` → `List[Prompt]` → `Chat` coge uno → `"Greet shrek"`. **`pydantic` ya deshizo el dict en el Bloque 2** |
-| **De dónde sale `written` en `_char_ok`** — lo pasa quien llama, no se lee del atributo | ❌ 08-27 | 🟡 | Dos preguntas seguidas (*"¿recibe written?"*, *"¿el contexto viene de dónde?"*). Lo cerró la traza de `_token_ok(".5")` con la copia creciendo `"40"` → `"40."` mientras `self._written` no se mueve. **Preguntar por qué es un parámetro y no `self._written`** |
+| **Qué es un "hueco" (`_slot`)** — los tres únicos puntos donde escribe el modelo | ❌ 08-27 | ✅ 08-29 | **08-29, sin ayuda:** con `{"prompt": "Greet shrek", "name": "fn_greet", "parameters": {"a": 4` delante señaló `fn_greet`, la **comilla de cierre** y el `4` como del modelo, y todo lo demás inyectado. · El 08-27 preguntó *"¿a qué te refieres con huecos?"* con el diseño ya cerrado. **Lo que lo arregló fue preguntar señalando un `_json_str` congelado**, nunca en abstracto |
+| **Qué entra a `start`: un `str`, no el `dict` del archivo** | ❌ 08-27 · ❌ 08-29 | 🟡 | **08-29, segunda vez:** el **tipo** ya lo tiene (`str`), pero dijo que el contenido era `{"prompt": "Greet shrek"}` entero. Lo corrigió solo al **ejecutar su propio `start`** con esa entrada y ver salir `{"prompt":"{\"prompt\": \"Greet shrek\"}", "name": "`. **Preguntar por el contenido, ya no por el tipo — y con la salida de su `start` delante** · El 08-27 dijo *"lo que entra es el dict, ¿no?"*. Lo desbloqueó la cadena entera en cuatro líneas: el JSON → `FileManager` → `List[Prompt]` → `Chat` coge uno → `"Greet shrek"` |
+| **De dónde sale `written` en `_char_ok`** — lo pasa quien llama, no se lee del atributo | ❌ 08-27 · ❌ 08-29 | ✅ 08-31 | **08-31, sin ayuda y a la primera:** con la traza de `_token_ok` delante contestó *"`self._written = "40"` y copia `"40."`, aún no aprobamos el 5"*. Lo que funcionó fue **poner su bucle y el estado congelado**, no describir el escenario · **08-29, segunda vez y con dos *"no entiendo"*:** con `self._written = "40"` y el token `".5"`, dijo que en la segunda llamada `written` valía `"40"`. Es `"40."` — la copia ya creció. Se dio directo. **Se re-pregunta cuando `_token_ok` esté escrito, no antes** · El 08-27 lo cerró la traza con la copia creciendo `"40"` → `"40."` mientras `self._written` no se mueve |
 | **Cuándo avanza el índice de un nivel de `_stack`** | 🙋 08-27 | 🟡 | Preguntó *"¿esos índices avanzan a medida de qué?"*. Son dos momentos y solo dos: cuando el modelo cierra con `,` y quedan claves, y cuando se vuelve de un nivel anidado. **Nunca lo mueve el modelo** |
-| **`_closing_char` informa, no muta** — el `pop` vive en `_close_level` | ❌ 08-27 | 🟡 | Preguntó *"si devuelvo `}` ahí mismo hago pop, ¿no?"*. La razón que lo cierra: `_closing_char` se llama desde `get_valid_ids`, **antes** de que el modelo elija, y miles de veces por paso; si hiciera `pop` desmontaría la pila probando tokens que no se usan |
+| **`_closing_char` informa, no muta** — el `pop` vive en `_close_level` | ❌ 08-27 · 🟡 08-29 | 🟡 | **08-29, a medias:** el *"no puede hacer `pop`"* salió limpio, pero la razón fue *"decidimos dejar esa responsabilidad a otra función"* — la regla, no la causa. Directo tras *"no entendí la pregunta"*: `get_valid_ids` prueba ~151.000 tokens por paso consultando el cierre en cada uno, y **solo uno se escribe**. **Preguntar por el número de llamadas, no por quién hace el `pop`** |
+| **Quién deshace el `dict` del archivo** — `pydantic` en el Bloque 2, no el bloque que llama | ❌ 08-29 | 🟡 | Contestó *"el bloque siguiente, que lo va a llamar por prompt"* —quién lo **pasa**, no quién lo **deshizo**— y luego señaló el `json.dumps` de `start`, que corre después y solo escapa. Se ejecutó `src/filemanager.py:48` por partes: `json.load` → `dict` · `validate_python` → `Prompt` · `.prompt` → `str`. **Preguntar con el `type()` de lo que devuelve `get_prompts` delante** |
+| **`str.isdigit()` no vale para validar un dígito de JSON** | 🔍 08-29 · ❌ 08-31 | 🟡 | **08-31, a medias:** los tres tokens los tiene (*"los de números minúsculos"*), pero situó el fallo en **`pydantic`**. Lo cerró separar las dos líneas —`json.loads(raw)` y `Reply.model_validate(d)`— y preguntar en cuál revienta: `json.loads`, antes de llegar a pydantic. **Preguntar por dónde revienta, ya no por qué tokens** · Encontrado ejecutando: da `True` para `²`, `³`, `¹`, que están en el vocabulario de Qwen como tokens sueltos. Preguntar **con la lista blanca real delante** (13 tokens con `4` escrito), nunca en abstracto |
+| **Dónde revienta un JSON con un número mal formado** — `json.loads`, no `pydantic` | ❌ 08-31 | 🟡 | Los tokens `²`,`³`,`¹` los tiene; el punto de fallo no. Lo cerró separar las dos líneas —`json.loads(raw)` y `Reply.model_validate(d)`— y preguntar en cuál revienta. **Preguntar por el orden de las dos llamadas, nunca por si falla** |
+| **Un número se acumula entre pasos, no llega como token** | ❌ 08-31 | ✅ 08-31 | Sostuvo que `07` no podía salir *"porque el modelo da dígito por dígito"*. Lo cerró la traza de dos pasos (`_written=""` → `"0"` → `"07"`) y la salida real del rojo. **El token es de un carácter; el número es lo acumulado** |
+| **Quitar un permiso vs añadir otro** — cómo se corrige una lista blanca | 🔍 08-31 | ✅ 08-31 | Al arreglar el cero a la izquierda añadió una rama que **permitía** en vez de restringir la que ya daba el paso. Lo cerró ejecutar su propia rama y enseñarle `text='0' + '7' -> True`. **Ante un permiso de más, la corrección quita, no añade** |
+| **Contrato sin pasos numerados — el lado del que implementa** | ❌ 08-31 | 🟡 | El lado del que **testea** lo tiene entero (*"ninguno tuviera manera de hacer trampa, ni prepararse para los tests, ni testar basado en lo que existe"*). Del implementador dijo *"no sé, tu pregunta es confusa"* → directo: con el paso numerado delante no le queda **ningún** trabajo, transcribe; y si el paso está mal, el código sale mal sin que nadie lo revise. Es lo que él nombró el 08-29: *"es casi copiar código"*. **La pregunta que falló comparaba dos redacciones en abstracto — reformular con un método concreto suyo** |
+| **Qué es una invariante** y en qué se diferencia de un caso de test | 🔍 08-29 | 🔴 | Sin preguntar. Salió al escribir el contrato. Una invariante se contrasta contra el **universo entero**; un caso es un punto suelto. Preguntar con una de las 16 del contrato delante |
+| **Cache de la lista blanca** — explicado otra vez el 08-29 | ❌ 08-11 · 🙋 diferir · 🔍 08-29 | ⏸️ | Se le volvió a explicar hoy al salir en el contrato: **clave** = tipo de hueco + lo escrito + cierre admisible, **valor** = lista de ids. Preguntó *"¿cache de qué? ¿de respuesta?"* — no lo confundía con el modelo, pero tampoco lo tenía. **Sigue diferido al bonus 4** |
 | **`startswith` vs `in`** — prefijo, no contención | 🔍 08-27 | ✅ 08-27 | Lo pidió directo y cortó la explicación de más: *"aquí sirve `.startswith` y ya"*. Tenía razón |
 
 > [!warning] Regla de reincidencia
@@ -137,6 +151,81 @@ graph LR
 > **Cómo se construye:** mitad de la `[[PROJECT#🎯 Lista de refuerzo]]` (lo que está en 🔴), mitad de lo trabajado en la sesión que se cierra.
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
+
+### Para la sesión siguiente al 2026-08-31
+
+> [!info] Seis preguntas — dos de los 🔴/🟡 de hoy, cuatro del método nuevo
+> Sesión mixta: se cerró el Bloque 4 con el agente de tests y se refundó el sistema entero. Las cuatro últimas son **sobre decisiones suyas de hoy**, no sobre lo que se le explicó.
+
+1. Congelado en una hoja `number`, con `self._written` valiendo `"0"`, llega el token `"7"`. Tu rama es esta:
+
+```python
+elif candidate2add in DIGITS and text != "0":
+    return True
+```
+
+   ¿Entra el `7`? ¿Y qué habría pasado con la rama que escribiste antes, `elif candidate2add == "0" and text:`? *(refuerzo — hoy corrigió añadiendo un permiso donde había que quitar uno. **Ponerle las dos ramas delante**, no describirlas)*
+
+2. Tienes este JSON ya cerrado, con `40²` dentro:
+
+```python
+d = json.loads(raw)          # línea A
+Reply.model_validate(d)      # línea B
+```
+
+   ¿En cuál de las dos revienta, y por qué la otra no llega a ejecutarse? *(refuerzo 🟡 — el 08-31 dijo `pydantic`; es `json.loads`)*
+
+3. El agente de tests escribió 43 tests y sacó 5 rojos. Uno era del código, uno del contrato y tres del test. Dame el criterio: ¿qué tiene que pasar para que un rojo sea **del test** y no del código? *(lo de hoy — la respuesta: el caso no puede darse en ejecución, o el `assert` espera algo que el contrato no promete)*
+
+4. Decidiste que el contrato se escriba **después** de que la clase exista. ¿Qué gana y qué se arriesga con eso? *(lo de hoy — gana que deja de mentir; arriesga que la implementación se cuele dentro y el que testea deje de ser ciego)*
+
+5. Un test miraba 8 de 150.134 candidatos y ahora los mira todos, en 7 segundos. ¿Qué cambió en cómo está montado el test? *(lo de hoy — antes recorría muchos caminos mirando pocos candidatos por paso; ahora congela un estado y recorre su lista entera)*
+
+6. En el método nuevo, ¿qué se cierra **antes** de teclear un bloque y qué sale **mientras** lo tecleas? *(lo de hoy, decisión suya — antes: qué debe hacer, qué debe rechazar, qué no es suyo. Mientras: nombres, atributos, métodos y firmas)*
+
+> [!note] Banco para la sesión siguiente
+> Qué es una invariante y en qué se diferencia de un caso · qué guarda el cache de la lista blanca (bonus 4) · por qué `get_json` no lanza nunca y `add_token` sí · los tres niveles de elemento objetivo · cuándo avanza el índice de un nivel de `_stack` · qué es la caché de Hugging Face.
+
+> [!important] Orden de la próxima sesión
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Cuestionario de repaso** | Regla suya: *"cuestionarios siempre primero"* |
+> | 2 | **Bloque 5 — lista de requisitos** | Es la puerta: no se teclea nada del bloque hasta cerrarla |
+>
+> ==El Bloque 4 está cerrado.== `flake8` ya funciona en el venv. Pendiente de estilo, para el final: docstrings en `src/guardian.py` y 17 líneas largas en `tests/test_bloque_1.py`.
+
+---
+
+### Para la sesión siguiente al 2026-08-29
+
+> [!info] Seis preguntas — dos de los 🔴 pendientes, cuatro de lo de hoy
+> Sesión atípica: casi entera de método, no de código. Se rediseñó cómo se trabaja de aquí en adelante y `Guardian` quedó implementada. **Las cuatro de hoy son sobre decisiones suyas**, no sobre lo que se le explicó — el cache de la lista blanca y la tabla de invariantes quedan para más adelante, que los conoció hoy.
+
+1. Estás en una hoja `number`. `self._written` vale `"40"` y llega el token `".5"`. Durante la simulación de ese token, ¿qué valor recibe `_char_ok` como segundo argumento en la llamada del `5`, y qué vale `self._written` en ese mismo instante? *(refuerzo 🔴 — falló el 08-27 y el 08-29. **Ponerle la traza de tres líneas delante**, no describir el escenario en prosa: es lo único que ha funcionado)*
+
+2. En tu `FileManager`, `_load_json` es privado y lo usan las dos cargas. ¿Qué parte del trabajo comparten catálogo y prompts, y qué parte **no** puede compartirse? *(refuerzo 🔴 desde el 08-24, nunca resuelto. La respuesta: se comparte **leer** —`open`, `json.load` y los dos guards—; no se comparten las reglas, porque el catálogo mira `name`/`description`/`parameters`/`returns` y los prompts solo `{"prompt": str}`)*
+
+3. La rama `"number"` de tu `_char_ok` usaba `str.isdigit()`. Con el vocabulario real, ¿qué tres tokens dejaba entrar en la lista blanca que no deberían, y qué pasaría si el modelo eligiera uno? *(lo de hoy — la respuesta es `²`, `³`, `¹`, y que `json.loads` reventaría con `40²`. **Si se atasca:** enseñarle la lista de 13 tokens con `4` escrito, que es como salió)*
+
+4. El atajo del nombre único exige que el modelo haya escrito **al menos un carácter** antes de completar. Con un catálogo de **una sola función**, ¿por qué no se le inyecta el nombre entero desde el principio? *(lo de hoy, decisión suya del 08-27 — la respuesta es la línea 310 del subject: la función la elige el LLM, no una heurística)*
+
+5. Decidiste hoy que el contrato del bloque **no lleve pasos numerados**. Dame las dos razones: una por el lado del agente que implementa y otra por el del que testea. *(lo de hoy — implementar deja de ser transcripción · el que testea no hereda la implementación esperada, que es de donde salen los puntos ciegos compartidos)*
+
+6. El agente de tests puede **importar** `Guardian` pero no **abrir** `src/guardian.py`. ¿Qué se rompería si leyera el archivo? *(lo de hoy — los tests pasarían a comprobar que el código hace lo que hace, y saldrían verdes también con el código mal)*
+
+> [!note] Banco para la sesión siguiente
+> Qué guarda el cache de la lista blanca — clave y valor · qué es una invariante y en qué se diferencia de un caso · por qué `get_json` hizo falta y qué se descartó · los tres niveles de elemento objetivo · por qué la estructura simulada debe llevar todas las características del real · cuándo avanza el índice de un nivel de `_stack` · qué es la caché de Hugging Face.
+
+> [!important] Orden de la próxima sesión
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Cuestionario de repaso** | Regla suya: *"cuestionarios siempre primero"* |
+> | 2 | **Tests del Bloque 4** | Con un **segundo agente**, la parte fija de `[[contract]]` ya dentro del PDF y `block_mockup/bloque_4_guardian_contrato.pdf` al lado. Uno a uno: se propone el test, se implementa, él lee que haga lo que dice |
+>
+> ==`Guardian` está implementada y sin un solo test.== No se toca el código hasta que un rojo lo justifique.
+> **`flake8` del venv sigue roto** — `pycodestyle` contra Python 3.14. Es de la pasada de estilo.
+
+---
 
 ### Para la sesión siguiente al 2026-08-27
 
@@ -1453,7 +1542,18 @@ Y `mypy` es el mismo problema sin ejecutar: como no corre el programa, no hay `_
 
 ### Bloque 4 — Validez de tokens
 
-> [!info] Estado — 2026-08-27 · 🔵 diseño cerrado, construcción empezada
+> [!success] Estado — 2026-08-31 · ✅ CERRADO
+> **64 tests verdes**, `flake8` y `mypy --strict` limpios. Los escribió un **agente ciego** que nunca abrió `src/`, con el contrato en PDF como único contexto.
+> **De sus 5 rojos salieron dos errores reales del código**, los dos en la rama `number` de `_char_ok` y los dos corregidos por él: el **cero a la izquierda** (`07` pasaba, porque los dígitos entraban siempre) y el **cierre tras un punto** (`0.,` pasaba, porque el cierre solo pedía que hubiera algo escrito y no que el último carácter fuera dígito). Los otros tres rojos eran del test y del contrato.
+> **Guards nuevos:** `get_valid_ids` y `add_token` lanzan `ValueError` sin sesión abierta; `add_token` también con un id que no está en el vocabulario. `get_json` **no lanza nunca** — es como se lee el resultado.
+> **Identificadores a inglés**, y la clase reordenada de la más específica arriba a la que orquesta abajo.
+> ==El contrato en PDF se borró al cerrar, por decisión suya.== Lo que queda del diseño es esta sección y los 64 tests.
+
+> [!info]- Estado — 2026-08-29 · 🔵 implementada entera, sin tests
+> **`Guardian` está terminada.** Los once métodos escritos, `mypy --strict` limpio, y verificada corriendo de punta a punta con el vocabulario y el catálogo reales. **No tiene ni un test**: eso es lo siguiente, y lo hace un segundo agente con el contrato delante.
+> **Quién escribió qué:** `__init__`, `start`, `is_open`, `_closing_char` y `_char_ok` entera (las tres ramas) son **suyos**. `_token_ok`, `_slot_closed`, `get_valid_ids`, `add_token`, `_close_name`, `_open_key`, `_close_level` y `get_json` los escribió el agente, por decisión suya del 08-29.
+
+> [!info]- Estado — 2026-08-27 · 🔵 diseño cerrado, construcción empezada
 > El **2026-08-26** se acordó el giro a esqueleto + huecos. El **2026-08-27** se cerró **todo lo que quedaba** —reglas de hoja, quién pone el cierre, la pila de posiciones, la capa de tokens, las firmas y los tipos— y se empezó a escribir.
 > **Escrito y verificado en ejecución:** `__init__` · `start` · `is_open` · `_closing_char`.
 > **A medias:** `_char_ok`, con solo la rama `"name"` y sin la regla de la comilla.
@@ -1464,7 +1564,7 @@ Y `mypy` es el mismo problema sin ejecutar: como no corre el programa, no hay `_
 **Qué recibe:** vocab, vocab invertido y catálogo en el constructor; el token elegido en cada paso.
 **Qué entrega:** la lista de ids válidos para el paso actual, y aviso de cuándo el JSON quedó cerrado.
 **Dónde vive:** `src/guardian.py` — clase `Guardian`.
-**Guía de construcción:** `block_mockup/bloque_4_guardian.pdf` — instructivo paso a paso en 10 fases, generado el 2026-08-27 a partir de esta sesión. Es el mapa para escribir el código; el diseño vivo sigue siendo este archivo.
+**Contrato:** `block_mockup/bloque_4_guardian_contrato.pdf` — generado el 2026-08-29. Es lo que reciben **los dos agentes**, el que implementa y el que testea. ==El PDF anterior, con los pasos numerados, se borró.== Reglas de escritura en `[[contract]]`.
 
 #### El mecanismo, en una escena
 
@@ -1562,7 +1662,7 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 #### Decisiones de implementación — 2026-08-27
 
 > [!important] Cerradas para que la guía no tenga huecos
-> Las tomó el agente a petición suya (*"debe faltar 0 por decidir, es una guía para implementar, no para pensar"*). **Se pueden revocar**: si alguna no le convence, se cambia y se regenera `block_mockup/bloque_4_guardian.pdf`.
+> Las tomó el agente a petición suya (*"debe faltar 0 por decidir, es una guía para implementar, no para pensar"*). **Se pueden revocar**: si alguna no le convence, se cambia y se regenera el PDF. *(Los PDF del Bloque 4 se borraron el 2026-08-31.)*
 
 | Asunto | Decisión |
 |---|---|
@@ -1604,7 +1704,7 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 #### Construcción — arrancada el 2026-08-27
 
 > [!info] Cómo se está escribiendo
-> Con `block_mockup/bloque_4_guardian.pdf` delante y el **agente conduciendo un paso por mensaje**, verificando cada paso **ejecutándolo** contra los archivos reales de `data/input/`. Mecánica completa en `Posible mejoras al sistema.md` → *`code mockup`*.
+> Con `block_mockup/bloque_4_guardian.pdf` delante y el **agente conduciendo un paso por mensaje**, verificando cada paso **ejecutándolo** contra los archivos reales de `data/input/`. *(El `code mockup` se descartó el 2026-08-31 — razón en `[[SYSTEM#Lo que se descartó y por qué]]`. El PDF ya no existe.)*
 
 | Método | Estado | Verificado con |
 |---|---|---|
@@ -1622,6 +1722,35 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 > **Condición que lo mantiene legal:** solo se aplica con `_written` **no vacío** (él propuso `> 1`, aún más conservador). El subject dice, literal (línea 310): *"The function to call should be chosen using the LLM, not with heuristics or any other sort of medieval magic"* — con al menos un carácter suyo delante, la elección ya la hizo el modelo y lo que se completa es ortografía.
 > **Dónde va:** en `add_token`, nunca en `_char_ok` (devuelve `bool`) ni en `get_valid_ids` (no toca el estado). Tras inyectar el nombre se inyecta también la comilla y se sigue directo a `_close_name`.
 > ==Pendiente de escribir.==
+
+#### Cerrado el 2026-08-29 — la construcción, y dos cosas que salieron de ejecutarla
+
+> [!success] `get_json() -> str` — método nuevo en la interfaz
+> El diseño no decía **cómo se lee el resultado**: había `start`, `is_open`, `get_valid_ids` y `add_token`, y ninguno devolvía el JSON terminado. Sin eso ni el Bloque 5 recoge la salida ni se puede comprobar una sola invariante.
+> Decisión del agente al implementar, **revocable**. Las dos alternativas que se descartaron: que `add_token` devolviera el JSON al cerrar (cambia una firma ya cerrada) y que el Bloque 5 acumulara los tokens por su cuenta (deja las invariantes 3–6 fuera de este bloque).
+
+> [!bug] `str.isdigit()` no sirve para validar un dígito de JSON — encontrado y corregido el 2026-08-29
+> La rama `"number"` usaba `isdigit()`, que da **`True`** para `²`, `³`, `¹` y para los dígitos de otras escrituras. Los tres están en el vocabulario de Qwen como **tokens sueltos**, así que entraban en la lista blanca y `40²` habría roto el `json.loads`.
+> **Cómo se encontró:** no razonando — pidiendo la lista blanca real en una hoja `number` y **mirando los 16 tokens que devolvía**. Salieron tres que no debían estar.
+> **Arreglo:** constante `DIGITS = "0123456789"` y comprobación de pertenencia. Verificado: con la hoja vacía la lista pasa de 13 tokens a **10**, exactamente `0`–`9`.
+> **Anotado como invariante 16 del contrato**, para que el test lo fije.
+
+> [!success] El atajo del nombre único, escrito y funcionando
+> Con el catálogo real, tras `fn` + `_add` queda un solo candidato: se inyecta `_numbers"` y el nombre queda cerrado **sin pedir más tokens**. Se verificó solo — tumbó el primer script de prueba, que esperaba que el modelo deletreara `_numbers`.
+> Condición que lo mantiene legal, ya escrita: solo con `_written` no vacío. Invariantes 14 y 15 del contrato.
+
+**Estado de los métodos, 2026-08-29:**
+
+| Método | Quién lo escribió | Verificado con |
+|---|---|---|
+| `__init__` · `start` · `is_open` · `_closing_char` | **Él** (08-27) | Ejecución contra archivos reales |
+| `_char_ok` — las tres ramas | **Él** (08-29) | Vocabulario real: 10 tokens con hoja vacía, 13 con `4` escrito |
+| `_token_ok` · `_slot_closed` · `get_valid_ids` · `add_token` | Agente (08-29) | Tres prompts de punta a punta, `json.loads` sin error |
+| `_close_name` · `_open_key` · `_close_level` · `get_json` | Agente (08-29) | Ídem, incluido el prompt con comillas dobles |
+
+**Pendientes de estilo, sin tocar:** no hay docstrings —los borró él, y el subject los exige— · `candidate2add in self._closing_char()` compara subcadena donde va `==` · cuando el modelo escribe la coma, la clave siguiente entra sin espacio (`40,"b"`), que es JSON válido pero no coincide con el recorrido del contrato.
+
+---
 
 #### Abierto en este bloque — actualizado el 2026-08-27
 

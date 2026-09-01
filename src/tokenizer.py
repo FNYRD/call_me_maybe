@@ -108,6 +108,9 @@ class Tokenizer:
     def get_vocab(self) -> Dict[str, int]:
         return self._vocab
 
+    def get_reversed_vocab(self) -> Dict[int, str]:
+        return self._reversed_vocab
+
     def encode(self, text: str) -> List[int]:
         id: int = 0
         token_ids: List[int] = []

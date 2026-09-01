@@ -305,7 +305,92 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 14 — activo
+> [!info] Agente 16 — activo
+> **Periodo:** cuestionario del 2026-08-31 → ==**Bloque 4 cerrado**== y ==**sistema refundado (`SYSTEM.md` 3.0)**==.
+>
+> **Qué se hizo:**
+> - **Repaso: 4 limpias de 5**, y una pregunta **retirada por mala** — se contestaba leyendo el artefacto que la acompañaba. Entrada en `[[REVIEWS]]`.
+> - **Tests del Bloque 4 con un agente ciego**, que nunca abrió `src/`. Escribió **43 tests** desde el contrato. **5 rojos**: 1 del código, 1 del contrato, 3 del test.
+> - ==**Dos errores reales del código**==, los dos en la rama `number` de `_char_ok` y **corregidos por él**: el **cero a la izquierda** (`07` pasaba porque los dígitos entraban siempre) y el **cierre tras un punto** (`0.,` pasaba porque el cierre solo pedía `and text`).
+> - **Tres guards nuevos** por decisión suya: `get_valid_ids` y `add_token` lanzan `ValueError` sin sesión abierta, y `add_token` también con un id fuera del vocabulario. `get_json` no lanza nunca.
+> - **Cobertura sin agujeros:** el muestreo de 8 candidatos en hojas `string` se sustituyó por un test que congela un estado y recorre **los 150.134** en 7 segundos. **64 tests verdes**.
+> - ==**`flake8` arreglado**==: el culpable era `flake9`, un fork viejo instalado en el venv. **No era Python 3.14.** Desinstalado y `flake8` reinstalado. `src/` y `tests/test_bloque_4.py` limpios.
+> - **Identificadores a inglés** en `src/`, clase reordenada de la más específica arriba a la que orquesta abajo, y `Tokenizer.get_reversed_vocab()` escrito por él.
+> - ==**Sistema refundado:**== `[[SYSTEM]]` 3.0, `[[FIRST]]` 2.0, `[[contract]]` refundido en un solo documento (parte fija + rellenable), `test.md` borrado, y **las 17 propuestas de `Posible mejoras` cerradas** — 13 adoptadas, 3 descartadas con su razón.
+>
+> **Dónde se quedó:** Bloque 4 cerrado. **Bloque 5 sin abrir**: lo primero es su lista de requisitos.
+>
+> **Decisiones tomadas:**
+> - ==**Vuelve a escribir el código él, pero diseñando e implementando entrelazado.**== Con sus palabras: *"no puedo diseñar toda la clase y 3 días después comenzar a codear porque me pierdo"*. Se cierra antes la **lista de requisitos** —qué debe hacer, qué debe rechazar, qué no es suyo—; nombres, atributos y firmas salen tecleando.
+> - **El contrato se escribe DESPUÉS de que la clase exista y corra.** Escrito antes mentía: el del Bloque 4 traía mal las cifras, no declaraba rutas y ponía un ejemplo (`.5`) que no existe en el vocabulario real.
+> - **`contract.md` y `test.md` se fusionan.** El PDF pasa a ser autocontenido: lleva dentro el briefing del agente de tests, así que no hay nada que pegar aparte.
+> - **Las correcciones de un rojo se hacen entre los dos.**
+> - **`Tokenizer` gana `get_reversed_vocab()`** en vez de invertir el vocabulario en el Bloque 5: el `dict` invertido ya existía dentro y lo usaba `decode`. ==Argumento suyo, contra la recomendación del agente, y era el correcto.==
+> - **`start("")` sigue aceptado.** Filtrar el prompt vacío es del orquestador, no de `Guardian` — anotado como decisión abierta del Bloque 6.
+> - **Los PDF del Bloque 4 y la carpeta `block_mockup/` se borraron**, por decisión suya.
+>
+> **Callejones sin salida:**
+> - ==**El ciclo de tests uno a uno.**== Se propone, se aprueba, se escribe, se corre, se revisa. Le costó demasiado contexto y lo cortó: *"esto me está absorbiendo los tokens de una manera exagerada"*. Lo que funcionó fue **el agente escribiendo los 43 de golpe** y volcando el resumen a un archivo, no al chat.
+> - **Reportes largos del subagente por mensaje:** se truncaron **tres veces**. La salida se le pide **a un archivo**, no al mensaje.
+> - **Preguntar con el artefacto que contiene la respuesta.** La pregunta 2 del cuestionario se retiró por eso.
+> - **Explicar de más un resultado verde.** Tras el primer test pidió: *"me estás dando excesivo texto y eso me abruma. entonces el test pasó o no?"*.
+>
+> **Abierto:**
+> - **Bloque 5**, sin empezar. Lo primero es la lista de requisitos.
+> - **Sin docstrings** en `src/guardian.py`, y el subject los exige — pasada de estilo, al final.
+> - **17 líneas largas en `tests/test_bloque_1.py`**, visibles ahora que `flake8` corre.
+> - `tests/test_bloque_4.py` está **en español** y no se pasó a inglés.
+> - Dos de sus tests los tocó el agente, que sí había visto `src/`: **esos dos ya no son ciegos**.
+> - Sigue sin existir `src/__main__.py` ni la regla `lint` del `Makefile`.
+>
+> **Sobre el estudiante:** dos cosas. **Ganó dos discusiones técnicas al agente en el mismo día** —la del getter con el mejor argumento de los dos— y **volvió a rediseñar el método desde su propia fricción**, segunda vez en tres días. Su postura del 08-29 no era *"no escribir código"*, era *"no transcribir"*. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas. Después, la lista de requisitos del Bloque 5.
+
+
+> [!info]- Agente 15 — histórico
+> **Periodo:** cuestionario del 2026-08-29 → ==**cambio de método del proyecto**== y **`Guardian` implementada entera**.
+>
+> **Qué se hizo:**
+> - **Repaso: 3 limpias de 6.** Las tres limpias eran sobre código que él escribió; los tres fallos, sobre métodos que aún no había tecleado. Entrada en `[[REVIEWS]]`, `[[PROJECT#🎯 Lista de refuerzo]]` actualizada.
+> - **Terminó `_char_ok` él**: la regla de la comilla en la rama `"name"`, y las ramas `"number"` y `"string"` enteras. Cuatro fallos suyos, todos cerrados enseñándole la salida: el `return True` de relleno que aprobaba los 151.643 tokens · un `True` sin `return` · la lista `[",", "}"]` a mano donde iba `_closing_char()` · la barra invertida colándose por `ord > 31`.
+> - ==**Decisión grande: deja de escribir el código.**== Salió de él tras terminar `_char_ok` al dictado. Se discutió a fondo, con búsqueda web incluida a petición suya, y acabó en un método nuevo, escrito y en uso.
+> - **Dos archivos nuevos, universales:** `[[contract]]` —reglas del contrato— y `test.md` —briefing del agente de tests—; **los dos se fusionaron en `[[contract]]` el 2026-08-31**. Construidos **regla a regla**, discutiendo cada una.
+> - **`block_mockup/bloque_4_guardian_contrato.pdf`**: el contrato del Bloque 4, ==**sin pasos numerados**==. El PDF viejo con los pasos lo borró él.
+> - **`Guardian` implementada entera** por el agente, desde el contrato. `mypy --strict` limpio, tres prompts de punta a punta con `json.loads` sin error.
+> - **`[[FIRST]]` modificado como excepción** (bloqueaba el trabajo) y entrada nueva en `Posible mejoras al sistema.md` que enmienda el `code mockup`.
+>
+> **Dónde se quedó:** `Guardian` completa y ==**sin un solo test**==. El siguiente trabajo es el del agente de tests.
+>
+> **Decisiones tomadas:**
+> - **El estudiante especifica, revisa y diagnostica; no teclea.** Un agente implementa, **otro distinto** escribe los tests, y los dos trabajan solo desde el contrato, ciegos entre sí.
+> - **El contrato no lleva pasos numerados.** Regla de corte: *si es comprobable desde fuera, va; si es decisión interna, no*. Lo que vivía dentro de un paso y sí importaba **subió a invariante** — son 16.
+> - **`get_json() -> str`**, método nuevo. El diseño no decía cómo se lee el resultado, y sin eso ninguna invariante era comprobable. **Decisión del agente, revocable.**
+> - **`str.isdigit()` fuera**, constante `DIGITS` dentro. Ver abajo.
+> - **Los elementos objetivos se cargan con sus propias clases** — `Tokenizer.get_vocab()` y `FileManager.get_functions()` —, no leyendo los archivos a mano.
+> - **El agente de tests importa pero no lee `src/`**, y no corrige lo que encuentra.
+>
+> **Callejones sin salida:**
+> - ==**Usar los nombres del PDF (`written`, `char`) teniendo su firma otros (`text`, `candidate2add`).**== Lo cortó en seco: *"para de usar `written` en vez de otra variable que sí existe"*. Regla nueva en `[[PSYCHOLOGY]]` y propuesta en `Posible mejoras`.
+> - **Meter en un docstring la razón de otro método.** Se justificó `_token_ok` con el coste de `get_valid_ids`, que no estaba escrito: *"me estás haciendo perder tiempo"*.
+> - **Preguntas del cuestionario redactadas en prosa.** *"Las redactas como una máquina y yo no lo soy"*. Lo que funcionó fue poner la **traza en tres líneas** y preguntar cuál de los valores era.
+> - **Escribirle docstrings sin que los pidiera.** Los mandó borrar: *"nunca te las pedí"*. El subject los exige, así que vuelven en la pasada de estilo.
+> - **Proponerle plantar bugs a propósito** para medir si los caza. Lo tumbó con razón: *"no me sirve si no es algo que hagas realmente en el día a día"*. Y no hace falta — los bugs salen solos.
+>
+> **Abierto:**
+> - **Tests del Bloque 4**: no existe `tests/test_bloque_4.py`.
+> - **Sin docstrings** en `src/guardian.py`, y el subject los pide.
+> - Estilo, sin tocar: `candidate2add in self._closing_char()` donde va `==` · la clave tras la coma del modelo entra sin espacio (`40,"b"`).
+> - **`flake8` del venv roto** — `pycodestyle` contra Python 3.14.
+> - Sigue sin existir `src/__main__.py` ni la regla `lint` del `Makefile`.
+> - `[[SYSTEM]]` no recoge todavía el método nuevo: está en `Posible mejoras`, para adoptarlo al cerrar el proyecto.
+>
+> **Sobre el estudiante:** la sesión fue casi entera de método, y ahí es donde rindió. Convirtió una frustración —*"es casi copiar código"*— en dos archivos de sistema, corrigiendo tres reglas del agente por el camino. También pidió explícitamente que se le lleve la contraria: *"cada que te propongo algo me dices que sí"*. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** el cuestionario ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — 6 preguntas. Después, los tests del Bloque 4 con un segundo agente.
+
+
+> [!info]- Agente 14 — histórico
 > **Periodo:** contextualización del 2026-08-27 → **diseño del Bloque 4 cerrado entero, guía en PDF escrita, y los cuatro primeros métodos de `Guardian` escritos por él**.
 >
 > **Qué se hizo:**
