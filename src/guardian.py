@@ -41,7 +41,7 @@ class Guardian:
 
     def get_written(self) -> str:
         return self._written
-    
+
     def _closing_char(self) -> str:
         current_object: Dict[str, TypeSpec] = {}
         current_index: int = 0

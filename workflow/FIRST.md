@@ -151,43 +151,58 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-09-02
+> [!info] Estado — 2026-09-02, **segunda sesión del día**
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 2. **6 bloques**; Bloques 1, 2, 3 y 4 cerrados —el **cache** del 4 incluido—. ==**El 5 está en curso**==
-> **Último hito:** ==**`reply` genera de punta a punta**==. Los 11 prompts reales salen con **función y argumentos correctos**, de 0,8 s a 6,8 s. `src/interface.py`, escrito por él hoy
-> **Siguiente:** ==**el modelo `pydantic` que devuelve `reply`**== — hoy devuelve `None`. Con él dentro se cierran el estado de fallo del modelo, el de corte por tope y el **decode del texto crudo**
-> **Abierto:** el texto crudo del vocabulario se cuela en el JSON (`"HelloĠ34Ġ..."`) · ==los 80 tests del Bloque 4 siguen sin correrse== · el tope por hoja está escrito y nunca se ha disparado · 8 avisos de `flake8` en `src/interface.py` · sin docstrings en `guardian.py` ni `interface.py`, y el subject los exige · no existe `src/__main__.py` ni la regla `lint` del `Makefile`
-> ==**`make` YA FUNCIONA**== — `xcode-select` apunta a las Command Line Tools. `make testN test=4` corre los 80 tests del Bloque 4, ~4 minutos
-> **Decisión suya sin cerrar (09-02):** quiere **quitar los cuestionarios de repaso**. ==Pregúntaselo antes de lanzar uno==; las preguntas están escritas por si lo mantiene
+> **Fase:** 2. **6 bloques**; Bloques 1, 2, 3 y 4 cerrados —el **cache** del 4 incluido, y ==**sus 80 tests corridos y en verde**==—. ==**La construcción del 5 está cerrada**==
+> **Último hito:** ==**`reply` devuelve su modelo `pydantic`**== — `Output` con `log` y `output`, tres estados. **11 de 11 prompts reales correctos**, de 1,0 s a 7,0 s. `flake8` y `mypy --strict` limpios en `src/`. Todos los requisitos del bloque, cumplidos
+> **Siguiente:** ==**el encargo de tests de caja negra del Bloque 5**== — es lo primero de la sesión, ver la instrucción de abajo
+> **Abierto:** el tope por hoja está escrito y ==**nunca se ha disparado**== · el decode del texto crudo (`"HelloĠ34Ġ..."`) pasó al **Bloque 6** · sin docstrings en `guardian.py` ni `interface.py`, y el subject los exige · no existe `src/__main__.py` ni la regla `lint` del `Makefile` · **Bloque 6 sin abrir**
+> ==**Regla suya del 09-02 — el cuestionario:**== solo **teoría** —el porqué de un mecanismo—, **nunca un error suyo** (*"aprendo resolviéndolo"*); no lo hay si la `Lista de refuerzo` no tiene filas abiertas; y ==**el agente no apunta filas por su cuenta**==: sugiere, y apunta él. En `[[SYSTEM#Sistema de refuerzo]]`
+> ==**Regla suya del 09-02 — el stress:**== se estresa hasta **el límite real de uso** y ahí se para; y todo guard o tope declarado tiene que **dispararse al menos una vez** dentro de ese límite. En `[[contract#F6 · Cómo se escriben y se corren los tests]]`
 > **Herramientas:** llamarlas siempre con `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. `mypy` necesita `mypy_path = "llm_sdk"` en `pyproject.toml`
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 ---
 
-## Instrucción para el próximo agente — escrita el 2026-09-02
+## Instrucción para el próximo agente — escrita el 2026-09-02, al cerrar la segunda sesión del día
 
 > [!important] Dónde quedamos
-> Sesión entera de teclear `src/interface.py`, el **Bloque 5**. Su lista de requisitos se cerró antes de escribir nada y está en `[[PROJECT#Bloque 5 — Bucle de generación]]` con las decisiones y su razón.
-> Escrito hoy por él: el `__init__` entero y `reply` hasta el `add_token`. **Funciona con los 11 prompts reales.**
-> ==**Lo que falta es lo que `reply` devuelve.**== Hoy es `None`. Lo dijo él al cerrar: *"apunta eso para comenzar desde allí"*.
+> La **construcción del Bloque 5 está cerrada**: `reply` devuelve `Output` con sus tres estados, 11/11 prompts correctos, `flake8` y `mypy --strict` limpios. Lo que falta del bloque son **el contrato y los tests**.
 
-> [!important] Por dónde empezar, en este orden
-> **1 · Preguntarle si quiere cuestionario.** Es una decisión suya del 09-02 sin cerrar. Si dice que sí, están escritas en `[[PROJECT#Para la sesión siguiente al 2026-09-02]]`.
-> **2 · El modelo `pydantic` de `reply`.** Dos campos: cómo salió el bucle y lo escrito. Con él dentro entran el `except Exception` del modelo y el ==decode del texto crudo==, que hoy mete `Ġ` en las hojas `string`.
-> **3 · Correr los 80 tests del Bloque 4.** Nunca se han corrido y ya no hay excusa.
-> **4 · La pasada de estilo de `src/interface.py`.**
+> [!important] ==Arranca por aquí, sin cuestionario== — instrucción literal suya, 2026-09-02
+> **Lo primero de la sesión es redactar el encargo de tests para el agente de caja negra del Bloque 5.** No hay cuestionario mañana; lo dijo él al cerrar.
+>
+> **Cómo se llama el archivo:** `blackbox_test_bloque_5`. ==Convención nueva suya: `blackbox_test_` + el nombre del test.==
+>
+> **Antes de escribir una línea del encargo, contextualízate de verdad. Con sus palabras:** *"quiero que el agente nuevo tenga lo suficiente para contextualizarse, así que pídele que lea bien la clase, el scope, los casos de uso real y por qué por ejemplo el return está correcto —ya que el Bloque 6 se encarga de los caracteres— y así mismo alguna otra cosa que sea necesaria explicarle, para que no lea por encima y genere el archivo, sino que el archivo sea tan robusto como los tests o más aún"*.
+> Lo mínimo que hay que tener leído y entendido antes de redactar:
+> - **La clase entera**, `src/interface.py` — el `__init__`, `reply`, el `Output` y sus tres estados.
+> - **El scope**: la lista de requisitos del bloque, en `[[PROJECT#La lista de requisitos — cerrada el 2026-09-02]]`, con su tabla de **qué NO es suyo**.
+> - **Los casos de uso reales**: los 11 prompts de `data/input/function_calling_tests.json` y el catálogo de `functions_definition.json`. ==El límite del stress se mide contra eso, no contra hipótesis.==
+> - ==**Por qué el `output` con `Ġ` dentro es correcto**==: el `_json_str` mezcla esqueleto en texto real y hojas en disfraz del vocabulario, y el decode es **del Bloque 6**, donde ya vive el `json.loads`. Un test que exija texto limpio aquí es un rojo del test, no del código. Detalle y salidas reales en `[[PROJECT#Bloque 5 — Bucle de generación]]`.
+> - **Lo que arrastra la suite:** `get_written()` no tiene test propio — ==se prueba forzando el tope por hoja, que **nunca se ha disparado**==. Si el encargo no obliga a dispararlo, ese método se queda sin probar.
+> - **Las dos reglas suyas de los tests:** el stress llega al límite real de uso (`[[contract#F6 · Cómo se escriben y se corren los tests]]`), y a `tests/` no se le pasa `flake8` ni `mypy`.
+>
+> **El encargo se escribe desde `[[contract]]`**, que es autocontenido: lleva dentro el briefing del agente de caja negra.
+
+> [!important] Después de generar el encargo — orden suya
+> **1 ·** El agente de caja negra escribe los tests, ciego: no abre `src/`.
+> **2 ·** ==**Tú revisas el archivo de tests**== y compruebas tres cosas: que se testa **lo suficiente**, que se testa **de forma correcta contra las estructuras que existen de verdad**, y que **no falta nada ni sobra un caso que no es de uso real**.
+> **3 ·** ==**Y ahí paras.**== Tras generar el archivo **te quedas esperando a que él confirme** que es momento de revisarlo. No lo revises por tu cuenta.
 
 > [!warning] Cómo se trabaja con él — no lo improvises
-> ==**Habla siempre con SUS identificadores, y con los que existen hoy en `src/`.**== El 09-02 se le ilustró el enmascarado con `limpio`/`blanca` teniendo él `clean_logits`/`whith_list` delante, y cortó: *"para de dar ejemplos con nombres de variables que no existen"*. Un vocabulario de juguete para enseñar un mecanismo vale; los nombres, no.
-> **Un paso por mensaje.** Hoy tres mensajes seguidos explicando el enmascarado entero no avanzaron nada; lo cortó él con *"vamos por pasos"* y se cerró en cuatro turnos.
-> ==**Ejecuta, no argumentes.**== Sus dos fallos de `numpy` se cerraron enseñando la salida real. Ninguno se cerró explicándolo.
-> **Di con qué certeza afirmas algo.** Hoy se le presentó el *presupuesto de tokens* como si viniera decidido del Bloque 4 y no lo estaba. Lo cazó.
-> **Al corregir una lista blanca, comprueba el conjunto entero.** Su primera corrección del cache movió la colisión en vez de matarla — segunda vez que pasa.
+> ==**Habla siempre con SUS identificadores, y solo con lo que existe hoy en `src/`.**== Reincidió el 09-02: *"para de dar ejemplos con nombres de variables que no existen"*.
+> **Un paso por mensaje.** Una idea, una pregunta.
+> ==**Ejecuta, no argumentes.**== Hoy las tres vías descartadas del decode se cerraron **enseñando la salida real** —la identidad de `decode(encode(r))`, el `KeyError: ' '`, el `UnicodeDecodeError`—; ninguna se cerró explicándola.
+> **Si una pregunta no la entiende, no la repitas mejor: pártela en dos artefactos y que elija.** Hoy *"¿qué le sobra a `decode`?"* no fue a ningún lado; partir el método en un bloque (A) y otro (B) y preguntar cuál necesitaba se cerró con un *"B"* a la primera.
+> **Cuando dice que no sabe, dale las opciones reales con su coste y una recomendación** — y que elija él. Hoy: *"seguro hay una manera super simple que estoy ignorando"*.
+> **Di con qué certeza afirmas algo.**
 
 > [!bug] Con lo que te vas a tropezar
 > **`mypy` da un error falso con `llm_sdk`** si falta `mypy_path = "llm_sdk"` en `pyproject.toml`: hay dos carpetas anidadas con el mismo nombre y resuelve la de fuera, que está vacía.
 > Llama siempre a las herramientas con `./callme/bin/python -m ...`.
+> **Un script suelto que corra `Interface` necesita `PYTHONPATH=.`** — los imports de `src/` son relativos.
 > La suite del Bloque 4 tarda **~4 minutos**: carga el modelo real. No la corras por costumbre.
 > **A `tests/` no se le pasa `flake8` ni `mypy`** — regla suya del 09-01.
-> **Sin docstrings** en `src/guardian.py` — los mandó borrar él. Vuelven en la pasada de estilo. No los repongas por tu cuenta.
+> **Sin docstrings** en `src/guardian.py` ni en `src/interface.py` — vuelven en la pasada de estilo. No los repongas por tu cuenta.

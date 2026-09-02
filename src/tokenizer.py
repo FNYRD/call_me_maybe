@@ -30,7 +30,7 @@ class Tokenizer:
                           + self._invisible_bytes.index(byte))
         self._byte_char: Dict[int, str] = {
             byte: chr(self._in_visible(byte)) for byte in range(0, 256)}
-        self._char_byte: Dict[str, int] = {
+        self.char_byte: Dict[str, int] = {
             char: byte for byte, char in self._byte_char.items()}
 
     def _load_tokenizer(self, tokenizer_path: FilePath) -> str:
@@ -173,5 +173,5 @@ class Tokenizer:
                 raise ValueError(
                     "Error decoding token ids. "
                     f"{token_id} it isn't a valid id")
-        bytearr = bytearray(self._char_byte[char] for char in text)
+        bytearr = bytearray(self.char_byte[char] for char in text)
         return bytearr.decode("utf-8")

@@ -163,6 +163,28 @@ Eres el **agente de tests** de este bloque. Trabajas **a caja negra**.
 - [ ] Stress sobre el límite
 - [ ] Entradas inválidas
 
+> [!important] ==El stress llega al límite real de uso, y ahí para== — regla del estudiante, 2026-09-02
+> El caso *"stress sobre el límite"* se construye contra **el uso verdadero de la clase**, no contra un escenario inventado. Con sus palabras: *"no nos preparamos para hipótesis que no se corresponden con el verdadero uso de la clase"*.
+> ==**Y la otra mitad, que es la que obliga:** todo lo que la clase declara —cada guard, cada tope, cada alarma— tiene que **dispararse al menos una vez** dentro de ese límite real.== Un tope que ninguna corrida activa no está probado, aunque esté escrito.
+> **Motivo:** un test que fabrica un escenario imposible sale verde sin comprar nada, y esconde que el caso posible nunca se probó.
+
+> [!important] Cómo se saca el límite real **de esta clase** — se responde por bloque, no se hereda
+> El límite no es un número universal: sale de las secciones rellenables de **este** contrato. Antes de escribir el primer test de stress, responde estas cuatro, **con datos, no con adjetivos**:
+>
+> | # | Pregunta | De dónde sale la respuesta |
+> |---|---|---|
+> | 1 | ¿Qué recibe esta clase **en ejecución real**, y quién se lo pasa? | `R4 · Qué debe aceptar` y `R7 · Fronteras` |
+> | 2 | ¿Cuál es el **dato real más grande y más raro** que puede llegarle? | `R9 · Elementos objetivos` — los archivos reales del proyecto, no muestras inventadas |
+> | 3 | ¿Qué **declara** esta clase que la protege? Enuméralos uno a uno | `R5 · Qué debe rechazar` y `R6 · Invariantes` |
+> | 4 | ¿Qué le pasaría a la clase **más allá** de ese límite? | `R8 · Descartado a propósito` — si está ahí, **no se testea** |
+>
+> **Lo que sale de las cuatro es una tabla, y esa tabla es el plan de stress:** una fila por cosa declarada en (3), y en cada fila **el dato real de (2) que la hace saltar**.
+> ==**Si una fila se queda sin dato que la dispare, no se inventa uno: se dice.**== Puede significar dos cosas y las dos importan — que el guard sobra, o que el elemento objetivo elegido es demasiado pequeño. Las dos son hallazgos, y se reportan sin resolverlos.
+
+> [!example] La misma regla, aplicada a dos clases distintas
+> **Una clase que valida un archivo de entrada:** el límite real es el archivo más grande y más malformado que el proyecto puede recibir de verdad. Un archivo de 2 GB no es stress, es ficción. Un JSON con una clave de más, sí.
+> **Una clase con un bucle y un tope:** el límite real es la entrada legítima más larga que existe en los datos del proyecto — y el test **obligatorio** es el que hace **saltar el tope**, no el que se queda cómodo por debajo. Si ninguna entrada real lo dispara, se construye la entrada legítima más extrema que el dominio admita, y se dice que hizo falta fabricarla.
+
 > [!note] Un crash es una salida como cualquier otra
 > Si el contrato dice *"no debe crashear nunca"*, una excepción es un rojo. Si dice *"lanza `ValueError` con el archivo ausente"*, la excepción **es** la salida correcta y no lanzarla es el rojo.
 

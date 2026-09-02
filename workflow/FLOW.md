@@ -102,7 +102,7 @@ graph LR
 | 2 | I/O de archivos | ✅ | ✅ | ✅ |
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
 | 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | 🔵 sin correr |
-| 5 | Bucle de generación | ✅ requisitos 09-02 | 🔵 `reply` corriendo | ⚪ |
+| 5 | Bucle de generación | ✅ requisitos 09-02 | ✅ cerrada 09-02 | ⚪ encargo de caja negra |
 | 6 | `Chat` orquestador | ⚪ | ⚪ | ⚪ |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
@@ -124,7 +124,13 @@ graph LR
 > `Guardian` gana `get_written()`, que expone lo escrito en la hoja en curso — lo pide el tope del Bloque 5. **Método público nuevo: arrastra su test.**
 > ==**Los 80 tests siguen sin correrse.**== `make` ya funciona: `make testN test=4`, ~4 minutos.
 
-> [!success] Bloque 5 — arrancado (2026-09-02)
+> [!success] Bloque 5 — construcción cerrada (2026-09-02)
+> `reply` devuelve `Output`, modelo `pydantic` con `log` y `output`, y **tres estados**: prompt vacío · fallo del modelo · corte por tope · salida correcta.
+> ==**11 de 11 prompts reales correctos**==, de 1,0 s a 7,0 s. `flake8` y `mypy --strict` limpios en `src/`. **Todos los requisitos del bloque cumplidos.**
+> **El decode del texto crudo pasó al Bloque 6**, donde ya vive el `json.loads`: el `_json_str` mezcla texto real y disfraz del vocabulario, así que no hay conversión posible sobre la cadena entera.
+> **Falta:** el contrato —el encargo del agente de caja negra— y los tests.
+
+> [!info]- Bloque 5 — arrancado (2026-09-02), histórico
 > **Lista de requisitos cerrada** antes de teclear, y `src/interface.py` con el `__init__` y `reply` escritos por él el mismo día. ==**Los 11 prompts reales salen con función y argumentos correctos**==, de 0,8 s a 6,8 s.
 > **Decisión de diseño suya:** `Interface` **no conoce ningún SDK** — recibe las rutas como `Path` y la función de logits como `Callable`. Construir el modelo pasa a `Chat`.
 > **Falta lo que `reply` devuelve:** el modelo `pydantic` con el estado, y con él el decode del texto crudo que hoy mete `Ġ` en las hojas `string`.

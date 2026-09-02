@@ -721,6 +721,12 @@ Se lee **en cada contextualización** y se aplica **en silencio**. El archivo es
 
 **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · empezando por el artefacto, nunca por la narración · un fallo **no se corrige dando la respuesta**, se pone el caso límite — solo si dice *"no sé"* se responde directo.
 
+> [!important] ==Qué entra en el cuestionario, y quién lo apunta== — regla suya, 2026-09-02
+> **1 · El cuestionario es solo para lo teórico.** Por qué `numpy` opera como opera y por qué corre en C, por qué una estructura se elige y no otra, qué garantiza un mecanismo. ==**No se pregunta por un error que cometió.**== Con sus palabras: *"ahora que me des un error que cometí no me sirve de nada, porque aprendo resolviéndolo"*.
+> **2 · Quién decide qué se apunta: él.** ==El agente **no añade filas a la `Lista de refuerzo` por su cuenta**.== Él dice qué apuntar; si no dice nada, el agente **puede sugerir** una fila, pero no la escribe hasta que él lo apruebe.
+> **3 · Si no hay filas sin cerrar, no hay cuestionario.** La regla del repaso deja de ser fija: se lanza solo cuando queda algo real que reforzar.
+> **Motivo:** un fallo de ejecución ya se cierra donde ocurre —corrigiéndolo—, así que volver a preguntarlo mide memoria, no comprensión. Lo que no se cierra solo es el porqué del mecanismo.
+
 > [!warning] Regla de reincidencia
 > Un tema que falla **tres veces** baja de ✅ a 🟡, y la explicación usada antes se busca en `[[REVIEWS]]` para no repetir la que ya no funcionó.
 

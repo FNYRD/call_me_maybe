@@ -18,7 +18,13 @@ tags: [42, proyecto]
 
 ## 🗺️ Mapa de flujo
 
-> [!info] Dónde estamos — 2026-09-02
+> [!success] Dónde estamos — 2026-09-02
+> ==**La construcción del Bloque 5 está cerrada.**== `reply` devuelve su modelo `pydantic` con los tres estados, **11 de 11 prompts correctos** (de 1,0 s a 7,0 s), y `flake8` y `mypy --strict` limpios en `src/`.
+> **Lo que queda del bloque:** el **contrato** —el encargo del agente de caja negra— y sus tests. ==El decode del texto crudo ya **no** es suyo: se movió al Bloque 6.==
+> **Regla suya cerrada hoy:** el cuestionario es **solo para teoría**, nunca para un error suyo; no lo hay si la `Lista de refuerzo` no tiene filas abiertas; y ==el agente **no apunta filas por su cuenta**==. Está en `[[SYSTEM#Sistema de refuerzo]]`.
+> **Regla suya cerrada hoy, para los tests:** el stress llega **al límite real de uso** y ahí para — y todo guard o tope declarado tiene que dispararse al menos una vez dentro de ese límite. En `[[contract#F6 · Cómo se escriben y se corren los tests]]`.
+
+> [!info]- Dónde estábamos — 2026-09-02, histórico
 > ==**El Bloque 5 arrancó y `reply` ya genera de punta a punta**==: los 11 prompts reales salen con función y argumentos correctos, entre 0,8 s y 6,8 s cada uno. Detalle en `[[PROJECT#Bloque 5 — Bucle de generación]]`.
 > **Por dónde se sigue:** ==el modelo `pydantic` que devuelve `reply`==. Hoy devuelve `None`. Con él dentro se cierran de una vez las tres cosas que faltan: el estado de fallo del modelo, el estado de corte por tope, y el ==**decode del texto crudo**== que hoy mete `Ġ` en las hojas `string`.
 > **Regla suya del 09-02, sin cerrar:** está pensando en **quitar los cuestionarios de repaso** una vez pasada la fase de internalización de conceptos. Hoy no se hizo ninguno, por decisión suya. ==No está decidido: se le pregunta antes de lanzar el siguiente.==
@@ -88,7 +94,7 @@ graph LR
 | ↳ | *cerrado el 08-31: **64 tests verdes** escritos por un agente ciego, `flake8` y `mypy --strict` limpios, las tres pasadas hechas salvo docstrings* | | | |
 | ↳ | *reabierto el 09-01 por decisión suya para meter el **cache** (bonus 4). **16 tests nuevos** de un segundo agente ciego — sección 10, sin correr todavía. `_cache_flags` tiene un bug abierto* | | | |
 | 5 — Bucle de generación | Logits, máscara, `argmax`, parada. **La validación `pydantic` del resultado sale del bloque** — decisión suya del 09-02 | 🔵 | Un prompt crudo | Un modelo `pydantic`: cómo salió el bucle y lo escrito |
-| ↳ | *lista de requisitos cerrada el 09-02 · `src/interface.py` con el `__init__` y `reply` escritos el 09-02, **11 de 11 prompts correctos**. Falta lo que devuelve* | | | |
+| ↳ | *lista de requisitos cerrada el 09-02 · `src/interface.py` escrito por él · ==**construcción cerrada el 09-02**==: los tres estados del `Output`, 11/11 prompts, `flake8` y `mypy --strict` limpios. **Falta el contrato y los tests*** | | | |
 | 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | ⚪ | Los bloques ya construidos | N resultados + registro de fallos |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
@@ -112,6 +118,10 @@ graph LR
 > [!important] Una sola lista, acumulada — petición del estudiante, 2026-08-11
 > Todo lo que hay que reforzar vive **aquí y solo aquí**. No se busca en las entradas de repaso ni en las filas del cuestionario de verificación.
 > Una fila por tema. Se añade en el momento en que aparece; se marca ✅ cuando resiste una pregunta sin ayuda, y **no se borra** — el histórico de que costó es lo que evita darlo por sabido demasiado pronto.
+
+> [!warning] ==El agente no apunta por su cuenta== — regla suya, 2026-09-02
+> Quien decide qué entra en esta lista es **él**. Si no dice nada, el agente **puede sugerir** una fila —y solo eso—; no la escribe hasta que él la apruebe.
+> Y lo que entra es **teoría**: el porqué de un mecanismo. ==Un error que cometió tecleando **no es una fila de esta lista**== — *"aprendo resolviéndolo"*.
 
 **Origen:** 🙋 lo pidió él · ❌ falló en un cuestionario · 🔍 lo propone el agente
 **Estado:** 🔴 pendiente · 🟡 explicado, sin verificar · ✅ resiste sin ayuda · ⏸️ diferido a Fase 2 por decisión suya
@@ -194,9 +204,25 @@ graph LR
 >
 > **Y se escribe al final de todo, nunca a mitad de sesión.** Si se redacta antes de terminar, deja fuera lo trabajado después — que es lo más reciente y lo que más riesgo tiene de olvidarse. Pasó el 2026-08-11: se escribió a media tarde y hubo que rehacerlo al cerrar.
 >
+> [!warning] ==Solo teoría, y solo si hay filas sin cerrar== — regla suya, 2026-09-02
+> **Se pregunta el porqué de un mecanismo** —por qué `numpy` opera así y por qué corre en C, por qué una estructura y no otra—, ==nunca un error que él cometió==: eso ya lo cerró resolviéndolo.
+> **Si la `[[PROJECT#🎯 Lista de refuerzo]]` no tiene filas abiertas, no hay cuestionario.**
+> Sustituye a la regla anterior de *"cuestionarios siempre primero"* (08-17) como criterio de **qué** se pregunta; el orden, cuando lo hay, sigue siendo el primero de la sesión.
+
 > **Cómo se construye:** mitad de la `[[PROJECT#🎯 Lista de refuerzo]]` (lo que está en 🔴), mitad de lo trabajado en la sesión que se cierra.
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
+
+### Para la sesión siguiente al 2026-09-02
+
+> [!warning] ==Mañana no hay cuestionario== — instrucción suya del 09-02
+> La sesión arranca **directamente** con la redacción del encargo de tests de caja negra del Bloque 5. Ver `[[FIRST]]`, instrucción final.
+> Y recuerda la regla nueva: cuando vuelva a haber cuestionario, ==solo teoría== —el porqué de un mecanismo—, **nunca un error suyo**, y ==el agente no apunta filas de refuerzo por su cuenta==.
+
+> [!note] Banco de teoría, para cuando toque
+> Por qué en el hueco `name` no cabe una flag · qué es una invariante y en qué se diferencia de un caso · los tres niveles de elemento objetivo · por qué el agente de tests no puede ejecutar tampoco, no solo leer · por qué dos booleanos independientes no caben en una cadena de `elif` · qué es la caché de Hugging Face.
+
+---
 
 ### Para la sesión siguiente al 2026-09-02
 
@@ -2004,7 +2030,19 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 
 #### Construcción — arrancada el 2026-09-02
 
-> [!success] Estado — 2026-09-02 · 🔵 `reply` genera de punta a punta
+> [!success] Estado — 2026-09-02 · ==**construcción cerrada**==
+> **`reply` devuelve `Output`**, modelo `pydantic` con dos campos —`log` y `output`— y **tres estados**:
+> ```python
+> Output(log="The prompt was empty",            output="")
+> Output(log="Model failed while replying",     output=self._guardian.get_json())
+> Output(log="Model entered an loop",           output=self._guardian.get_json())
+> Output(log="The prompt was replied correctly", output=self._guardian.get_json())
+> ```
+> **Los 11 prompts reales, 11 de 11 correctos**, de **1,0 s a 7,0 s**. `flake8` y `mypy --strict` limpios en `src/`.
+> **Contra la lista de requisitos: todo cumplido.** Lo único que sale del bloque es el decode del texto crudo, movido al Bloque 6 por decisión suya de hoy.
+> **Falta:** el **contrato** —el encargo del agente de caja negra— y los tests.
+
+> [!info]- Estado — 2026-09-02 · histórico, `reply` genera de punta a punta
 > **Escrito hoy por él:** el `__init__` entero y `reply` hasta el `add_token`. ==**Los 11 prompts reales salen con función y argumentos correctos**==, más uno corto fabricado para forzar el tope:
 > ```
 >  2.3s  {"prompt":"What is the sum of 2 and 3?", "name": "fn_add_numbers", "parameters": {"a": 2,"b": 3}}
@@ -2056,6 +2094,15 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 > **Por qué `Callable` y no `Any`:** con `Any` el fallo sale en ejecución; con la firma declarada, `mypy --strict` avisa antes.
 > **Cuánto baja el acoplamiento:** de **4 métodos** del SDK a **1** — las tres rutas dejan de pedirse al modelo, y `get_logits_from_input_ids` es el único que no se puede evitar. ==La idea de pedir las rutas como `Path` es suya.==
 > **Trabajo que se mueve fuera:** construir el modelo y sacarle las rutas pasa a `Chat`, en un sitio único que sí conoce el SDK concreto — con sus palabras, *"en chat se cree una parte donde se defina una api"*.
+
+> [!important] Las cuatro decisiones del 2026-09-02 — todas suyas
+> **1 · El `Output` devuelve `get_json()`, no `get_written()`.** `get_written()` es **la hoja en curso**, y `_close_level` la vacía al cerrar el JSON: el caso bueno salía con `output=''`. Encontrado ejecutando.
+> **2 · ==El decode del texto crudo se hace en el Bloque 6==**, donde ya vive el `json.loads`. Se descartaron las otras dos vías con la salida real delante:
+> - `decode(encode(r))` es **la identidad** — devuelve la cadena igual, con los `Ġ` dentro.
+> - Pasar `get_json()` entero por la tabla `char_byte` **revienta**: `KeyError: ' '`. El `_json_str` mezcla dos alfabetos —el esqueleto va en texto real y solo las hojas en disfraz—, y en la tabla el byte 32 es `'Ġ'`, no `' '`.
+> **Y no se puede convertir token a token:** un carácter se reparte entre dos tokens. `char_byte['Ä']=196` y `char_byte['ł']=160`; juntos dan `'Ġ'`, y `bytearray([196]).decode("utf-8")` lanza `UnicodeDecodeError`.
+> **3 · `Tokenizer._char_byte` pasa a público, `Tokenizer.char_byte`.** Lo va a necesitar `Chat`. ==Decisión suya: **no arrastra test**== — *"es un dict que se puede generar en cualquier momento copiando y pegando código"*.
+> **4 · `get_written()` tampoco lleva test propio.** Se prueba **estresando el Bloque 5** hasta que salte el tope. ==Condición: si la suite no fuerza el tope, ese método se queda sin probar por ninguna vía.==
 
 **Casos límite anotados**
 

@@ -305,7 +305,46 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 18 — activo
+> [!info] Agente 19 — activo
+> **Periodo:** 2026-09-02, **segunda sesión del día** —la del Agente 18 fue la primera—, sin cuestionario → ==**construcción del Bloque 5 cerrada**== y **dos reglas nuevas del sistema, suyas**.
+>
+> **Qué se hizo:**
+> - ==**`reply` devuelve su modelo `pydantic`.**== `Output` con `log` y `output`, y **tres estados**: prompt vacío, fallo del modelo, corte por tope y salida correcta. Escrito por él.
+> - **Dos bugs encontrados ejecutando, corregidos por él:** el caso bueno devolvía `output=''` porque usaba `get_written()` —la hoja en curso, que `_close_level` vacía— en vez de `get_json()`; y el `except` del modelo se había quedado con el `get_written()` viejo.
+> - ==**El decode del texto crudo se movió al Bloque 6**==, con las otras dos vías descartadas **enseñando la salida real**, no argumentando. Detalle en `[[PROJECT#Bloque 5 — Bucle de generación]]`.
+> - **Pasada de estilo:** `flake8` limpio en `src/` —los 11 avisos de `interface.py` y el `W293` de `guardian.py`— y `mypy --strict` limpio. **Los corrigió el agente, por orden suya.**
+> - **11 de 11 prompts reales correctos** después de tocar, de 1,0 s a 7,0 s.
+> - ==**Dos reglas suyas escritas en el sistema.**== La del cuestionario, en `[[SYSTEM#Sistema de refuerzo]]` y en las dos cabeceras de `[[PROJECT]]`. La del stress, en `[[contract#F6 · Cómo se escriben y se corren los tests]]`.
+>
+> **Dónde se quedó:** construcción cerrada, ==**sin contrato y sin un solo test**==. Lo siguiente es el encargo de caja negra — ver la instrucción final de `[[FIRST]]`, que trae sus condiciones literales.
+>
+> **Decisiones tomadas:**
+> - ==**El cuestionario es solo para teoría.**== Nunca por un error que él cometió: *"aprendo resolviéndolo"*. Y ==**el agente no apunta filas de la `Lista de refuerzo` por su cuenta**==: sugiere, apunta él. Si no hay filas abiertas, no hay cuestionario.
+> - ==**El stress llega al límite real de uso y ahí para.**== *"No nos preparamos para hipótesis que no se corresponden con el verdadero uso de la clase"*. La otra mitad la añadió el agente y la aceptó: todo guard o tope declarado tiene que dispararse **al menos una vez** dentro de ese límite.
+> - **El decode va al Bloque 6**, donde ya vive el `json.loads` — su propia lista de requisitos se lo asigna a `Chat`.
+> - **`Tokenizer.char_byte` pasa a público y NO arrastra test** — *"es un dict que se puede generar copiando y pegando código"*.
+> - **`get_written()` tampoco lleva test propio:** se prueba estresando el Bloque 5 hasta que salte el tope.
+>
+> **Callejones sin salida:**
+> - ==**`decode(encode(r))` para quitar los `Ġ`.**== Es la identidad. Se cerró ejecutándolo, con la cadena entrando y saliendo idéntica.
+> - **Pasar `get_json()` entero por `char_byte`.** `KeyError: ' '` — el `_json_str` mezcla texto real (esqueleto) y disfraz (hojas).
+> - **Convertir token a token.** Un carácter se reparte entre dos tokens: `bytearray([196]).decode("utf-8")` lanza `UnicodeDecodeError`.
+> - **Preguntar en abstracto.** *"No entendí tu pregunta"* ante *"¿qué le sobra a `decode` para lo que necesitas?"*. Lo desbloqueó **partir `decode` en dos bloques, (A) y (B), y preguntar cuál** — contestó *"B"* a la primera.
+> - **Dejarle solo con las opciones cuando dice que no sabe.** *"No sé de qué manera podría hacerlo más simple… seguro hay una manera super simple que estoy ignorando"*. Lo que funcionó fue **poner las dos salidas reales con su coste y una recomendación**, y que eligiera.
+>
+> **Abierto:**
+> - ==**El contrato del Bloque 5 y sus tests de caja negra.**== Es lo de mañana.
+> - **El tope por hoja sigue sin dispararse.** ==Si la suite no lo fuerza, `get_written()` se queda sin probar por ninguna vía.==
+> - **El decode de los `Ġ`, ahora del Bloque 6.**
+> - Sin docstrings en `src/guardian.py` ni en `src/interface.py`, y el subject los exige.
+> - Sigue sin existir `src/__main__.py` ni la regla `lint` del `Makefile`. **Bloque 6 sin abrir.**
+> - `mypy_path = "llm_sdk"` en `pyproject.toml` sigue siendo obligatorio.
+>
+> **Sobre el estudiante:** convirtió **dos** fricciones en reglas escritas del sistema en una sola sesión, y las dos acotan al agente, no a él. Y cuando se quedó sin ideas lo dijo en claro —*"por ignorancia"*— en vez de improvisar una solución compleja. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** la redacción del encargo de caja negra, con las condiciones que dejó escritas en `[[FIRST]]`.
+
+> [!info]- Agente 18 — histórico
 > **Periodo:** 2026-09-02, sin cuestionario por decisión suya → ==**cache del Bloque 4 cerrado**== y ==**Bloque 5 arrancado: `reply` genera de punta a punta**==.
 >
 > **Qué se hizo:**
