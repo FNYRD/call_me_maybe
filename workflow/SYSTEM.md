@@ -458,7 +458,7 @@ graph LR
 > [!warning] Bloqueo de bloque
 > No se pasa al siguiente bloque sin los tests del actual pasando y las tres pasadas hechas.
 
-**Output:** código + tests verdes, `flake8` y `mypy --strict` limpios, bloque a bloque.
+**Output:** código + tests verdes, `flake8` y `mypy --strict` limpios **en `src/`**, bloque a bloque. Los tests no se lintan — ver `[[SYSTEM#Testing]]`.
 
 ---
 
@@ -466,6 +466,11 @@ graph LR
 
 > [!important] Framework
 > **Siempre `pytest`.** Un archivo por bloque: `tests/test_bloque_N.py`. Se ejecutan desde la raíz con la regla del `Makefile`.
+
+> [!important] A los tests no se les exige `flake8` ni `mypy` — decisión del estudiante, 2026-09-01
+> ==**Ninguna herramienta de estilo se aplica a `tests/`.**== Solo dos cosas: que el test **pruebe de verdad su objetivo**, y que el **tipado sea correcto**.
+> `src/` no cambia: `flake8` y `mypy --strict` limpios siguen siendo bloqueo de bloque.
+> La regla vive también en `[[contract#F6 · Cómo se escriben y se corren los tests]]`, que es lo que lee el agente de tests.
 
 > [!important] Quien escribe el código no escribe sus tests — regla central
 > Los tests de un bloque los escribe **un agente distinto**, que **no abre `src/`** y cuyo único contexto es el **PDF del bloque**.

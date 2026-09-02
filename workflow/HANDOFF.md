@@ -305,7 +305,87 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 16 — activo
+> [!info] Agente 18 — activo
+> **Periodo:** 2026-09-02, sin cuestionario por decisión suya → ==**cache del Bloque 4 cerrado**== y ==**Bloque 5 arrancado: `reply` genera de punta a punta**==.
+>
+> **Qué se hizo:**
+> - ==**`_cache_flags` arreglado por él**==, en dos pasadas. Verificado contra las listas blancas reales —15 estados de `number` con los dos cierres y 7 de `string`—: ningún par de estados con la misma clave devuelve listas distintas.
+> - ==**`make` ya no está roto.**== `xcode-select` apunta a `/Library/Developer/CommandLineTools` y `make -v` responde. **No hizo falta tocar nada.**
+> - **`flake8` y `mypy --strict` limpios en `src/`** tras cortar la línea larga de `get_valid_ids`.
+> - ==**Lista de requisitos del Bloque 5 cerrada**==, discutida punto por punto y volcada a `[[PROJECT#Bloque 5 — Bucle de generación]]`.
+> - **`src/interface.py` escrito por él:** el `__init__` entero y `reply` hasta el `add_token`. ==**Los 11 prompts reales salen con función y argumentos correctos**==, de 0,8 s a 6,8 s.
+> - **Decisión grande, suya, tecleando:** `Interface` **no conoce ningún SDK**. Recibe las rutas como `Path` y la función de logits como `Callable[[List[int]], List[float]]`.
+>
+> **Dónde se quedó:** en el **modelo `pydantic` que devuelve `reply`**. Hoy devuelve `None`, y hasta que exista no se pueden cerrar ni el estado de fallo del modelo ni el de corte por tope. Lo dijo él al cerrar: *"apunta eso para comenzar desde allí"*.
+>
+> **Decisiones tomadas:**
+> - **El tope se cuenta por hoja y en caracteres, con el prompt crudo como techo.** Suya, y las tres partes las corrigió él: por hoja porque *"el problema sería que no se cierre una hoja, no que tenga mil hojas"*; en caracteres porque *"por token no es medible, un solo token puede contener muchos chars"*; y crudo porque el texto completo pesa ~250 tokens iguales para todos.
+> - **Devuelve un modelo `pydantic`, no un `dict`.** Su propuesta era `{estado: respuesta}`; aceptó la objeción de que con `Dict[str, str]` una errata en la clave pasa `mypy --strict`.
+> - **`Chat` pasa el prompt crudo; el Bloque 5 llama a `PromptBuilder` y `Tokenizer`.** Suya: *"el Bloque 5 realmente es la mecánica del chat, la parte de abajo del carro"*.
+> - **El prompt vacío lo filtra el Bloque 5**, no `Chat`. ==Cierra una decisión que estaba abierta desde el 08-31.==
+> - **Se reencodea el texto entero cada vuelta**, no por trozos: *"tiene menos riesgo y el precio no es tan grande"*.
+> - **`Guardian` expone lo escrito en la hoja en curso** — `get_written()`, escrito por él. Método público nuevo en un bloque cerrado: **arrastra su test**.
+> - **`except Exception` en la llamada al modelo**, no `RuntimeError`: el SDK no declara qué lanza. En sus clases, no.
+>
+> **Callejones sin salida:**
+> - ==**Explicar con nombres inventados.**== Se ilustró el enmascarado con `limpio`/`blanca` teniendo él `clean_logits`/`whith_list` delante: *"para de dar ejemplos con nombres de variables que no existen"*. **Es la regla del 08-29 otra vez.** Un vocabulario de juguete para el mecanismo vale; los nombres, no.
+> - **Presentarle como dato heredado algo sin decidir.** El *presupuesto de tokens* se le mencionó como si viniera del Bloque 4: *"no entiendo eso de que se acaba el presupuesto de tokens, ¿de dónde se acaba eso?"*. Se rectificó en voz alta.
+> - **Explicar el enmascarado entero de golpe.** Tres mensajes sin avanzar hasta que él cortó con *"vamos por pasos, qué le paso a clean logits"*. Con una pieza por mensaje, cerrado en cuatro turnos.
+> - **Argumentar en vez de ejecutar.** Sus dos fallos de `numpy` —`np.full(151.936, "-inf")` y la línea con los logits dentro de los corchetes— se cerraron enseñando la salida real, no explicándolos.
+>
+> **Abierto:**
+> - ==**Lo que devuelve `reply`**== — es lo primero.
+> - ==**El texto crudo del vocabulario se cuela en el JSON**==: `"HelloĠ34ĠI'mÄł233ĠyearsĠold"`. Falta la tabla inversa. **Es del retorno**, lo situó él ahí.
+> - ==**Los 80 tests del Bloque 4 siguen sin correrse.**== Ya no hay excusa: `make testN test=4` funciona, ~4 minutos.
+> - **El tope por hoja está escrito y nunca se ha disparado** — ninguna corrida lo ha probado.
+> - **Ocho avisos de `flake8` en `src/interface.py`**, todos de estilo. Sin docstrings, ni ahí ni en `src/guardian.py`.
+> - **`mypy_path = "llm_sdk"` en `pyproject.toml`** — sin él, `mypy` resuelve la carpeta de fuera y da un error falso.
+> - Sigue sin existir `src/__main__.py` ni la regla `lint` del `Makefile`. **Bloque 6 sin abrir.**
+> - ==**Los cuestionarios de repaso, en duda.**== Ver la advertencia de `[[PROJECT#Para la sesión siguiente al 2026-09-02]]`.
+>
+> **Sobre el estudiante:** bajó el acoplamiento con el SDK de 4 métodos a 1 por iniciativa propia mientras tecleaba, y corrigió al agente dos veces sobre **dónde vive** un fallo. En contra: al arreglar una lista blanca vuelve a no comprobar el conjunto entero — la primera corrección del cache movió la colisión en vez de matarla. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** preguntarle si quiere cuestionario, y después el modelo `pydantic` de `reply`.
+
+> [!info]- Agente 17 — histórico
+> **Periodo:** cuestionario del 2026-09-01 —anulado por él— → ==**cache de la lista blanca escrito a medias**== y **16 tests nuevos de un segundo agente ciego**.
+>
+> **Qué se hizo:**
+> - ==**El repaso se anuló a la tercera pregunta**==, y con razón: dos de tres estaban mal redactadas. Entrada en `[[REVIEWS]]`, dos reglas nuevas en `[[PSYCHOLOGY]]`.
+> - **Regla suya, escrita:** ==a `tests/` no se le exige `flake8` ni `mypy`==. Solo que el test pruebe su objetivo y que el tipado sea correcto. En `[[contract#F6 · Cómo se escriben y se corren los tests]]` y en `[[SYSTEM#Testing]]`.
+> - **Recorrido entero de `Guardian` con él**, sin tocar código: qué hace el bloque, quién devuelve los ids, la cadena `get_valid_ids` → `_token_ok` → `_char_ok`, y qué hace `_open_key`. **Corregidas tres cosas suyas:** `Guardian` **decide antes**, no valida después · no interrumpe por error del modelo · el bucle del Bloque 5 es de **un** prompt, los N son del 6.
+> - ==**Cache del bonus 4, escrito por él**==: atributo, clave y el `if`/`else` de `get_valid_ids`. Verificado ejecutando: 1,19 s el primer prompt, 0,00 s el segundo y el tercero, 12 entradas para los tres.
+> - **Normalización de la clave, decidida y a medias.** La clave pasa a `(slot, flag, cierre)`, con `_written` entero solo en `name`.
+> - **16 tests nuevos** —sección 10 de `tests/test_bloque_4.py`— escritos por un **segundo agente ciego** desde `tests/encargo_tests_cache.pdf`. Revisados por el agente: cuatro correcciones pedidas y aplicadas, más la sustitución de todos los `vocab['x']` crudos por `id_de` en los 64 tests viejos.
+>
+> **Dónde se quedó:** ==`_cache_flags` tiene un bug encontrado ejecutando y **sin corregir**==: `0.` y `0.5` comparten flag y no comparten lista blanca. Detalle y salida real en `[[PROJECT#Cache de la lista blanca (bonus 4) — abierto el 2026-09-01]]`.
+>
+> **Decisiones tomadas:**
+> - **El cache envuelve `get_valid_ids`, no `_token_ok`.** Suya, con el dato de 1 consulta contra 151.000.
+> - **La clave es `(slot, flag, cierre)`.** Suya. En `name` no hay flag: la lista depende del prefijo exacto.
+> - **La flag se calcula una vez por paso desde `_written`**, no dentro de `_char_ok` — que responde por carácter, corre cientos de miles de veces y ya está testeado devolviendo `bool`.
+> - **El cache no necesita lista de requisitos.** Suya: *"quien necesita lista de requisitos es un bloque entero"*.
+> - **Indexar el vocabulario por tipo de hueco: descartado por ahora**, obliga a mantener un índice en paralelo a las reglas.
+> - **El agente de tests tampoco ejecuta**, solo escribe. Los tests los corre él.
+>
+> **Callejones sin salida:**
+> - ==**Preguntar con piezas que no existen.**== `Reply.model_validate` en el cuestionario, y encadenar otra pregunta encima de la misma pieza. Dos cortes seguidos.
+> - **Preguntas con respuesta perezosa válida.** La 3 del cuestionario. Anuló la sesión ahí.
+> - **Decirle "normalizar la clave" sin artefacto.** Lo desbloqueó su propia traza: cinco pasos con `_written` creciendo y la misma lista de 11 ids las cinco veces.
+> - **Afirmar que faltaba código por revisar** cuando solo habían crecido las docstrings. Se rectificó en voz alta.
+>
+> **Abierto:**
+> - ==**El bug de `_cache_flags`.**== Es lo primero.
+> - ==**Los 80 tests del Bloque 4 no se han corrido ni una vez.**== `make` está roto en la máquina: `xcode-select` apunta a un `Xcode.app` vacío. Arreglo con `sudo xcode-select -s /Library/Developer/CommandLineTools`.
+> - **Dos líneas de `src/guardian.py` pasan de 79 columnas** — pasada de estilo, y ahora `flake8` sí corre.
+> - Sin docstrings en `src/guardian.py` · no existe `src/__main__.py` ni la regla `lint` del `Makefile` · el prompt vacío no lo filtra nadie, decisión abierta del Bloque 6.
+> - **Bloque 5 sin abrir.**
+>
+> **Sobre el estudiante:** anuló un repaso por preguntas mal hechas y pidió que quedara registro; y diseñó el cache entero él —sitio, clave y flag—, corrigiendo por el camino dónde vivía un fallo que el agente había situado mal. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** el cuestionario de `[[PROJECT#Para la sesión siguiente al 2026-09-01]]` — cuatro preguntas. Después, `_cache_flags`.
+
+> [!info]- Agente 16 — histórico
 > **Periodo:** cuestionario del 2026-08-31 → ==**Bloque 4 cerrado**== y ==**sistema refundado (`SYSTEM.md` 3.0)**==.
 >
 > **Qué se hizo:**

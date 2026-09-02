@@ -24,7 +24,7 @@ Pendiente por decision del estudiante (S5), sin testear todavia:
 import json
 import random
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set, Tuple
 
 import pytest
 from pydantic import TypeAdapter, ValidationError
@@ -253,6 +253,19 @@ def repetir(vocab, reversed_vocab, functions, prompt: str,
     for token_id in traza:
         conductor.pon(token_id)
     return conductor
+
+
+def id_de(vocab: Dict[str, int], texto: str) -> int:
+    """El id del token que escribe exactamente `texto`.
+
+    Que un caracter suelto —`.`, `,`, `}`, `"`— exista como token propio del
+    vocabulario es una suposicion sobre el vocabulario real, no algo que el
+    contrato prometa: si no esta, el rojo lo dice aqui y no salta un
+    `KeyError` a mitad de un assert.
+    """
+    assert texto in vocab, (
+        f"el vocabulario real no trae {texto!r} como token suelto")
+    return vocab[texto]
 
 
 def muestra(ids: List[int]) -> List[int]:
@@ -522,7 +535,7 @@ def test_la_comilla_cierra_el_nombre_en_cuanto_esta_completo(
     conductor = nueva(vocab, reversed_vocab, ampliado, "Greet shrek")
     conductor.escribe("fn_greet")
 
-    assert vocab['"'] in conductor.ids()
+    assert id_de(vocab, '"') in conductor.ids()
 
 
 def test_el_nombre_no_admite_prefijos_imposibles_ni_comilla_temprana(
@@ -533,7 +546,7 @@ def test_el_nombre_no_admite_prefijos_imposibles_ni_comilla_temprana(
     conductor = nueva(vocab, reversed_vocab, functions, "Greet shrek")
 
     # Sin nada escrito la comilla no cierra.
-    assert vocab['"'] not in conductor.ids()
+    assert id_de(vocab, '"') not in conductor.ids()
 
     # Todo lo ofrecido mantiene la posibilidad de completar algun nombre.
     escrito = ""
@@ -560,7 +573,7 @@ def test_el_nombre_no_admite_prefijos_imposibles_ni_comilla_temprana(
     conductor = nueva(vocab, reversed_vocab, functions, "Greet shrek")
     conductor.escribe("fn_")
     if not conductor.json().rstrip().endswith('"'):
-        assert vocab['"'] not in conductor.ids()
+        assert id_de(vocab, '"') not in conductor.ids()
 
 
 def hasta_hoja_number(vocab, reversed_vocab, functions) -> Conductor:
@@ -582,9 +595,9 @@ def test_la_hoja_number_no_admite_cierre_ni_punto_sin_digito(
     conductor = hasta_hoja_number(vocab, reversed_vocab, functions)
     ofrecidos = set(conductor.ids())
 
-    assert vocab[','] not in ofrecidos
-    assert vocab['}'] not in ofrecidos
-    assert vocab['.'] not in ofrecidos
+    assert id_de(vocab, ',') not in ofrecidos
+    assert id_de(vocab, '}') not in ofrecidos
+    assert id_de(vocab, '.') not in ofrecidos
     assert all(conductor.txt(i)[:1] in DIGITOS + "-" for i in ofrecidos)
 
 
@@ -620,8 +633,10 @@ def test_en_la_hoja_number_solo_hay_un_cierre_admisible(
     conductor.escribe("40")
     ofrecidos = set(conductor.ids())
 
-    assert not (vocab[','] in ofrecidos and vocab['}'] in ofrecidos)
-    assert vocab[','] in ofrecidos or vocab['}'] in ofrecidos
+    coma, llave = id_de(vocab, ','), id_de(vocab, '}')
+
+    assert not (coma in ofrecidos and llave in ofrecidos)
+    assert coma in ofrecidos or llave in ofrecidos
 
 
 def test_todo_lo_ofrecido_en_una_hoja_number_deja_un_numero_valido(
@@ -667,7 +682,7 @@ def test_la_hoja_string_no_cierra_con_coma_ni_llave(
     conductor = hasta_hoja_string(vocab, reversed_vocab, functions)
     antes = conductor.json()
 
-    conductor.pon(vocab[','])
+    conductor.pon(id_de(vocab, ','))
 
     assert conductor.g.is_open() is True
     assert conductor.json().startswith(antes + ',')
@@ -878,7 +893,7 @@ def test_el_nombre_no_se_completa_sin_un_caracter_del_modelo(
     conductor = nueva(vocab, reversed_vocab, una_sola, "Greet shrek")
 
     assert "fn_greet" not in conductor.json()
-    assert vocab['"'] not in conductor.ids()
+    assert id_de(vocab, '"') not in conductor.ids()
 
 
 def test_con_un_solo_candidato_el_nombre_se_completa_y_cierra(
@@ -947,13 +962,13 @@ def test_comunicar_un_token_sin_sesion_abierta_lanza(
     antes se colaba en un `_json_str` que nadie habia arrancado."""
     g = Guardian(vocab, reversed_vocab, functions)
     with pytest.raises(ValueError):
-        g.add_token(vocab["fn"])
+        g.add_token(id_de(vocab, "fn"))
 
     conductor = nueva(vocab, reversed_vocab, functions, prompts[0].prompt)
     while conductor.g.is_open():
         conductor.cierra_uno()
     with pytest.raises(ValueError):
-        conductor.g.add_token(vocab["fn"])
+        conductor.g.add_token(id_de(vocab, "fn"))
 
 
 def test_pedir_el_json_sin_haber_arrancado_no_lanza(
@@ -1007,3 +1022,352 @@ def test_la_lista_entera_de_una_hoja_string_es_admisible(
         assert completable, (
             f"el id {token_id} ofrece {conductor.txt(token_id)!r} y deja un "
             f"JSON que no se puede terminar: {candidato!r}")
+
+
+# --------------------------------------------------------------------------
+# 10. Estabilidad de la lista blanca — la lista depende solo del estado
+#
+# Todo lo de esta seccion mira una sola cosa: `get_valid_ids()` responde al
+# estado actual y nunca a la historia previa de la instancia. Los catalogos
+# fabricados aqui son los que el real no trae: nombres que no comparten
+# prefijo, y dos parametros del mismo tipo.
+# --------------------------------------------------------------------------
+
+def divergentes() -> List[Function]:
+    """Catalogo de tres nombres: dos que no comparten ni la primera letra, y
+    un tercero que comparte arranque con el primero.
+
+    El tercero existe para que el recorrido del nombre de varios pasos antes
+    de quedarse con un unico candidato: con solo dos nombres ajenos, la
+    primera letra ya decide y el atajo del nombre unico cierra el hueco.
+    """
+    return como_funciones([
+        {"name": "get_weather",
+         "description": "Weather for a city.",
+         "parameters": {"city": {"type": "string"}},
+         "returns": {"type": "string"}},
+        {"name": "send_mail",
+         "description": "Send a mail to someone.",
+         "parameters": {"to": {"type": "string"}},
+         "returns": {"type": "string"}},
+        {"name": "get_time",
+         "description": "Shares its start with the first name.",
+         "parameters": {"zone": {"type": "string"}},
+         "returns": {"type": "string"}},
+    ])
+
+
+def dos_parametros() -> List[Function]:
+    """Catalogo con una funcion de dos parametros del mismo tipo.
+
+    Lleva una segunda funcion solo para que el nombre no se complete solo:
+    con un unico nombre el atajo salta antes del primer token.
+    """
+    return como_funciones([
+        {"name": "fn_dos",
+         "description": "Two parameters of the same type.",
+         "parameters": {"a": {"type": "number"}, "b": {"type": "number"}},
+         "returns": {"type": "number"}},
+        {"name": "zz_otra",
+         "description": "Only here to keep two names alive.",
+         "parameters": {"q": {"type": "string"}},
+         "returns": {"type": "string"}},
+    ])
+
+
+def continuaciones(nombres: List[str], escrito: str,
+                   vocab: Dict[str, int]) -> Set[int]:
+    """Los ids que el hueco del nombre admite, calculados desde el catalogo.
+
+    Un token vale si su texto, pegado a lo ya escrito, sigue siendo prefijo
+    de algun nombre del catalogo o de ese nombre ya cerrado con comilla.
+    """
+    metas = [nombre + '"' for nombre in nombres]
+    return {token_id for texto, token_id in vocab.items()
+            if any(meta.startswith(escrito + texto) for meta in metas)}
+
+
+def recorrido(conductor: Conductor) -> Tuple[List[List[int]], str]:
+    """Las listas paso a paso de una sesion, y su JSON final."""
+    listas: List[List[int]] = []
+    while conductor.g.is_open():
+        listas.append(conductor.ids())
+        conductor.cierra_uno()
+    return listas, conductor.json()
+
+
+def hasta_number(conductor: Conductor) -> Conductor:
+    """Avanza hasta que el hueco actual sea una hoja `number` sin escribir."""
+    pasos = 0
+    while not conductor.json().rstrip().endswith(':'):
+        conductor.cierra_uno()
+        pasos += 1
+        assert conductor.g.is_open(), "no se llego a la hoja number"
+        assert pasos <= TOPE_PASOS, "no se llego a la hoja number"
+    return conductor
+
+
+def hasta_string_vacia(vocab, reversed_vocab, functions) -> Conductor:
+    """Deja la sesion en una hoja `string` recien abierta, sin contenido."""
+    conductor = nueva(vocab, reversed_vocab, functions, "Greet shrek")
+    conductor.escribe('fn_greet')
+    while not conductor.json().rstrip().endswith('"'):
+        conductor.cierra_uno()
+        assert conductor.g.is_open(), "no se llego a la hoja string"
+    return conductor
+
+
+def test_dos_consultas_seguidas_devuelven_la_misma_lista(
+        vocab, reversed_vocab, functions, prompts):
+    """Caso 1: sin `add_token` en medio, la lista repite contenido Y orden,
+    en todos los huecos de una sesion entera."""
+    conductor = nueva(vocab, reversed_vocab, functions, prompts[0].prompt)
+
+    while conductor.g.is_open():
+        assert conductor.ids() == conductor.ids(), conductor.json()
+        conductor.cierra_uno()
+
+
+def test_dos_prompts_distintos_arrancan_con_la_misma_lista(
+        vocab, reversed_vocab, functions):
+    """Caso 2: el hueco del nombre no depende del texto del prompt, asi que
+    dos sesiones distintas arrancan con listas identicas."""
+    uno = nueva(vocab, reversed_vocab, functions, "Greet shrek")
+    otro = nueva(vocab, reversed_vocab, functions,
+                 "What is the sum of 40 and 2?")
+
+    assert uno.ids() == otro.ids()
+
+
+def test_una_instancia_reutilizada_da_lo_mismo_que_una_por_prompt(
+        vocab, reversed_vocab, functions, prompts):
+    """Caso 3, el central: N prompts sobre una sola instancia dan, paso a
+    paso, las mismas listas y los mismos JSON que una instancia por prompt.
+
+    Recorre tres prompts reales enteros dos veces: puede tardar.
+    """
+    textos = [entrada.prompt for entrada in prompts[:3]]
+    guardian = Guardian(vocab, reversed_vocab, functions)
+
+    seguidas = [recorrido(Conductor(guardian, reversed_vocab, texto))
+                for texto in textos]
+
+    for texto, esperado in zip(textos, seguidas):
+        aparte = recorrido(nueva(vocab, reversed_vocab, functions, texto))
+        assert aparte == esperado, texto
+
+
+def test_start_nuevo_arranca_desde_cero_y_no_desde_lo_abandonado(
+        vocab, reversed_vocab, functions):
+    """Caso 4: `start` a mitad de una sesion tira el estado anterior; la
+    primera lista es la del arranque, no la del hueco abandonado."""
+    conductor = nueva(vocab, reversed_vocab, functions, "Greet shrek")
+    for _ in range(3):
+        conductor.cierra_uno()
+    abandonada = conductor.ids()
+
+    segunda = Conductor(conductor.g, reversed_vocab, "Reverse 'hello'")
+    fresca = nueva(vocab, reversed_vocab, functions, "Reverse 'hello'")
+
+    assert segunda.ids() == fresca.ids()
+    assert segunda.ids() != abandonada
+
+
+def test_dos_catalogos_distintos_no_comparten_lista(
+        vocab, reversed_vocab, functions):
+    """Caso 5: en el mismo estado —arranque, nada escrito— dos instancias con
+    catalogos distintos ofrecen listas distintas, sin herencia entre ellas."""
+    otro_catalogo = divergentes()
+    uno = nueva(vocab, reversed_vocab, functions, "Greet shrek")
+    otro = nueva(vocab, reversed_vocab, otro_catalogo, "Greet shrek")
+
+    assert set(uno.ids()) != set(otro.ids())
+    assert set(otro.ids()) == continuaciones(
+        [f.name for f in otro_catalogo], "", vocab)
+
+
+def test_una_hoja_number_y_una_string_vacias_ofrecen_listas_distintas(
+        vocab, reversed_vocab, functions):
+    """Caso 6: el tipo del hueco manda. Dos hojas recien abiertas, una
+    `number` y una `string`, no ofrecen lo mismo."""
+    numero = hasta_hoja_number(vocab, reversed_vocab, functions)
+    texto = hasta_string_vacia(vocab, reversed_vocab, functions)
+
+    assert set(numero.ids()) != set(texto.ids())
+
+
+def test_lo_ya_escrito_en_la_hoja_cambia_la_lista(
+        vocab, reversed_vocab, functions):
+    """Caso 7: misma hoja `number`, distinto contenido escrito. Sin nada, ni
+    el punto ni el cierre entran; con un digito, los dos aparecen."""
+    vacia = hasta_hoja_number(vocab, reversed_vocab, functions)
+    sin_nada = set(vacia.ids())
+
+    vacia.escribe("4")
+    con_digito = set(vacia.ids())
+
+    assert id_de(vocab, '.') not in sin_nada
+    assert id_de(vocab, '.') in con_digito
+    assert not {id_de(vocab, ','), id_de(vocab, '}')} & sin_nada
+    assert {id_de(vocab, ','), id_de(vocab, '}')} & con_digito
+    assert sin_nada != con_digito
+
+
+def test_el_cierre_admisible_depende_de_si_quedan_parametros(
+        vocab, reversed_vocab):
+    """Caso 8: dos hojas `number` con el mismo contenido escrito difieren en
+    el cierre: coma en el parametro que no es el ultimo, llave en el ultimo.
+    """
+    catalogo = dos_parametros()
+    conductor = nueva(vocab, reversed_vocab, catalogo, "Add 4 and 4")
+    conductor.escribe("fn_dos")
+
+    hasta_number(conductor)
+    conductor.escribe("4")
+    primera = set(conductor.ids())
+
+    hasta_number(conductor)
+    conductor.escribe("4")
+    ultima = set(conductor.ids())
+
+    assert id_de(vocab, ',') in primera and id_de(vocab, '}') not in primera
+    assert id_de(vocab, '}') in ultima and id_de(vocab, ',') not in ultima
+    assert primera != ultima
+
+
+def test_un_cero_solo_no_admite_ningun_digito_detras(
+        vocab, reversed_vocab, functions):
+    """Caso 9: escrito un `0` en una hoja `number`, JSON no deja mas digitos
+    a la izquierda del punto, asi que ninguno entra."""
+    conductor = hasta_hoja_number(vocab, reversed_vocab, functions)
+    conductor.escribe("0")
+
+    for token_id in conductor.ids():
+        texto = conductor.txt(token_id)
+        assert texto[:1] not in DIGITOS, texto
+
+
+def test_el_punto_no_vuelve_a_entrar_en_la_misma_hoja(
+        vocab, reversed_vocab, functions):
+    """Caso 10: escrito `0.`, el punto ya se gasto y desaparece de la lista.
+    """
+    conductor = hasta_hoja_number(vocab, reversed_vocab, functions)
+    conductor.escribe("0.")
+
+    for token_id in conductor.ids():
+        texto = conductor.txt(token_id)
+        assert '.' not in texto, texto
+
+
+def test_la_lista_nunca_esta_vacia_con_la_sesion_abierta(
+        vocab, reversed_vocab, ampliado, prompts):
+    """Caso 11: mientras `is_open()` sea verdadero hay al menos un id, en
+    todo el recorrido y con el catalogo ampliado."""
+    conductor = nueva(vocab, reversed_vocab, ampliado, prompts[0].prompt)
+
+    while conductor.g.is_open():
+        assert conductor.ids(), conductor.json()
+        conductor.cierra_uno()
+
+
+def test_la_lista_del_nombre_es_todo_el_universo_admisible(
+        vocab, reversed_vocab):
+    """Caso 12: estado congelado —arranque, nada escrito— y pasada por TODO
+    el vocabulario: la lista es exactamente el conjunto de tokens que
+    continuan algun nombre del catalogo. Ni uno de mas, ni uno de menos.
+
+    Recorre los 150.000 tokens del vocabulario real: puede tardar.
+    """
+    catalogo = divergentes()
+    nombres = [f.name for f in catalogo]
+    conductor = nueva(vocab, reversed_vocab, catalogo, "Weather in Madrid")
+
+    assert set(conductor.ids()) == continuaciones(nombres, "", vocab)
+
+
+def test_dos_nombres_sin_prefijo_comun_en_la_misma_instancia(
+        vocab, reversed_vocab):
+    """Caso 13: sobre UNA instancia se recorre cada nombre del catalogo, uno
+    por sesion, con `start` nuevo entre medias.
+
+    En cada paso la lista es exactamente la que se calcula desde el catalogo
+    y lo escrito, asi que el camino de un nombre no hereda nada del anterior.
+    El recorrido para en cuanto el atajo del nombre unico cierra el hueco:
+    con `get_weather` y `get_time` vivos, eso ocurre pasada la letra que los
+    separa, no en la primera.
+    """
+    catalogo = divergentes()
+    nombres = [f.name for f in catalogo]
+    guardian = Guardian(vocab, reversed_vocab, catalogo)
+
+    for nombre in nombres:
+        conductor = Conductor(guardian, reversed_vocab, "Do something")
+        escrito = ""
+        for letra in nombre:
+            assert set(conductor.ids()) == continuaciones(
+                nombres, escrito, vocab), (nombre, escrito)
+            conductor.escribe(letra)
+            escrito += letra
+            # El atajo del nombre unico puede cerrar el nombre solo: a partir
+            # de ahi el hueco ya no es el nombre.
+            if '"parameters"' in conductor.json():
+                break
+
+
+def test_dos_nombres_que_divergen_tarde_se_separan_en_su_punto(
+        vocab, reversed_vocab, ampliado):
+    """Caso 14: `fn_greet` y `fn_greeting` comparten arranque. Paso a paso la
+    lista es la de las continuaciones vivas, y la comilla de cierre solo
+    aparece cuando lo escrito ES un nombre completo del catalogo."""
+    nombres = [f.name for f in ampliado]
+    conductor = nueva(vocab, reversed_vocab, ampliado, "Greet shrek")
+
+    escrito = ""
+    for letra in "fn_greet":
+        assert set(conductor.ids()) == continuaciones(
+            nombres, escrito, vocab), escrito
+        cierra = id_de(vocab, '"') in conductor.ids()
+        assert cierra is (escrito in nombres), escrito
+        conductor.escribe(letra)
+        escrito += letra
+
+    assert escrito == "fn_greet" and escrito in nombres
+    assert set(conductor.ids()) == continuaciones(nombres, escrito, vocab)
+    assert id_de(vocab, '"') in conductor.ids()
+
+
+def test_los_guardas_de_orden_y_de_id_desconocido(
+        vocab, reversed_vocab, functions, prompts):
+    """Caso 15: `get_valid_ids` y `add_token` antes de `start` lanzan
+    `ValueError`; un id fuera del vocabulario tambien; `get_json` no lanza
+    nunca.
+
+    Solo se comprueba que `get_json` no lance: el contrato no dice que
+    devuelva antes del primer `start`. Que sea la cadena vacia es una
+    suposicion pendiente de confirmar, y se comprueba en la seccion 9.
+    """
+    guardian = Guardian(vocab, reversed_vocab, functions)
+
+    with pytest.raises(ValueError):
+        guardian.get_valid_ids()
+    with pytest.raises(ValueError):
+        guardian.add_token(id_de(vocab, "fn"))
+    guardian.get_json()
+
+    conductor = nueva(vocab, reversed_vocab, functions, prompts[0].prompt)
+    fuera = max(reversed_vocab) + 1000
+    with pytest.raises(ValueError):
+        conductor.g.add_token(fuera)
+    conductor.json()
+
+
+def test_al_cerrar_la_sesion_el_json_esta_completo(
+        vocab, reversed_vocab, functions, prompts):
+    """Caso 16: terminado un prompt, `is_open()` es `False` y el JSON pasa
+    `json.loads` sin error."""
+    conductor = nueva(vocab, reversed_vocab, functions, prompts[0].prompt)
+
+    salida = conductor.cierra_todo()
+
+    assert conductor.g.is_open() is False
+    assert json.loads(salida)

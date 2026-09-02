@@ -101,8 +101,8 @@ graph LR
 | 1 | Tokenizer | ✅ | ✅ | ✅ |
 | 2 | I/O de archivos | ✅ | ✅ | ✅ |
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
-| 4 | Validez de tokens | ✅ | ✅ | ✅ |
-| 5 | Bucle de generación | ⚪ | ⚪ | ⚪ |
+| 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | 🔵 sin correr |
+| 5 | Bucle de generación | ✅ requisitos 09-02 | 🔵 `reply` corriendo | ⚪ |
 | 6 | `Chat` orquestador | ⚪ | ⚪ | ⚪ |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
@@ -118,6 +118,20 @@ graph LR
 > Los tests los escribió un **agente ciego** que nunca abrió `src/`. De sus 5 rojos salieron **dos errores reales del código** —el cero a la izquierda y el cierre tras un punto—, los dos en la rama `number` de `_char_ok` y corregidos por él.
 > **Diseño:** esqueleto + huecos, sin pila de estructura JSON. El modelo solo escribe **hojas** —nombre de función y valores—; el resto lo inyecta `Guardian`.
 > ==El contrato en PDF se borró al cerrar el bloque, por decisión suya.==
+
+> [!success] Bloque 4 — cache cerrado (2026-09-02)
+> `_cache_flags` arreglado por él y **verificado contra las listas blancas reales**: 15 estados de `number` con los dos cierres y 7 de `string`, ==ningún par de estados con la misma clave devuelve listas distintas==.
+> `Guardian` gana `get_written()`, que expone lo escrito en la hoja en curso — lo pide el tope del Bloque 5. **Método público nuevo: arrastra su test.**
+> ==**Los 80 tests siguen sin correrse.**== `make` ya funciona: `make testN test=4`, ~4 minutos.
+
+> [!success] Bloque 5 — arrancado (2026-09-02)
+> **Lista de requisitos cerrada** antes de teclear, y `src/interface.py` con el `__init__` y `reply` escritos por él el mismo día. ==**Los 11 prompts reales salen con función y argumentos correctos**==, de 0,8 s a 6,8 s.
+> **Decisión de diseño suya:** `Interface` **no conoce ningún SDK** — recibe las rutas como `Path` y la función de logits como `Callable`. Construir el modelo pasa a `Chat`.
+> **Falta lo que `reply` devuelve:** el modelo `pydantic` con el estado, y con él el decode del texto crudo que hoy mete `Ġ` en las hojas `string`.
+
+> [!info]- Bloque 4 — reabierto para el cache (2026-09-01), histórico
+> El **bonus 4** entró dentro del bloque, por decisión suya: el cache envuelve `get_valid_ids` y no toca el cálculo. Funciona —el primer prompt lo llena, los siguientes no recorren el vocabulario— pero ==**`_cache_flags` tiene un bug abierto**==: `0.` y `0.5` comparten flag sin compartir lista blanca.
+> **16 tests nuevos** de un segundo agente ciego, sección 10 de `tests/test_bloque_4.py`. ==Ninguno de los 80 se ha corrido: `make` está roto en la máquina.==
 
 > [!important] Método refundado (2026-08-31)
 > El ciclo de un bloque: **lista de requisitos cerrada** → **él teclea y el agente verifica ejecutando** → **contrato escrito después** → **agente de tests ciego** → **él diagnostica los rojos** → **correcciones entre los dos** → **tres pasadas y cierre**.

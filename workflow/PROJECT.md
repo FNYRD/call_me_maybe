@@ -18,12 +18,45 @@ tags: [42, proyecto]
 
 ## 🗺️ Mapa de flujo
 
-> [!info] Dónde estamos — actualizado el 2026-08-31
+> [!info] Dónde estamos — 2026-09-02
+> ==**El Bloque 5 arrancó y `reply` ya genera de punta a punta**==: los 11 prompts reales salen con función y argumentos correctos, entre 0,8 s y 6,8 s cada uno. Detalle en `[[PROJECT#Bloque 5 — Bucle de generación]]`.
+> **Por dónde se sigue:** ==el modelo `pydantic` que devuelve `reply`==. Hoy devuelve `None`. Con él dentro se cierran de una vez las tres cosas que faltan: el estado de fallo del modelo, el estado de corte por tope, y el ==**decode del texto crudo**== que hoy mete `Ġ` en las hojas `string`.
+> **Regla suya del 09-02, sin cerrar:** está pensando en **quitar los cuestionarios de repaso** una vez pasada la fase de internalización de conceptos. Hoy no se hizo ninguno, por decisión suya. ==No está decidido: se le pregunta antes de lanzar el siguiente.==
+
+> [!success] El cache del Bloque 4 — cerrado el 2026-09-02
+> ==**El cache de la lista blanca (bonus 4) está cerrado.**== El bug de `_cache_flags` lo arregló él: las cuatro preguntas de `number` ya no se pisan y la rama `string` pregunta `'"' in text`, que es lo que mira la regla.
+> **Verificado contra las listas blancas reales**, 15 estados de `number` con los dos cierres y 7 de `string`: ==ningún par de estados con la misma clave devuelve listas distintas==.
+> ```
+> clave=(3,',')  ['0.5','40.53','1.0','0.000','8.9']    1 lista   11 ids
+> clave=(4,',')  ['1','40','405','9999','7','123456']   1 lista   12 ids
+> clave=(5,',')  ['0.','40.']                           1 lista   10 ids
+> clave=(0,'}')  ['', 'h', 'hello', 'shrek']            1 lista   150.134 ids
+> clave=(1,'}')  ['hello"', 'a"', '"']                  1 lista        1 id
+> ```
+> ==**`make` ya no está roto**== — `xcode-select` apunta a `/Library/Developer/CommandLineTools` y `make -v` responde. Los 80 tests **siguen sin correrse**: `make testN test=4`, ~4 minutos.
+> **`flake8` y `mypy --strict` limpios en `src/`** tras arreglar la línea larga de `get_valid_ids`. Queda pendiente el `W293` de la línea en blanco del `get_written` nuevo.
+
+> [!info]- Lo que estaba a medias — 2026-09-01, histórico
+> ==**El cache de la lista blanca (bonus 4) está a medio escribir y con un bug conocido.**== Vive dentro de `Guardian.get_valid_ids`, que ahora consulta `self._cache` antes de recorrer el vocabulario.
+> **Lo que funciona:** con la clave sin normalizar —`(_slot, _written, cierre)`— el primer prompt llena el cache y los siguientes no recorren el vocabulario. Medido: 1,19 s el primero, 0,00 s el segundo y el tercero, 12 entradas para los tres.
+> ==**El bug, encontrado ejecutando y sin corregir:**== `_cache_flags` usa `elif`, así que `0.` y `0.5` caen los dos en la flag `3` y **comparten entrada del cache**. No tienen la misma lista blanca: con `0.` el cierre no puede entrar y con `0.5` sí. Salida real de la comprobación:
+> ```
+> instancias limpias:   '0.' -> coma admitida? False | '0.5' -> coma admitida? True
+> misma instancia:      '0.' -> False | '0.5' -> False  (devuelve la lista de '0.')
+> ```
+> **Consecuencia si se deja:** sale `{"a": 0.}` y `json.loads` revienta.
+> **Dónde está la causa:** *tiene punto* y *acaba en dígito* son dos preguntas distintas, y `0.5` responde que sí a las dos. Con `elif` solo se responde la primera.
+> **Además, sin tocar:** la línea de `_cache` en `__init__` y la de `flag` en `get_valid_ids` pasan de 79 columnas — es de la pasada de estilo, y ahora `flake8` sí corre.
+> ==**Los 80 tests del Bloque 4 no se han corrido ni una vez**== — `make` está roto en la máquina, ver abajo.
+
+> [!info] Dónde estamos — actualizado el 2026-09-01
 > ==**Método refundado el 2026-08-31.**== El ciclo de un bloque queda: **lista de requisitos cerrada** → **él teclea y el agente verifica ejecutando** → **contrato en PDF escrito después** → **agente de tests ciego** → **él diagnostica los rojos** → **correcciones entre los dos** → **tres pasadas y cierre**. Detalle en `[[SYSTEM#FASE 2 — CONSTRUCCIÓN (por bloque)]]`; la plantilla del PDF, en `[[contract]]`.
 > **Fase actual:** `FASE 2` — construcción
 > **Progreso del cuestionario de Fase 0:** **10/10 en `dominado`**
 > **Bloques cerrados:** ==**1, 2, 3 y 4**== — `src/tokenizer.py` (08-24), `src/filemanager.py` y `src/promptbuilder.py` (08-25), `src/guardian.py` (08-31). Los cuatro con `flake8` y `mypy --strict` limpios y **259 tests verdes** en total
-> **Siguiente paso:** ==**Bloque 5 — bucle de generación**==, empezando por su **lista de requisitos**. No se teclea nada hasta cerrarla
+> **Siguiente paso:** ==**cerrar el cache**== —arreglar `_cache_flags` y correr los 80 tests—, y después el **Bloque 5**, empezando por su **lista de requisitos**
+> ==**`make` no funciona en esta máquina**== — `xcode-select` apunta a `/Applications/Xcode.app`, que está vacío. Arreglo: `sudo xcode-select -s /Library/Developer/CommandLineTools`. Sin sudo, la salida es llamar al binario entero: `/Library/Developer/CommandLineTools/usr/bin/make test`
+> **Decisión suya del 09-01:** el cache **no necesita lista de requisitos** — *"quien necesita lista de requisitos es un bloque entero"*. Es un añadido dentro de un bloque ya cerrado
 > ==**El `flake8` del venv ya no está roto**== — el culpable era `flake9`, un fork viejo instalado en `callme/` que rompía el plugin de `pycodestyle`. Desinstalado y `flake8` reinstalado el 08-31. **No era Python 3.14**
 > **Requisito del subject, vigente:** *"All classes must use pydantic for validation"* (IV.3.1, literal)
 > **Diferido a la fase de tests final:** la hoja de evaluación y la estrategia de medición del 90%
@@ -53,12 +86,16 @@ graph LR
 | ↳ | *cerrado el 08-25: `PromptBuilder` con la plantilla de Qwen y el catálogo en JSON, 20 tests verdes* | | | |
 | 4 — Validez de tokens | Esqueleto inyectado + huecos, lista blanca por token | ✅ | Estado del JSON y schema | Ids permitidos en ese estado |
 | ↳ | *cerrado el 08-31: **64 tests verdes** escritos por un agente ciego, `flake8` y `mypy --strict` limpios, las tres pasadas hechas salvo docstrings* | | | |
-| 5 — Bucle de generación | Logits, máscara, `argmax`, parada, validación `pydantic` | ⚪ | Todo lo anterior | Un resultado por prompt |
+| ↳ | *reabierto el 09-01 por decisión suya para meter el **cache** (bonus 4). **16 tests nuevos** de un segundo agente ciego — sección 10, sin correr todavía. `_cache_flags` tiene un bug abierto* | | | |
+| 5 — Bucle de generación | Logits, máscara, `argmax`, parada. **La validación `pydantic` del resultado sale del bloque** — decisión suya del 09-02 | 🔵 | Un prompt crudo | Un modelo `pydantic`: cómo salió el bucle y lo escrito |
+| ↳ | *lista de requisitos cerrada el 09-02 · `src/interface.py` con el `__init__` y `reply` escritos el 09-02, **11 de 11 prompts correctos**. Falta lo que devuelve* | | | |
 | 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | ⚪ | Los bloques ya construidos | N resultados + registro de fallos |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
-> [!bug] Decisión abierta del `[[PROJECT#Bloque 6 — `Chat` orquestador|Bloque 6]]` — anotada el 2026-08-31
+> [!success] ==Cerrada el 2026-09-02: el prompt vacío lo filtra el **Bloque 5**==, no `Chat`. Lo de abajo es el histórico de cuando estaba abierta
+
+> [!info]- Decisión que estuvo abierta del `[[PROJECT#Bloque 6 — `Chat` orquestador|Bloque 6]]` — anotada el 2026-08-31
 > **Un prompt vacío (`""`) no tiene respuesta posible**, y hoy no lo filtra nadie: el `FileManager` rechaza el **catálogo** vacío (`raise ValueError("Function's file is empty")`) pero no pone guard a los prompts —decisión suya del 08-24— y `""` es un `str` válido para el modelo `Prompt`. `Guardian` tampoco lo juzga: `start` recibe un `str` y monta el esqueleto, sin mirar el contenido.
 > **Consecuencia si nadie lo filtra:** el modelo elige función a ciegas y sale una llamada **válida en formato pero inventada**.
 > **Salida propuesta, sin cerrar:** es un **fallo de prompt** —tiene índice—, así que va a `logs/logs.json` bajo la clave `prompts`, y quien lo atrapa es `Chat`. Mismo camino que un prompt que revienta dentro del tokenizer.
@@ -82,7 +119,7 @@ graph LR
 | Tema | Origen | Estado | Cómo preguntarlo / qué falta |
 |---|---|---|---|
 | **De qué depende la lista blanca** — las dos cosas: texto ya escrito + schema del campo | ❌ 08-11 · ❌ 08-12 | 🟡 | Segunda vez que falla. El 08-12 contestó *"del catch y de la máscara"* — confunde el **resultado** con la causa. Sacó el **schema** con el par `{"a":` number vs `{"s":` string; el **texto ya escrito** dijo *"no sé"* y se le dio directo (par `{"a":` vs `{"a": 40`, mismo schema). Preguntar siempre con **dos congelados que solo cambien en una de las dos cosas** |
-| **Cache de la lista blanca (bonus 4)** — qué va de clave y qué de valor | ❌ 08-11 · 🙋 diferir | ⏸️ | Volvió tres veces al `dict` invertido del tokenizer. Explicado con dos bloques de código; quedó *"medio claro"*. **Se explica de nuevo al implementar el bonus 4**, y se pregunta antes de escribirlo |
+| **Cache de la lista blanca (bonus 4)** — qué va de clave y qué de valor | ❌ 08-11 · 🙋 diferir · 🔍 08-29 | ✅ 09-01 | **09-01, y lo sacó él entero:** propuso la clave `(slot, flag, cierre)` con su razón —*"con slot sabemos en qué punto estamos y cuáles son las reglas, la flag en qué punto de la string o number vamos, y qué cierre es válido"*—. Antes había elegido bien el sitio (`get_valid_ids` y no `_token_ok`) con el dato de 1 llamada contra 151.000. **Lo que costó llegar:** *"no entendí lo de normalizar la clave"* — lo desbloqueó su propia traza, cinco pasos con `_written` creciendo (`0.0` → `0.00000`) y la misma lista de 11 ids las cinco veces. **Sigue sin verificar** la parte de *por qué en `name` no cabe flag* |
 | **Por qué el Bloque 4 es bloque propio** | ❌ 08-11 | ✅ 08-17 | Preguntado por el test de la lista blanca: contestó **vocabulario**, y que el modelo no hace falta — *"lo que hace el modelo es predecir en base a vocabulario que yo le permito usar"*. Sin ayuda |
 | **Qué es un tensor — una fila es un texto entero, no un token** | 🙋 08-11 · ❌ 08-11 · ❌ 08-12 · 🙋 08-12 | 🟡 | Falló otra vez el 08-12: dijo que cada fila era *"un token id"*, y luego preguntó si las filas eran los turnos (pregunta/respuesta). **Lo que funcionó:** poner dos textos con nombre (`texto_A`, `texto_B`) al lado del tensor de dos filas y preguntar *"¿en qué fila quedó `texto_B`?"* — contestó "segunda" y ahí lo vio. Corregido también: la conversación entera va en **una sola fila**; lo que separa turnos son los tokens especiales (`<\|im_start\|>`), no las filas. Pidió él reforzarlo |
 | **Por qué un prompt por llamada** — la razón, no la regla | ❌ 08-10 · ❌ 08-12 · 🙋 08-12 | 🟡 | 08-12: dio tres razones ciertas pero secundarias (contexto, localizar errores, contador de profundidad) y se le escapó la de fondo. **Lo que lo desbloqueó:** pegar los 5 prompts y preguntar *"¿de cuál de los 5 es el token que sale de `argmax`?"* — reaccionó con *"¿pueden mezclarse las respuestas?"*. No se mezclan: solo hay **una** continuación, la del último token; los otros 4 prompts quedan como contexto sucio. Pidió él reforzarlo |
@@ -128,12 +165,21 @@ graph LR
 | **`_closing_char` informa, no muta** — el `pop` vive en `_close_level` | ❌ 08-27 · 🟡 08-29 | 🟡 | **08-29, a medias:** el *"no puede hacer `pop`"* salió limpio, pero la razón fue *"decidimos dejar esa responsabilidad a otra función"* — la regla, no la causa. Directo tras *"no entendí la pregunta"*: `get_valid_ids` prueba ~151.000 tokens por paso consultando el cierre en cada uno, y **solo uno se escribe**. **Preguntar por el número de llamadas, no por quién hace el `pop`** |
 | **Quién deshace el `dict` del archivo** — `pydantic` en el Bloque 2, no el bloque que llama | ❌ 08-29 | 🟡 | Contestó *"el bloque siguiente, que lo va a llamar por prompt"* —quién lo **pasa**, no quién lo **deshizo**— y luego señaló el `json.dumps` de `start`, que corre después y solo escapa. Se ejecutó `src/filemanager.py:48` por partes: `json.load` → `dict` · `validate_python` → `Prompt` · `.prompt` → `str`. **Preguntar con el `type()` de lo que devuelve `get_prompts` delante** |
 | **`str.isdigit()` no vale para validar un dígito de JSON** | 🔍 08-29 · ❌ 08-31 | 🟡 | **08-31, a medias:** los tres tokens los tiene (*"los de números minúsculos"*), pero situó el fallo en **`pydantic`**. Lo cerró separar las dos líneas —`json.loads(raw)` y `Reply.model_validate(d)`— y preguntar en cuál revienta: `json.loads`, antes de llegar a pydantic. **Preguntar por dónde revienta, ya no por qué tokens** · Encontrado ejecutando: da `True` para `²`, `³`, `¹`, que están en el vocabulario de Qwen como tokens sueltos. Preguntar **con la lista blanca real delante** (13 tokens con `4` escrito), nunca en abstracto |
-| **Dónde revienta un JSON con un número mal formado** — `json.loads`, no `pydantic` | ❌ 08-31 | 🟡 | Los tokens `²`,`³`,`¹` los tiene; el punto de fallo no. Lo cerró separar las dos líneas —`json.loads(raw)` y `Reply.model_validate(d)`— y preguntar en cuál revienta. **Preguntar por el orden de las dos llamadas, nunca por si falla** |
+| **Dónde revienta un JSON con un número mal formado** — `json.loads`, no `pydantic` | ❌ 08-31 | 🔴 | **09-01: pregunta retirada, no fallada.** Estaba redactada con `Reply.model_validate(d)`, una clase del Bloque 5 **que aún no existe**; la cortó dos veces. Ver la entrada de *Evitar* del 09-01 en `[[PSYCHOLOGY]]`. Lo que sí quedó ejecutado delante: `json.loads('{"a": 40²}')` → `JSONDecodeError` · **Se vuelve a preguntar cuando la validación `pydantic` del Bloque 5 esté escrita**, con sus dos líneas reales delante. Antes, no |
 | **Un número se acumula entre pasos, no llega como token** | ❌ 08-31 | ✅ 08-31 | Sostuvo que `07` no podía salir *"porque el modelo da dígito por dígito"*. Lo cerró la traza de dos pasos (`_written=""` → `"0"` → `"07"`) y la salida real del rojo. **El token es de un carácter; el número es lo acumulado** |
 | **Quitar un permiso vs añadir otro** — cómo se corrige una lista blanca | 🔍 08-31 | ✅ 08-31 | Al arreglar el cero a la izquierda añadió una rama que **permitía** en vez de restringir la que ya daba el paso. Lo cerró ejecutar su propia rama y enseñarle `text='0' + '7' -> True`. **Ante un permiso de más, la corrección quita, no añade** |
 | **Contrato sin pasos numerados — el lado del que implementa** | ❌ 08-31 | 🟡 | El lado del que **testea** lo tiene entero (*"ninguno tuviera manera de hacer trampa, ni prepararse para los tests, ni testar basado en lo que existe"*). Del implementador dijo *"no sé, tu pregunta es confusa"* → directo: con el paso numerado delante no le queda **ningún** trabajo, transcribe; y si el paso está mal, el código sale mal sin que nadie lo revise. Es lo que él nombró el 08-29: *"es casi copiar código"*. **La pregunta que falló comparaba dos redacciones en abstracto — reformular con un método concreto suyo** |
 | **Qué es una invariante** y en qué se diferencia de un caso de test | 🔍 08-29 | 🔴 | Sin preguntar. Salió al escribir el contrato. Una invariante se contrasta contra el **universo entero**; un caso es un punto suelto. Preguntar con una de las 16 del contrato delante |
-| **Cache de la lista blanca** — explicado otra vez el 08-29 | ❌ 08-11 · 🙋 diferir · 🔍 08-29 | ⏸️ | Se le volvió a explicar hoy al salir en el contrato: **clave** = tipo de hueco + lo escrito + cierre admisible, **valor** = lista de ids. Preguntó *"¿cache de qué? ¿de respuesta?"* — no lo confundía con el modelo, pero tampoco lo tenía. **Sigue diferido al bonus 4** |
+| **Cache de la lista blanca** — explicado otra vez el 08-29 | ❌ 08-11 · 🙋 diferir · 🔍 08-29 | ✅ 09-01 | Se cerró el 09-01 implementándolo. Ver la fila de arriba |
+| **Estados que colisionan en una clave normalizada** — `0.` y `0.5` | 🔍 09-01 · ❌ 09-02 | 🟡 | **09-02: lo arregló en dos pasadas.** La primera separó `0.` de `0.5` y dejó colisionando `40` con `0.5` — ==movió la colisión en vez de matarla==. La segunda partió por las dos preguntas independientes (*tiene punto* · *acaba en dígito*) y quedó bien, verificado contra las listas reales. Lo que lo cerró las dos veces fue **la tabla de estados con sus listas al lado**, nunca el código de `_cache_flags`. **Sin verificar:** por qué dos booleanos independientes no caben en una cadena de `elif` |
+| **El id de un token es su índice en los logits** — no hay búsqueda | 🔍 09-02 | 🟡 | Preguntó *"¿lo que hago es una búsqueda indexada?"*. Lo cerró `vocab['fn'] = 8822` al lado de `logits[8822] = 0.4438` y `len(logits) = 151936`. **Preguntar con los tres números delante**, nunca en abstracto |
+| **`list` vs `ndarray`** — indexar con una lista de índices | ❌ 09-02 | 🟡 | *"¿cuál es la diferencia de un array, es que es más lowlevel?"*. Lo que sirvió: `lista[[1, 4]]` → `TypeError` al lado de `array[[1, 4]]` → `[8.4 1.5]`. Lo de la memoria contigua lo entendió, pero no era lo que necesitaba. **Preguntar por qué la lista blanca tiene que indexar un array**, no por qué `numpy` es rápido |
+| **Los dos lados de una selección** — a la derecha lee, a la izquierda escribe | ❌ 09-02 | 🟡 | Escribió `clean_logits[np.array(model_logits)[white_list]]`: metió los **logits** donde van los **ids**, y sin asignación. Lo cerró ejecutar su propia línea → *"arrays used as indices must be of integer type"*. **Preguntar con su línea delante, no con la buena** |
+| **Tipar `numpy` bajo `mypy --strict`** — `npt.NDArray[np.float64]` | 🔍 09-02 | 🟡 | Salió al ver `ndarray[tuple[int], dtype[Any]]` en el editor. Sin verificar |
+| **`Path` vs `FilePath`** — cuál exige que el archivo exista | 🙋 08-24 · 🙋 09-02 | 🟡 | Lo preguntó él por segunda vez. Cerrado ejecutando: la misma ruta inexistente pasa por `Path` y `FilePath` la rechaza con `path_not_file`. ==Si vuelve a preguntarlo es la tercera== |
+| **Por qué no basta con pegar el id elegido** — `Guardian` inyecta texto que nadie eligió | 🔍 09-02 | ✅ 09-02 | Lo cerró la traza real: el modelo elige `'r'` y el JSON crece con `eet", "parameters": {"name": "`. De ahí sacó que hay que pegar `get_json()` entero cada vuelta |
+| **Por qué en el hueco `name` no cabe una flag** | 🔍 09-01 | 🔴 | Sin preguntar. La lista depende del prefijo exacto: `fn_` deja 19 tokens y `fn_g` otros. Preguntar con las dos listas puestas al lado |
+| **Dónde poner un cache: 1 llamada contra 151.000** | 🔍 09-01 | 🟡 | Lo eligió bien con el dato delante, pero primero dijo que *"ambos llaman al vocabulario 151.000 veces"* — confundía el trabajo total con el número de consultas. Preguntar por **cuántas veces se consulta el `dict`**, nunca por cuál recorre más |
 | **`startswith` vs `in`** — prefijo, no contención | 🔍 08-27 | ✅ 08-27 | Lo pidió directo y cortó la explicación de más: *"aquí sirve `.startswith` y ya"*. Tenía razón |
 
 > [!warning] Regla de reincidencia
@@ -151,6 +197,106 @@ graph LR
 > **Cómo se construye:** mitad de la `[[PROJECT#🎯 Lista de refuerzo]]` (lo que está en 🔴), mitad de lo trabajado en la sesión que se cierra.
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
+
+### Para la sesión siguiente al 2026-09-02
+
+> [!warning] ==Antes de lanzarlo: pregúntale si quiere cuestionario==
+> El 09-02 dijo: *"estoy pensando en quitar los cuestionarios posterior a la fase de internalización de conceptos, así que hoy no haremos esa fase"*. **No lo cerró como decisión**, así que las preguntas quedan escritas por si lo mantiene.
+> **Dato para esa conversación, no argumento:** la regla del repaso la creó él (08-10), la fijó como lo primero de la sesión (08-17), y el 09-01 anuló una sesión entera porque dos de tres preguntas estaban mal redactadas. ==Conviene preguntarle si lo que sobra es el cuestionario o las preguntas malas.==
+> Las dos reglas del 09-01 siguen vigentes: **cada identificador de una pregunta existe hoy en `src/`**, y **la respuesta perezosa se escribe antes y no debe valer**.
+
+> [!info] Cuatro preguntas — todas sobre lo que escribió hoy
+> Sesión entera de teclear `src/interface.py`. Nada se le explicó en frío.
+
+1. Tu `_cache_flags`, primera corrección del día, con los estados reales al lado:
+
+```
+_written = '0.'    flag 3
+_written = '0.5'   flag 4        <- y 40 tambien cae en la 4
+_written = '40'    flag 4
+```
+
+   `40` admite el punto y `0.5` no. ¿Por qué la primera versión no mató la colisión, solo la movió? *(refuerzo 🟡 — le pasó dos veces seguidas hoy. **Ponerle los tres estados, nunca el código**)*
+
+2. Congelado en el primer paso, con el vocabulario real:
+
+```
+vocab['fn'] = 8822
+logits[8822] = 0.4438
+len(logits) = 151936
+```
+
+   `get_valid_ids` te devuelve `[69, 8822]`. ¿Qué tiene que pasar entre esos ids y los logits para que puedas enmascarar? *(refuerzo 🟡 del 09-02 — hoy preguntó si era una búsqueda indexada)*
+
+3. Esta línea la escribiste hoy y reventó:
+
+```python
+clean_logits[np.array(model_logits)[white_list]]
+```
+
+   ¿Qué quedó dentro de los corchetes de `clean_logits`, y qué tenía que quedar? *(refuerzo 🟡 — **su línea delante, no la corregida**)*
+
+4. Tu `reply` de hoy encodea `system_prompt + get_json()` entero en cada vuelta. La alternativa era encodear una sola vez la base y pegarle solo el trozo del JSON. La descartaste. ¿Qué riesgo tenía? *(lo de hoy, decisión suya — la fusión que cruza la costura)*
+
+> [!note] Banco para más adelante
+> Por qué en el hueco `name` no cabe una flag · qué es una invariante y en qué se diferencia de un caso · por qué `get_json` no lanza nunca y `add_token` sí · los tres niveles de elemento objetivo · qué es la caché de Hugging Face · por qué el agente de tests no puede ejecutar tampoco, no solo leer.
+
+> [!important] Orden de la próxima sesión
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Preguntarle si quiere cuestionario** | Decisión suya del 09-02, sin cerrar |
+> | 2 | ==**El modelo `pydantic` que devuelve `reply`**== | Es donde empieza, dicho por él al cerrar. Con él dentro se cierran de golpe el estado de fallo del modelo, el de corte por tope y el ==decode de los `Ġ`== |
+> | 3 | **Correr los 80 tests del Bloque 4** | Siguen sin correrse ni una vez. `make testN test=4`, ~4 minutos. **`make` ya funciona** |
+> | 4 | **La pasada de estilo de `src/interface.py`** | Ocho avisos de `flake8`, ninguno de lógica |
+
+---
+
+### Para la sesión siguiente al 2026-09-01
+
+> [!warning] Antes de lanzar ninguna: las dos reglas que salieron de anular el repaso de hoy
+> **1 · Cada identificador que aparezca en una pregunta tiene que existir hoy en `src/`.** Hoy se preguntó con `Reply.model_validate` —clase del Bloque 5, sin escribir— y lo cortó dos veces.
+> **2 · Escribe la respuesta perezosa antes de lanzar la pregunta y comprueba que no vale.** Hoy se preguntó *"¿qué tiene que pasar para que un rojo sea del test y no del código?"* y contestó, con razón, que *"el test esté mal hecho"* la respondía. Anuló la sesión ahí.
+> Detalle en `[[REVIEWS]]`, entrada 2026-09-01.
+
+> [!info] Cuatro preguntas — todas sobre lo que escribió hoy
+> Sesión entera de cache. Nada de lo de hoy se le explicó en frío: lo decidió él, así que se pregunta por sus propias decisiones.
+
+1. Estos dos estados de una hoja `number`, con las dos listas reales al lado:
+
+```
+_written = '0.'    ->  la coma NO entra
+_written = '0.5'   ->  la coma SI entra
+```
+
+   Tu `_cache_flags` les da a los dos la flag `3`. ¿Qué pasa con el segundo cuando el cache ya tiene guardado el primero? *(el bug que quedó abierto — **ponerle los dos estados y las dos listas**, nunca el código de `_cache_flags`)*
+
+2. Congelado en el hueco del nombre, con el catálogo real:
+
+```
+_written = 'fn_'    ->  19 ids
+_written = 'fn_g'   ->  otros ids
+```
+
+   Decidiste que en `name` la clave lleve `_written` entero y no una flag. ¿Por qué ahí no sirve un resumen? *(refuerzo 🔴 del 09-01)*
+
+3. En un solo paso de generación, `get_valid_ids` se llama una vez y `_token_ok` unas 151.000. Pusiste el cache en el primero. ¿Cuántas consultas al `dict` hace cada opción, y por qué el trabajo total no es lo que decide? *(refuerzo 🟡 — hoy dijo primero que *"ambos llaman al vocabulario 151.000 veces"*)*
+
+4. `get_valid_ids` devuelve lo guardado solo si la lista tiene elementos. Hoy dijiste que una lista blanca vacía no debería existir nunca. Si un día saliera vacía, ¿qué le pasaría al bucle del Bloque 5? *(lo de hoy, argumento suyo — el agente lo daba por matiz del cache y él lo situó donde estaba de verdad)*
+
+> [!note] Banco para la sesión siguiente
+> Qué es una invariante y en qué se diferencia de un caso · por qué `get_json` no lanza nunca y `add_token` sí · los tres niveles de elemento objetivo · cuándo avanza el índice de un nivel de `_stack` · qué es la caché de Hugging Face · por qué el agente de tests no puede ejecutar tampoco, no solo leer.
+
+> [!important] Orden de la próxima sesión
+> | # | Qué | Por qué |
+> |---|---|---|
+> | 1 | **Cuestionario de repaso** | Regla suya: *"cuestionarios siempre primero"* |
+> | 2 | **Arreglar `_cache_flags`** | Es un bug conocido, con la salida real ya guardada en `[[PROJECT#Cache de la lista blanca (bonus 4) — abierto el 2026-09-01]]` |
+> | 3 | **Correr los 80 tests** | Los 16 nuevos no se han ejecutado ni una vez. Antes hay que arreglar `make` |
+> | 4 | **Bloque 5 — lista de requisitos** | La puerta: no se teclea nada del bloque hasta cerrarla |
+>
+> ==`make` está roto en la máquina.== `sudo xcode-select -s /Library/Developer/CommandLineTools`, o llamar a `/Library/Developer/CommandLineTools/usr/bin/make test`.
+
+---
 
 ### Para la sesión siguiente al 2026-08-31
 
@@ -192,7 +338,8 @@ Reply.model_validate(d)      # línea B
 > | 1 | **Cuestionario de repaso** | Regla suya: *"cuestionarios siempre primero"* |
 > | 2 | **Bloque 5 — lista de requisitos** | Es la puerta: no se teclea nada del bloque hasta cerrarla |
 >
-> ==El Bloque 4 está cerrado.== `flake8` ya funciona en el venv. Pendiente de estilo, para el final: docstrings en `src/guardian.py` y 17 líneas largas en `tests/test_bloque_1.py`.
+> ==El Bloque 4 está cerrado.== `flake8` ya funciona en el venv. Pendiente de estilo, para el final: docstrings en `src/guardian.py`.
+> ==Las 17 líneas largas de `tests/test_bloque_1.py` dejan de ser pendiente== — decisión suya del 2026-09-01: a `tests/` no se le exige `flake8` ni `mypy`. Ver `[[SYSTEM#Testing]]`.
 
 ---
 
@@ -1752,6 +1899,37 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 
 ---
 
+#### Cache de la lista blanca (bonus 4) — abierto el 2026-09-01
+
+> [!important] Dónde vive y por qué ahí — decisión suya
+> El cache **envuelve `get_valid_ids`**: consulta antes, calcula si no está, guarda y devuelve. ==El cálculo no se toca por dentro.==
+> **El dato que decidió el sitio:** en un solo paso de generación `get_valid_ids` se llama **una vez** y `_token_ok` **~151.000**. Puesto arriba, un acierto se salta el bucle entero; puesto abajo, se pagan 151.000 consultas al `dict` para ahorrar solo el cálculo de cada token.
+
+> [!success] Por qué el cache acierta — verificado ejecutando el 09-01
+> Dos prompts distintos, primer paso del nombre:
+> ```
+> _json_str : {"prompt":"What is the sum of 40 and 2?", "name": "
+> ids       : [69, 8822] -> ['f', 'fn']
+> _json_str : {"prompt":"Greet shrek", "name": "
+> ids       : [69, 8822] -> ['f', 'fn']
+> ```
+> El `_json_str` es distinto y la lista es la misma: `get_valid_ids` no mira el prompt. Mira el hueco, lo escrito dentro de él y el cierre admisible.
+> **Y no está atado a este catálogo:** con `get_weather`/`send_mail` la misma línea devuelve `['g','s','se','get','ge','send','sen']`. El `f`/`fn` sale del `startswith` contra `_functions`, no de nada escrito a mano.
+
+> [!important] La clave — sacada por él
+> `(slot, flag, cierre)`. ==**`slot` dice qué reglas mandan, `flag` en qué punto de esas reglas estás, y el cierre cuál de los dos caracteres es admisible.**==
+> **En `name` no hay flag**: la lista depende del prefijo exacto —con `fn_` valen 19 tokens y con `fn_g` otros—, así que ahí la clave lleva `_written` tal cual. La normalización es solo de `number` y `string`.
+> **La flag se calcula una vez por paso, mirando `_written`.** No sale de `_char_ok`: ese responde por un carácter suelto, se ejecuta cientos de miles de veces por paso y devuelve `bool`, que ya está testeado.
+
+> [!bug] El bug abierto de `_cache_flags` — encontrado ejecutando, sin corregir
+> Las cuatro preguntas de `number` están encadenadas con `elif`, y no son excluyentes: `0.` y `0.5` caen las dos en la flag `3`.
+> **No tienen la misma lista:** con `0.` el cierre no entra, con `0.5` sí. Con el cache caliente, `0.5` recibe la lista de `0.` y sale `{"a": 0.}`, que `json.loads` rechaza.
+> ==*Tiene punto* y *acaba en dígito* son dos preguntas distintas; `0.5` responde que sí a las dos.==
+> Del lado de `string` la flag mira `endswith('"')` donde la regla mira `'"' in text`. Hoy coinciden, porque al cerrar el hueco `_written` se vacía — pero es una coincidencia, no la regla.
+
+> [!info] Lo que se descartó
+> **Indexar el vocabulario por tipo de hueco** —precalcular los tokens que son solo dígitos, los que traen punto…— ahorraría también el primer cálculo, no solo los repetidos. Se descartó por ahora: obliga a mantener un índice en paralelo a las reglas, y el día que cambie una regla y el índice no, sale una lista blanca mal sin que ningún test tenga por qué cazarlo.
+
 #### Abierto en este bloque — actualizado el 2026-08-27
 
 > [!info] El camino recorrido, para no perder el hilo
@@ -1782,6 +1960,136 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 - [ ] Qué pasa si el modelo deja el JSON a medias por agotar el presupuesto de tokens
 - [ ] Cache de la lista blanca por estado (bonus 4) — se pone **encima** de `get_valid_ids` sin tocarlo por dentro, cuando llegue
 - [x] ~~Verificar que el `prompt` inyectado necesita pasar por `encode`/`decode`~~ — **no**: `Guardian` traduce con `_vocab` y `_reversed_vocab`, que son diccionarios. El tokenizer es cosa del Bloque 5 (decisión suya, 2026-08-27: *"sería mezclar responsabilidades"*)
+
+---
+
+### Bloque 5 — Bucle de generación
+
+> [!info] Estado — 2026-09-02 · 🔵 lista de requisitos cerrada, sin teclear
+> La lista de abajo se cerró **antes de escribir una línea**, y ==no se toca mientras se teclea==. Con sus palabras al cerrarla: *"probablemente van a faltar cosas, pero ya las veremos a medida que aparezcan"* — cuando aparezca algo, **se para, se decide entre los dos y se anota aquí**.
+
+**Descripción:** recibe **un** prompt crudo, lo convierte en texto de modelo, y genera la respuesta token a token con la máscara de `Guardian` encima, hasta que el JSON cierre.
+
+**Depende de:** `[[PROJECT#Bloque 1 — Tokenizer|Bloque 1]]` — `encode` · `[[PROJECT#Bloque 3 — Construcción del prompt|Bloque 3]]` — el texto con plantilla y catálogo · `[[PROJECT#Bloque 4 — Validez de tokens|Bloque 4]]` — la lista blanca por paso.
+**Qué recibe:** un prompt crudo, uno por llamada.
+**Qué entrega:** un modelo `pydantic` con **cómo salió el bucle** y **lo escrito**.
+**Dónde vive:** `src/interface.py` — clase `Interface`. ==Nombre suyo, 09-02.== El archivo nace con la lista de requisitos dentro, en comentarios, como checklist de lo que falta
+
+#### La lista de requisitos — cerrada el 2026-09-02
+
+**Qué debe hacer**
+
+- Recibir un prompt crudo de `Chat`, **uno por llamada**
+- Construir el texto completo (`PromptBuilder`) y tokenizarlo (`Tokenizer`) — ==las dos llamadas son suyas, no de `Chat`==
+- Por vuelta: pegar el JSON escrito hasta ahora, pedir logits, poner `-inf` a los ids que `Guardian` no permite, `argmax`, y avisar a `Guardian` del token elegido
+- Repetir hasta que el JSON cierre
+- Devolver un modelo `pydantic` con cómo salió el bucle y lo escrito
+
+**Qué debe rechazar**
+
+| Caso | Qué hace |
+|---|---|
+| **Prompt vacío** | Ni se entra al bucle, se devuelve vacío |
+| **Hoja colgada** | Se corta cuando lo escrito **dentro de la hoja** pasa de los caracteres del **prompt crudo** |
+| **Fallo del modelo** | Se atrapa y se devuelve como estado. ==Nunca se cae== |
+
+**Qué NO es suyo**
+
+| Fuera | De quién |
+|---|---|
+| Recorrer los N prompts | `Chat` — Bloque 6 |
+| `json.loads` y la validación del resultado | `Chat` — decisión suya del 09-02 |
+| Escribir archivos y el log | `FileManager` — Bloque 2 |
+| Las reglas de formato JSON | `Guardian` — Bloque 4 |
+
+#### Construcción — arrancada el 2026-09-02
+
+> [!success] Estado — 2026-09-02 · 🔵 `reply` genera de punta a punta
+> **Escrito hoy por él:** el `__init__` entero y `reply` hasta el `add_token`. ==**Los 11 prompts reales salen con función y argumentos correctos**==, más uno corto fabricado para forzar el tope:
+> ```
+>  2.3s  {"prompt":"What is the sum of 2 and 3?", "name": "fn_add_numbers", "parameters": {"a": 2,"b": 3}}
+>  1.7s  {"prompt":"Greet shrek", "name": "fn_greet", "parameters": {"name": "shrek"}}
+>  0.9s  {"prompt":"Reverse the string 'hello'", "name": "fn_reverse_string", "parameters": {"s": "hello"}}
+>  1.0s  {"prompt":"What is the square root of 16?", "name": "fn_get_square_root", "parameters": {"a": 16}}
+>  1.3s  {"prompt":"Sum 2 3", "name": "fn_add_numbers", "parameters": {"a": 2,"b": 3}}
+> ```
+> **El tope no cortó ninguno** — sigue sin haber una corrida que lo dispare.
+> `mypy --strict` limpio. `flake8`: ocho avisos, todos de estilo.
+
+**Qué está escrito, contra la lista de requisitos:**
+
+| Requisito | Estado |
+|---|---|
+| Recibir un prompt crudo, uno por llamada | ✅ 09-02 |
+| Construir el texto (`PromptBuilder`) y tokenizarlo (`Tokenizer`) | ✅ 09-02 |
+| Pegar el JSON escrito, pedir logits, `-inf`, `argmax`, avisar a `Guardian` | ✅ 09-02 |
+| Repetir hasta que el JSON cierre | ✅ 09-02 |
+| Prompt vacío: ni se entra al bucle | ✅ 09-02 |
+| Tope por hoja en caracteres | ✅ 09-02 — escrito, **sin disparar todavía** |
+| Fallo del modelo: atraparlo y devolverlo como estado | ⚪ |
+| Devolver el modelo `pydantic` | ⚪ — hoy `reply` devuelve `None` |
+
+> [!bug] ==El texto crudo del vocabulario se cuela en el JSON== — encontrado ejecutando el 2026-09-02
+> Los tres prompts de `fn_substitute_string_with_regex` salen así:
+> ```
+> "source_string": "HelloĠ34ĠI'mÄł233ĠyearsĠold"
+> "source_string": "ProgrammingĠisĠfun"
+> "source_string": "TheĠcatĠsatĠonĠtheÄłmatÄłwithAnotherCat"
+> ```
+> `Ġ` es el espacio en la tabla byte↔carácter de Qwen y `Äł` otro invisible. `Guardian` acumula en `_json_str` el **texto crudo del token**, tal como viene del vocabulario, sin pasarlo por la tabla inversa. En hojas `number` no se ve; en `string` sale en el JSON final.
+> ==**Es del retorno, no del bucle**== — decisión suya del 09-02: se resuelve al escribir lo que `reply` devuelve, no antes.
+
+> [!important] Decisiones del 2026-09-02, tecleando
+> **Se reencodea el texto entero cada vuelta, no por trozos.** Suya, con el coste delante: encodear la base y el JSON por separado es más rápido pero ==una fusión puede cruzar la costura y dar otros ids==. Con sus palabras: *"mejor los encodeo juntos, eso tiene menos riesgo y el precio no es tan grande"*.
+> **Descartado: guardar el texto tokenizado en una `lambda`.** No ahorra nada —se ejecuta una vez por vuelta igual— y esconde el coste de encodear ~1.200 caracteres detrás de algo que parece una variable.
+> **El array de la máscara se construye lleno de `-inf` y se copian encima solo los permitidos**, en vez de recorrer los 151.936 apagando. La lista blanca es `List[int]` justo para poder indexar así.
+
+> [!info] Lo que hizo falta enseñar ejecutando — 2026-09-02
+> **`np.full(151.936, "-inf")`** — dos fallos en una línea: `151.936` es un `float` en Python, no un separador de miles, y con la string sale un array de texto (`dtype <U4`) sobre el que `argmax` no compara números.
+> **El id de un token ES su índice en los logits.** No hay búsqueda ni traducción de por medio — lo cerró `vocab['fn'] = 8822` al lado de `logits[8822] = 0.4438`, con `len(logits) = 151936`.
+> **Indexar con una lista de índices** es lo que separa un `array` de una `list`: `lista[[1, 4]]` lanza `TypeError`, `array[[1, 4]]` devuelve las dos casillas. La misma lista sirve para leer a la derecha del `=` y para escribir a la izquierda.
+> **Tipar `numpy` bajo `mypy --strict`:** `npt.NDArray[np.float64]`, y `int(np.argmax(...))` para el `np.int64`.
+
+> [!important] Añadido a la lista el 2026-09-02 — el modelo entra inyectado, decisión suya
+> Salió tecleando el `__init__`, al preguntarse cómo se soportarían **otros modelos** (bonus 1). El `__init__` de hoy importa `Small_LLM_Model`, lo construye dentro y le pide las tres rutas.
+> **Lo que se decide:** `Interface` **no conoce ningún SDK**. Recibe las rutas ya como `Path` y la función de logits ya extraída, tipada `Callable[[List[int]], List[float]]`.
+> **Por qué `Callable` y no `Any`:** con `Any` el fallo sale en ejecución; con la firma declarada, `mypy --strict` avisa antes.
+> **Cuánto baja el acoplamiento:** de **4 métodos** del SDK a **1** — las tres rutas dejan de pedirse al modelo, y `get_logits_from_input_ids` es el único que no se puede evitar. ==La idea de pedir las rutas como `Path` es suya.==
+> **Trabajo que se mueve fuera:** construir el modelo y sacarle las rutas pasa a `Chat`, en un sitio único que sí conoce el SDK concreto — con sus palabras, *"en chat se cree una parte donde se defina una api"*.
+
+**Casos límite anotados**
+
+- `argmax` devuelve `np.int64`; ==la conversión a `int` la hace este bloque== — decidido el 08-27 en el Bloque 4
+- `Guardian` necesita exponer lo escrito en la hoja en curso. **Ya escrito por él el 09-02:** `get_written() -> str`. Método público nuevo en un bloque cerrado, así que **arrastra su test**
+
+#### Las tres decisiones de diseño, con su razón — 2026-09-02
+
+> [!important] El tope se cuenta **por hoja y en caracteres**, no por JSON ni por tokens — suyo
+> **Por hoja:** el fallo es local — *"el problema sería que no se cierre una hoja, no que tenga mil hojas"*. Un tope global no distingue una hoja colgada de una función con muchos parámetros.
+> **En caracteres:** *"por token no es medible porque un solo token puede contener muchos chars"*. Los tokens del valor y los del prompt no se corresponden; los caracteres sí.
+> **El techo es el prompt crudo, no el completo.** Medido con su `Tokenizer` sobre los 11 prompts reales: el catálogo pesa ~245 tokens e igual para todos, así que el texto completo no distingue nada.
+> ```
+> 'Greet shrek'                      crudo=  4   con plantilla+catálogo=251
+> 'What is the sum of 265 and 345?'  crudo= 15   con plantilla+catálogo=262
+> "Substitute the word 'cat' ..."    crudo= 23   con plantilla+catálogo=270
+> ```
+> **Por qué el prompt es un techo legítimo:** el valor de cada hoja sale del propio prompt (`Greet shrek` → `"shrek"`, `Reverse the string 'hello'` → `"hello"`). No pretende ser exacto: ==es un guard contra el cuelgue, no un criterio de calidad==.
+
+> [!important] Devuelve un modelo `pydantic`, no un `dict` — decisión suya tras discutirla
+> Su primera propuesta fue `{estado: respuesta}`. La objeción que aceptó: con `Dict[str, str]` la clave es texto libre, una errata pasa `mypy --strict` y el fallo sale en ejecución con el prompt ya perdido. Los dos campos son fijos y se conocen hoy.
+
+> [!important] `Chat` pasa el prompt crudo; el Bloque 5 llama a `PromptBuilder` y a `Tokenizer` — suya
+> Con sus palabras: *"el Bloque 5 realmente lo que es, es la mecánica del chat, la parte de abajo del carro"*.
+
+> [!success] Por qué el bucle nunca genera a ciegas — verificado el 2026-09-02
+> `Guardian.get_json()` **ya expone** el JSON escrito, y `start` deja dentro el esqueleto con el prompt inyectado. La coordinación entre 4 y 5 —pegar el estado al texto del modelo antes de pedir logits— se puede hacer **sin tocar `Guardian`**.
+
+> [!bug] Lo que hizo falta explicarle, y no estaba decidido
+> El **presupuesto de tokens** se le presentó como si fuera un dato heredado del Bloque 4, y no lo era: es una decisión suya sin tomar. Lo cortó bien — *"no entiendo eso de que se acaba el presupuesto de tokens, ¿de dónde se acaba eso?"*.
+> Lo que sí es dato, medido: en una hoja `string` con `shr` escrito la lista blanca tiene **150.134 ids** y la comilla de cierre es **uno** de ellos; con `shrek"`, **1**. Nada en la máscara obliga al modelo a cerrar. ==Que se cuelgue de verdad o no, **no está medido**: se sabrá la primera vez que corra el bucle.==
+
+> [!info] Cierra una decisión que estaba abierta desde el 08-31
+> El **prompt vacío** ya no espera al Bloque 6: lo filtra el Bloque 5, decisión suya del 09-02. La propuesta anterior —que lo atrapara `Chat` y fuera a `logs/logs.json`— queda descartada.
 
 ---
 

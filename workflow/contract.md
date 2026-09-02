@@ -145,6 +145,15 @@ Eres el **agente de tests** de este bloque. Trabajas **a caja negra**.
 | **Carga cara** | Lo que tarde (modelos, vocabularios) va en una fixture de **sesión**, no por test |
 | **Entorno** | El del proyecto, nunca uno propio. Comando en la sección R11 |
 | **Cobertura por método** | Los cinco de abajo, y la lista se mantiene visible |
+| **Linting** | ==**No aplica a los tests.**== Ver el callout de abajo |
+
+> [!important] Los tests no pasan por `flake8` ni por `mypy` — decisión del estudiante, 2026-09-01
+> ==**A un archivo de tests no se le exige `flake8`, ni `mypy --strict`, ni ninguna otra herramienta de estilo.**== Líneas largas, nombres, orden, imports sin usar: nada de eso es un pendiente.
+> **Lo único que se le exige son dos cosas:**
+> 1. ==**Que el test pruebe de verdad su objetivo**== — que el `assert` compruebe lo que la frase dice que compra.
+> 2. ==**Que el tipado sea correcto**== — los tipos que se le pasan a la clase y los que se esperan de vuelta son los del contrato. Correcto de verdad, no *"limpio para la herramienta"*.
+>
+> **Alcance:** solo `tests/`. `src/` sigue con `flake8` y `mypy --strict` limpios como bloqueo de bloque — eso no cambia.
 
 **Los cinco casos obligatorios por método:**
 

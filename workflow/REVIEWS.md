@@ -23,6 +23,37 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Sesión 2026-09-02 — ==sin repaso, por decisión suya==
+
+> [!info] No hubo cuestionario, y puede que no vuelva a haberlo
+> Abrió la sesión con: *"estoy pensando en quitar los cuestionarios posterior a la fase de internalización de conceptos, así que hoy no haremos esa fase"*. ==**No lo cerró como decisión**==, así que el cuestionario de la siguiente quedó escrito igual, con la advertencia delante.
+> **Es la segunda sesión seguida sin repaso completo:** la del 09-01 la anuló él a la tercera pregunta, por preguntas mal redactadas.
+> **Lo que conviene preguntarle antes de borrar la regla:** si lo que sobra es el cuestionario o las preguntas malas. La regla del repaso la creó él (08-10) y la fijó como lo primero de la sesión (08-17).
+>
+> **Lo que sí se verificó, sin cuestionario:** la sesión fue de teclear, y los huecos salieron solos —`np.full` con la string, la línea con los logits dentro de los corchetes, el id como índice—. Los tres están en `[[PROJECT#🎯 Lista de refuerzo]]` con **cómo se cerró cada uno**, que es lo que se preguntaría.
+
+---
+
+## Repaso 2026-09-01 — ==anulado por él a la tercera pregunta==
+
+> [!warning] Sesión cancelada: dos preguntas de tres estaban mal redactadas
+> No es un resultado de repaso, es un fallo del cuestionario. Se registra entero porque el patrón ya va por su tercera aparición (08-29, 08-31, hoy) y las tres veces lo detectó él.
+
+| # | Qué pasó |
+|---|---|
+| 1 | **A medias.** Con las dos ramas delante acertó que la primera da `False`; dijo que la vieja (`candidate2add == "0" and text`) aprobaba el `7`, y **no la aprueba** — el `7` lo aprobaba la rama `in DIGITS` que había quedado **intacta encima**. Lo cerró sustituir los literales (`elif "7" == "0" and "0":`) y preguntar cuántas veces se ejecuta esa segunda rama: *"ninguna"*. ==La lección quedó: la corrección buena **restringe la rama que ya da el paso**, no añade otra debajo== |
+| 2 | ==**Retirada.**== Venía redactada con `Reply.model_validate(d)`, clase del Bloque 5 **que no existe en `src/`**. Cortó: *"no sé qué es esto"*. Reformulada, el agente **volvió a apoyarse en la misma pieza** y la cortó otra vez: *"tu pregunta está muy fuera de contexto"*. Pidió que quedara registro → entrada nueva en *Evitar* de `[[PSYCHOLOGY]]`. Lo único que quedó en pie fue la ejecución: `json.loads('{"a": 40²}')` → `JSONDecodeError` |
+| 3 | ==**Anulada, y con ella la sesión.**== *"¿Qué tiene que pasar para que un rojo sea del test y no del código?"* → *"pregunta estúpida y mal hecha. vaga, podría responder que el test esté mal hecho y ya tendría razón. se anula la sesión de repaso"*. **Tenía razón: la pregunta admite una respuesta tautológica**, así que no discrimina entre saber el criterio y repetir el enunciado |
+
+> [!important] Las dos reglas que salen de aquí
+> · ==**Cada identificador de una pregunta tiene que existir hoy en `src/`.**== Si el concepto necesita una pieza futura, va como dato suelto y sin nombre — o no se pregunta. (Regla del 08-29 aplicada al cuestionario, saltada dos veces seguidas hoy.)
+> · ==**Una pregunta que se puede contestar repitiendo su enunciado no mide nada.**== Hermana de la del 08-31 (la respuesta estaba en el artefacto que la acompañaba): allí la respuesta la daba el artefacto, aquí la da la propia pregunta.
+
+> [!note] Estado tras la anulación
+> Las preguntas **4, 5 y 6** no llegaron a lanzarse. La lista de refuerzo queda con la fila del `40²` en 🔴 y *pregunta retirada*.
+
+---
+
 ## Repaso 2026-08-31 — entrada de sesión, `Guardian` implementada y sin tests
 
 > [!info] 4 limpias de 5 · una pregunta retirada por mal redactada

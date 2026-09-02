@@ -1,5 +1,5 @@
 from src.filemanager import Function, TypeSpec
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Union
 from pydantic import validate_call
 import json
 
@@ -19,6 +19,8 @@ class Guardian:
         self._slot: Optional[str] = None
         self._written: str = ""
         self._done: bool = True
+        self._cache: Dict[Tuple[Optional[str],
+                                Union[str, int], str], List[int]] = {}
 
     @validate_call
     def start(self, prompt: str) -> None:
@@ -37,6 +39,9 @@ class Guardian:
     def get_json(self) -> str:
         return self._json_str
 
+    def get_written(self) -> str:
+        return self._written
+    
     def _closing_char(self) -> str:
         current_object: Dict[str, TypeSpec] = {}
         current_index: int = 0
@@ -97,14 +102,42 @@ class Guardian:
             draft += char
         return True
 
+    def _cache_flags(self) -> int:
+        match self._slot:
+            case "number":
+                if not self._written:
+                    return 1
+                elif self._written == "0":
+                    return 2
+                elif "." in self._written and self._written[-1].isdigit():
+                    return 3
+                elif self._written[-1].isdigit():
+                    return 4
+                elif self._written[-1].endswith("."):
+                    return 5
+            case "string":
+                if '"' in self._written:
+                    return 1
+        return 0
+
     def get_valid_ids(self) -> List[int]:
         if self._done:
             raise ValueError("Guardian has no open session. Call start first")
-        return [
-            token_id
-            for token_text, token_id in self._vocab.items()
-            if self._token_ok(token_text)
-        ]
+        close: str = ('"' if self._slot == "name" else self._closing_char())
+        flag: Union[str, int] = (
+            self._written if self._slot ==
+            "name" else self._cache_flags())
+        current_state: Tuple[Optional[str], Union[str, int], str] = (
+            self._slot, flag, close)
+        if posible_cache := self._cache.get(current_state, []):
+            return posible_cache
+        else:
+            self._cache[current_state] = [
+                token_id
+                for token_text, token_id in self._vocab.items()
+                if self._token_ok(token_text)
+            ]
+        return self._cache[current_state]
 
     def _open_key(self) -> None:
         node, index = self._stack[-1]

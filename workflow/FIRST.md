@@ -1,7 +1,7 @@
 ---
 tipo: entrada
 version: 2.0
-ultima_actualizacion: 2026-08-31
+ultima_actualizacion: 2026-09-02
 tags: [42, sistema, contextualizacion]
 ---
 
@@ -151,37 +151,43 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-08-31
+> [!info] Estado — 2026-09-02
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 2. **6 bloques**; ==**Bloques 1, 2, 3 y 4 cerrados**==
-> **Último hito:** Bloque 4 cerrado entero — `Guardian` con **64 tests verdes**, `flake8` y `mypy --strict` limpios. Los tests los escribió un **agente ciego** que nunca abrió `src/`, y de sus 5 rojos salieron **dos errores reales del código**, corregidos por él
-> **Además:** ==**el `flake8` del venv ya no está roto**== — el culpable era `flake9`, un fork viejo instalado que rompía el plugin; desinstalado y `flake8` reinstalado
-> **Siguiente:** ==**Bloque 5 — bucle de generación**==. Empieza por su lista de requisitos
-> **Abierto:** `src/guardian.py` sin docstrings, y el subject los exige (pasada de estilo, al final) · 17 líneas largas en `tests/test_bloque_1.py` · no existe `src/__main__.py` ni la regla `lint` del `Makefile` · el prompt vacío no lo filtra nadie — decisión abierta del Bloque 6
-> **Herramientas:** llamarlas siempre con `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`
+> **Fase:** 2. **6 bloques**; Bloques 1, 2, 3 y 4 cerrados —el **cache** del 4 incluido—. ==**El 5 está en curso**==
+> **Último hito:** ==**`reply` genera de punta a punta**==. Los 11 prompts reales salen con **función y argumentos correctos**, de 0,8 s a 6,8 s. `src/interface.py`, escrito por él hoy
+> **Siguiente:** ==**el modelo `pydantic` que devuelve `reply`**== — hoy devuelve `None`. Con él dentro se cierran el estado de fallo del modelo, el de corte por tope y el **decode del texto crudo**
+> **Abierto:** el texto crudo del vocabulario se cuela en el JSON (`"HelloĠ34Ġ..."`) · ==los 80 tests del Bloque 4 siguen sin correrse== · el tope por hoja está escrito y nunca se ha disparado · 8 avisos de `flake8` en `src/interface.py` · sin docstrings en `guardian.py` ni `interface.py`, y el subject los exige · no existe `src/__main__.py` ni la regla `lint` del `Makefile`
+> ==**`make` YA FUNCIONA**== — `xcode-select` apunta a las Command Line Tools. `make testN test=4` corre los 80 tests del Bloque 4, ~4 minutos
+> **Decisión suya sin cerrar (09-02):** quiere **quitar los cuestionarios de repaso**. ==Pregúntaselo antes de lanzar uno==; las preguntas están escritas por si lo mantiene
+> **Herramientas:** llamarlas siempre con `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. `mypy` necesita `mypy_path = "llm_sdk"` en `pyproject.toml`
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 ---
 
-## Instrucción para el próximo agente — escrita el 2026-08-31
+## Instrucción para el próximo agente — escrita el 2026-09-02
 
 > [!important] Dónde quedamos
-> **Bloque 4 cerrado del todo**, y el **método de trabajo refundado**. `[[SYSTEM]]` está en la versión 3.0 y recoge el ciclo de arriba; `[[contract]]` es ahora un solo documento con parte fija y parte rellenable, y `test.md` ya no existe.
-> Escrito hoy por él: las dos correcciones de `_char_ok` —cero a la izquierda y cierre solo tras dígito— y el getter `Tokenizer.get_reversed_vocab()`.
+> Sesión entera de teclear `src/interface.py`, el **Bloque 5**. Su lista de requisitos se cerró antes de escribir nada y está en `[[PROJECT#Bloque 5 — Bucle de generación]]` con las decisiones y su razón.
+> Escrito hoy por él: el `__init__` entero y `reply` hasta el `add_token`. **Funciona con los 11 prompts reales.**
+> ==**Lo que falta es lo que `reply` devuelve.**== Hoy es `None`. Lo dijo él al cerrar: *"apunta eso para comenzar desde allí"*.
 
 > [!important] Por dónde empezar, en este orden
-> **1 · El cuestionario**, ya escrito en `[[PROJECT#📋 Cuestionario de la próxima sesión]]` — una pregunta por mensaje, con el artefacto delante.
-> **2 · El Bloque 5**, empezando por su **lista de requisitos**: qué debe hacer el bucle de generación, qué debe rechazar, y qué no es suyo. No se teclea nada hasta cerrarla.
+> **1 · Preguntarle si quiere cuestionario.** Es una decisión suya del 09-02 sin cerrar. Si dice que sí, están escritas en `[[PROJECT#Para la sesión siguiente al 2026-09-02]]`.
+> **2 · El modelo `pydantic` de `reply`.** Dos campos: cómo salió el bucle y lo escrito. Con él dentro entran el `except Exception` del modelo y el ==decode del texto crudo==, que hoy mete `Ġ` en las hojas `string`.
+> **3 · Correr los 80 tests del Bloque 4.** Nunca se han corrido y ya no hay excusa.
+> **4 · La pasada de estilo de `src/interface.py`.**
 
 > [!warning] Cómo se trabaja con él — no lo improvises
-> ==**Habla con SUS nombres y solo de lo que ya existe.**==
-> **Ponle el artefacto delante, no el escenario en prosa.**
-> ==**Llévale la contraria cuando toque.**== Hoy se le llevó dos veces y las dos tenía razón él — una sobre el getter del vocabulario invertido, con mejor argumento que el del agente.
-> **Un fallo por mensaje**, y por orden: lógica primero; estilo y guards esperan su pasada.
-> **Vigila el gasto de contexto.** Hoy cortó la sesión de tests uno a uno: *"esto me está absorbiendo los tokens de una manera exagerada"*.
+> ==**Habla siempre con SUS identificadores, y con los que existen hoy en `src/`.**== El 09-02 se le ilustró el enmascarado con `limpio`/`blanca` teniendo él `clean_logits`/`whith_list` delante, y cortó: *"para de dar ejemplos con nombres de variables que no existen"*. Un vocabulario de juguete para enseñar un mecanismo vale; los nombres, no.
+> **Un paso por mensaje.** Hoy tres mensajes seguidos explicando el enmascarado entero no avanzaron nada; lo cortó él con *"vamos por pasos"* y se cerró en cuatro turnos.
+> ==**Ejecuta, no argumentes.**== Sus dos fallos de `numpy` se cerraron enseñando la salida real. Ninguno se cerró explicándolo.
+> **Di con qué certeza afirmas algo.** Hoy se le presentó el *presupuesto de tokens* como si viniera decidido del Bloque 4 y no lo estaba. Lo cazó.
+> **Al corregir una lista blanca, comprueba el conjunto entero.** Su primera corrección del cache movió la colisión en vez de matarla — segunda vez que pasa.
 
 > [!bug] Con lo que te vas a tropezar
-> Llama siempre a las herramientas con `./callme/bin/python -m ...`; por su nombre suelto usan las del sistema y salen errores falsos de `pydantic`.
-> **`src/guardian.py` no tiene docstrings** — los mandó borrar él. El subject los exige, así que vuelven en la pasada de estilo. No los repongas por tu cuenta.
+> **`mypy` da un error falso con `llm_sdk`** si falta `mypy_path = "llm_sdk"` en `pyproject.toml`: hay dos carpetas anidadas con el mismo nombre y resuelve la de fuera, que está vacía.
+> Llama siempre a las herramientas con `./callme/bin/python -m ...`.
 > La suite del Bloque 4 tarda **~4 minutos**: carga el modelo real. No la corras por costumbre.
+> **A `tests/` no se le pasa `flake8` ni `mypy`** — regla suya del 09-01.
+> **Sin docstrings** en `src/guardian.py` — los mandó borrar él. Vuelven en la pasada de estilo. No los repongas por tu cuenta.
