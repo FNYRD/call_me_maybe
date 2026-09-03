@@ -14,6 +14,7 @@ clean-files:
 	rm -rf data/output logs
 	rm -rf .pytest_cache .mypy_cache
 	find . -type d -name __pycache__ -not -path "./callme/*" -exec rm -rf {} +
+	find . -type f -name tempCodeRunnerFile.py -not -path "./callme/*" -exec rm -f {} +
 
 push:
 	git add .

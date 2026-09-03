@@ -151,58 +151,55 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-09-02, **segunda sesión del día**
+> [!info] Estado — 2026-09-03, al cerrar
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 2. **6 bloques**; Bloques 1, 2, 3 y 4 cerrados —el **cache** del 4 incluido, y ==**sus 80 tests corridos y en verde**==—. ==**La construcción del 5 está cerrada**==
-> **Último hito:** ==**`reply` devuelve su modelo `pydantic`**== — `Output` con `log` y `output`, tres estados. **11 de 11 prompts reales correctos**, de 1,0 s a 7,0 s. `flake8` y `mypy --strict` limpios en `src/`. Todos los requisitos del bloque, cumplidos
-> **Siguiente:** ==**el encargo de tests de caja negra del Bloque 5**== — es lo primero de la sesión, ver la instrucción de abajo
-> **Abierto:** el tope por hoja está escrito y ==**nunca se ha disparado**== · el decode del texto crudo (`"HelloĠ34Ġ..."`) pasó al **Bloque 6** · sin docstrings en `guardian.py` ni `interface.py`, y el subject los exige · no existe `src/__main__.py` ni la regla `lint` del `Makefile` · **Bloque 6 sin abrir**
-> ==**Regla suya del 09-02 — el cuestionario:**== solo **teoría** —el porqué de un mecanismo—, **nunca un error suyo** (*"aprendo resolviéndolo"*); no lo hay si la `Lista de refuerzo` no tiene filas abiertas; y ==**el agente no apunta filas por su cuenta**==: sugiere, y apunta él. En `[[SYSTEM#Sistema de refuerzo]]`
-> ==**Regla suya del 09-02 — el stress:**== se estresa hasta **el límite real de uso** y ahí se para; y todo guard o tope declarado tiene que **dispararse al menos una vez** dentro de ese límite. En `[[contract#F6 · Cómo se escriben y se corren los tests]]`
-> **Herramientas:** llamarlas siempre con `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. `mypy` necesita `mypy_path = "llm_sdk"` en `pyproject.toml`
+> **Fase:** 2. **6 bloques**; ==**1, 2, 3, 4 y 5 cerrados**==. Los 80 tests del 4 se corrieron por fin hoy (80 verdes, 2 min 23 s) y el 5 cerró con **32 verdes** en 1 min 33 s
+> **Último hito:** ==**Bloque 5 cerrado**== — contrato de caja negra, 32 tests de un agente ciego, y pasada de estilo hecha: `flake8` y `mypy --strict` limpios sobre los **8** archivos de `src/`
+> **Siguiente:** ==**el Bloque 6, `Chat`**== — es lo del día, empezando por su **lista de requisitos**. Antes, el cuestionario ya redactado en `[[PROJECT#Para la sesión siguiente al 2026-09-03]]`
+> **Qué arrastra el Bloque 6:** el ==**decode del texto crudo**== (`"HelloĠ34Ġ..."`, las hojas `string` salen en el alfabeto del vocabulario) · el `json.loads` y la validación `pydantic` del resultado · construir el `Small_LLM_Model` y sacarle las tres rutas —`Interface` no conoce ningún SDK— · llamar a `write_replies` y `write_logs` · atrapar el fallo de un prompt y mandarlo al log
+> **Abierto:** ==**las docstrings van al final del proyecto**, decisión suya del 09-03==, y el subject las exige (`interface.py` y `guardian.py` no las tienen) · no existe `src/__main__.py` ni la regla `lint` del `Makefile` · falta `mypy_path = "llm_sdk"` en `pyproject.toml` · `src/chat.py` existe vacío, lo creó él
+> ==**Regla suya del 09-03:**== un rojo **solo se justifica si el objetivo del test rompe su código**. De ahí la **regla de cifras**: lo que **mide** un artefacto se mide dentro del test, lo que es **promesa del contrato** se clava literal
+> ==**Regla suya del 09-02 — el cuestionario:**== solo **teoría**, nunca un error suyo; no lo hay si la `Lista de refuerzo` no tiene filas abiertas; y ==el agente **no apunta filas por su cuenta**==
+> ==**Regla suya del 09-02 — el stress:**== hasta **el límite real de uso**, y todo guard declarado tiene que dispararse al menos una vez dentro de él
+> **Herramientas:** siempre `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. Suite del 5: **1 min 33 s**; la del 4: **2 min 23 s**. No se corren por costumbre
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 ---
 
-## Instrucción para el próximo agente — escrita el 2026-09-02, al cerrar la segunda sesión del día
+## Instrucción para el próximo agente — escrita el 2026-09-03, al cerrar
 
 > [!important] Dónde quedamos
-> La **construcción del Bloque 5 está cerrada**: `reply` devuelve `Output` con sus tres estados, 11/11 prompts correctos, `flake8` y `mypy --strict` limpios. Lo que falta del bloque son **el contrato y los tests**.
+> **Bloque 5 cerrado.** `src/interface.py` con `Interface` y `Output`, 32 tests verdes escritos por un agente de caja negra desde `tests/blackbox_test_bloque_5.md`, y la pasada de estilo hecha.
 
-> [!important] ==Arranca por aquí, sin cuestionario== — instrucción literal suya, 2026-09-02
-> **Lo primero de la sesión es redactar el encargo de tests para el agente de caja negra del Bloque 5.** No hay cuestionario mañana; lo dijo él al cerrar.
->
-> **Cómo se llama el archivo:** `blackbox_test_bloque_5`. ==Convención nueva suya: `blackbox_test_` + el nombre del test.==
->
-> **Antes de escribir una línea del encargo, contextualízate de verdad. Con sus palabras:** *"quiero que el agente nuevo tenga lo suficiente para contextualizarse, así que pídele que lea bien la clase, el scope, los casos de uso real y por qué por ejemplo el return está correcto —ya que el Bloque 6 se encarga de los caracteres— y así mismo alguna otra cosa que sea necesaria explicarle, para que no lea por encima y genere el archivo, sino que el archivo sea tan robusto como los tests o más aún"*.
-> Lo mínimo que hay que tener leído y entendido antes de redactar:
-> - **La clase entera**, `src/interface.py` — el `__init__`, `reply`, el `Output` y sus tres estados.
-> - **El scope**: la lista de requisitos del bloque, en `[[PROJECT#La lista de requisitos — cerrada el 2026-09-02]]`, con su tabla de **qué NO es suyo**.
-> - **Los casos de uso reales**: los 11 prompts de `data/input/function_calling_tests.json` y el catálogo de `functions_definition.json`. ==El límite del stress se mide contra eso, no contra hipótesis.==
-> - ==**Por qué el `output` con `Ġ` dentro es correcto**==: el `_json_str` mezcla esqueleto en texto real y hojas en disfraz del vocabulario, y el decode es **del Bloque 6**, donde ya vive el `json.loads`. Un test que exija texto limpio aquí es un rojo del test, no del código. Detalle y salidas reales en `[[PROJECT#Bloque 5 — Bucle de generación]]`.
-> - **Lo que arrastra la suite:** `get_written()` no tiene test propio — ==se prueba forzando el tope por hoja, que **nunca se ha disparado**==. Si el encargo no obliga a dispararlo, ese método se queda sin probar.
-> - **Las dos reglas suyas de los tests:** el stress llega al límite real de uso (`[[contract#F6 · Cómo se escriben y se corren los tests]]`), y a `tests/` no se le pasa `flake8` ni `mypy`.
->
-> **El encargo se escribe desde `[[contract]]`**, que es autocontenido: lleva dentro el briefing del agente de caja negra.
+> [!important] El orden de la sesión
+> **1 ·** El **cuestionario** de `[[PROJECT#Para la sesión siguiente al 2026-09-03]]` — cuatro preguntas, ==solo teoría==, una por mensaje.
+> **2 ·** ==**El Bloque 6, `Chat`.**== Se abre por su **lista de requisitos** —qué debe hacer, qué debe rechazar, qué NO es suyo—, y ==la propone él==. No se teclea una línea hasta cerrarla.
+> **3 ·** Después, construcción: él teclea, tú conduces **un paso por mensaje** y verificas **ejecutando**.
 
-> [!important] Después de generar el encargo — orden suya
-> **1 ·** El agente de caja negra escribe los tests, ciego: no abre `src/`.
-> **2 ·** ==**Tú revisas el archivo de tests**== y compruebas tres cosas: que se testa **lo suficiente**, que se testa **de forma correcta contra las estructuras que existen de verdad**, y que **no falta nada ni sobra un caso que no es de uso real**.
-> **3 ·** ==**Y ahí paras.**== Tras generar el archivo **te quedas esperando a que él confirme** que es momento de revisarlo. No lo revises por tu cuenta.
+> [!warning] Lo que el Bloque 6 arrastra, y no se descubre a mitad
+> · ==**El decode del texto crudo.**== Las hojas `string` salen en el alfabeto del vocabulario (`"HelloĠ34ĠI'mÄł233ĠyearsĠold"`). Se movió aquí el 09-02 porque es donde vive el `json.loads`. Tres vías ya descartadas **ejecutándolas**: `decode(encode(r))` es la identidad · pasar `get_json()` entero por `char_byte` da `KeyError: ' '` porque el JSON mezcla dos alfabetos · token a token revienta con `UnicodeDecodeError`, porque un carácter se reparte entre dos tokens. `Tokenizer.char_byte` ya es público para esto.
+> · **El `json.loads` y la validación `pydantic`** del resultado — salieron del Bloque 5 por decisión suya.
+> · **Construir el `Small_LLM_Model` y sacarle las tres rutas.** `Interface` recibe `Path`es y un `Callable`: quien conoce el SDK concreto es `Chat`, y ahí vive el bonus 1.
+> · **`write_replies` y `write_logs`**, y atrapar el fallo de un prompt para mandarlo al log con su índice.
+> · **`src/chat.py` ya existe, vacío.** Lo creó él el 09-03.
 
-> [!warning] Cómo se trabaja con él — no lo improvises
-> ==**Habla siempre con SUS identificadores, y solo con lo que existe hoy en `src/`.**== Reincidió el 09-02: *"para de dar ejemplos con nombres de variables que no existen"*.
+> [!warning] Lo que se aprendió el 09-03, y no se repite
+> ==**Ningún número se escribe sin medirlo.**== Se pusieron once longitudes de prompt en el contrato contadas a ojo; cinco estaban mal y el primer rojo de la suite fue por eso. ==**Un rojo solo se justifica si rompe su código.**==
+> ==**Ejecuta, no argumentes.**== Hoy se cerraron así el escapado de las comillas dentro del JSON, el `-type d` del `Makefile` que no borraba un archivo, y la duda de si los 80 tests del Bloque 4 estaban corridos.
+> **Contextualízate de verdad:** preguntó *"¿leíste todos los .md que te indico?"* después de una cifra sin comprobar. Se le respondió con la tabla honesta de qué se había leído entero y qué a medias.
+
+> [!important] Cómo se trabaja con él
+> ==**Sus identificadores, y solo lo que existe hoy en `src/`.**==
 > **Un paso por mensaje.** Una idea, una pregunta.
-> ==**Ejecuta, no argumentes.**== Hoy las tres vías descartadas del decode se cerraron **enseñando la salida real** —la identidad de `decode(encode(r))`, el `KeyError: ' '`, el `UnicodeDecodeError`—; ninguna se cerró explicándola.
-> **Si una pregunta no la entiende, no la repitas mejor: pártela en dos artefactos y que elija.** Hoy *"¿qué le sobra a `decode`?"* no fue a ningún lado; partir el método en un bloque (A) y otro (B) y preguntar cuál necesitaba se cerró con un *"B"* a la primera.
-> **Cuando dice que no sabe, dale las opciones reales con su coste y una recomendación** — y que elija él. Hoy: *"seguro hay una manera super simple que estoy ignorando"*.
-> **Di con qué certeza afirmas algo.**
+> ==**Respuestas cortas.**== Reincidió hoy: *"sé mucho más breve"*. Si algo está verde, se dice cuántos pasan y qué queda.
+> **Cuando dice que no sabe, dale las opciones reales con su coste y una recomendación** — y elige él.
+> **Di con qué certeza afirmas algo**: dato, verificado ejecutando, convención o suposición.
+> ==**Le llevas la contraria cuando toca**==, y rectificas en voz alta cuando pierdes.
 
 > [!bug] Con lo que te vas a tropezar
-> **`mypy` da un error falso con `llm_sdk`** si falta `mypy_path = "llm_sdk"` en `pyproject.toml`: hay dos carpetas anidadas con el mismo nombre y resuelve la de fuera, que está vacía.
-> Llama siempre a las herramientas con `./callme/bin/python -m ...`.
-> **Un script suelto que corra `Interface` necesita `PYTHONPATH=.`** — los imports de `src/` son relativos.
-> La suite del Bloque 4 tarda **~4 minutos**: carga el modelo real. No la corras por costumbre.
+> **`mypy` da un error falso con `llm_sdk`** si falta `mypy_path = "llm_sdk"` en `pyproject.toml`.
+> Llama a las herramientas con `./callme/bin/python -m ...`, y un script suelto que corra `Interface` necesita `PYTHONPATH=.`.
 > **A `tests/` no se le pasa `flake8` ni `mypy`** — regla suya del 09-01.
-> **Sin docstrings** en `src/guardian.py` ni en `src/interface.py` — vuelven en la pasada de estilo. No los repongas por tu cuenta.
+> **Sin docstrings** en `src/interface.py` ni en `src/guardian.py`: ==van al final del proyecto, decisión suya del 09-03==. No las repongas por tu cuenta.
+> **Auditar una sesión ajena:** `~/.claude/tools/auditar_sesion.py` sobre el `.jsonl` de `~/.claude/projects/<proyecto>/`.

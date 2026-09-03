@@ -33,6 +33,7 @@ class Interface:
             self._tokenizer.get_reversed_vocab(),
             functions)
 
+    @validate_call
     def reply(self, user_prompt: str) -> Output:
         if not user_prompt or len(user_prompt) < 1:
             return Output(

@@ -305,7 +305,43 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 19 — activo
+> [!info] Agente 20 — activo
+> **Periodo:** 2026-09-03, sin cuestionario por instrucción suya del día anterior → ==**contrato del Bloque 5 escrito y sus 32 tests en verde**==.
+>
+> **Qué se hizo:**
+> - ==**`tests/blackbox_test_bloque_5.md`**==, el contrato: parte fija de `[[contract]]` literal + `R1`–`R12` rellenados **con la clase corriendo**. Antes de redactar se ejecutaron los cuatro estados de `Output` para no afirmar nada de memoria.
+> - **Dos huecos cerrados con él antes de escribir:** (1) la suite usa **el modelo real y una función de logits fabricada** —*"quiero usar los dos, lo que no se pueda hacer con uno se fuerza con el otro"*—; (2) el no-`str` en `reply` es **doble guard, no caso real**, y él le puso `@validate_call` en el momento.
+> - ==**32 tests verdes en 1 min 33 s**==, de un agente de caja negra. **Los cuatro estados se disparan**, el tope por hoja incluido → `get_written()` queda probado.
+> - **El único rojo fue del contrato**, no del código: cinco longitudes de prompt contadas a ojo por el agente (`87` donde son `81`). Corregidas.
+> - **Dos instrucciones suyas al agente de tests**, redactadas por el agente y enviadas por él: la **regla de cifras** y el `json.dumps` en los `assert` que pegaban el prompt crudo.
+> - **Atajo `cmd+shift+c`** para abrir y cerrar el chat, en `~/Library/Application Support/Code/User/keybindings.json`. Y **`~/.claude/tools/auditar_sesion.py`**, que lista las rutas que tocó una sesión.
+>
+> **Dónde se quedó:** ==**Bloque 5 cerrado**==. Pasada de estilo hecha —`flake8` y `mypy --strict` limpios sobre los 8 archivos de `src/`— tras sacar `src/tempCodeRunnerFile.py`, un artefacto de Code Runner que estaba **commiteado** y rompía las dos herramientas; la regla `clean-files` del `Makefile` que él escribió para borrarlo usaba `-type d` sobre un archivo y no casaba nada.
+> ==**Los 80 tests del Bloque 4 se corrieron por primera vez: 80 verdes en 2 min 23 s.**== Llevaban dos sesiones escritos sin ejecutar.
+> **Las docstrings van al final del proyecto**, decisión suya del 09-03. **Bloque 6 sin abrir**; `src/chat.py` existe vacío, lo creó él.
+>
+> **Decisiones tomadas:**
+> - ==**Un rojo solo se justifica si el objetivo del test rompe su código.**== Regla suya. Un rojo por un dato mal escrito en el contrato quema una revisión y no prueba nada.
+> - ==**Regla de cifras en los tests:**== lo que **mide** un artefacto real se mide dentro del test (`max(prompts, key=len)`, `len(get_logits_from_input_ids([...]))`); lo que es **promesa del contrato** se clava literal (las cuatro cadenas de `log`, las tres claves del JSON).
+> - **El `Callable` inyectado es entrada pública legítima:** pasarle una función de logits del test no es trampa, es la decisión de diseño del 09-02.
+> - **El `output` con `Ġ` es correcto en este bloque** y está declarado en `R8`: un test que exija texto limpio es rojo del test.
+>
+> **Callejones sin salida:**
+> - ==**Escribir cifras sin medirlas.**== Las once longitudes de prompt se contaron a ojo y cinco salieron mal. Lo cazó el primer rojo. **Todo número que describa un artefacto se mide antes de escribirlo en un `.md`.**
+> - **Pegar el prompt crudo dentro del JSON esperado.** Uno de los prompts reales lleva comillas dobles y salen escapadas; se cerró **enseñando la salida real**, no explicándolo.
+> - **Auditar al agente ciego a posteriori:** su sesión **no está** entre las transcripciones de este proyecto —corrió fuera—, así que no hubo nada que auditar. `git status` sí confirma que no escribió fuera de `tests/`.
+>
+> **Abierto:**
+> - **Docstrings** en `src/interface.py` y `src/guardian.py`, que el subject exige.
+> - No existe `src/__main__.py` ni la regla `lint` del `Makefile`. **Bloque 6 sin abrir**, con el decode de los `Ġ` esperándolo.
+> - `mypy_path = "llm_sdk"` **sigue sin estar** en `pyproject.toml`.
+> - **Prevención en vez de auditoría:** queda ofrecido un hook `PreToolUse` que le impida al agente ciego leer `src/`. No se escribió.
+>
+> **Sobre el estudiante:** exigió que un rojo signifique algo, auditó al agente ciego **y al propio agente** —*"¿leíste todos los .md que te indico?"*, con razón—, y volvió a pedir brevedad. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** el cuestionario ya redactado en `[[PROJECT#Para la sesión siguiente al 2026-09-03]]`, y después la pasada de estilo del Bloque 5.
+
+> [!info]- Agente 19 — histórico
 > **Periodo:** 2026-09-02, **segunda sesión del día** —la del Agente 18 fue la primera—, sin cuestionario → ==**construcción del Bloque 5 cerrada**== y **dos reglas nuevas del sistema, suyas**.
 >
 > **Qué se hizo:**
@@ -342,7 +378,7 @@ Debe incluir, como mínimo:
 >
 > **Sobre el estudiante:** convirtió **dos** fricciones en reglas escritas del sistema en una sola sesión, y las dos acotan al agente, no a él. Y cuando se quedó sin ideas lo dijo en claro —*"por ignorancia"*— en vez de improvisar una solución compleja. Detalle en `[[PSYCHOLOGY]]`.
 >
-> **Siguiente paso:** la redacción del encargo de caja negra, con las condiciones que dejó escritas en `[[FIRST]]`.
+> **Siguiente paso:** el cuestionario de `[[PROJECT#Para la sesión siguiente al 2026-09-03]]`, y después ==**el Bloque 6, `Chat`**==, empezando por su lista de requisitos — la propone él.
 
 > [!info]- Agente 18 — histórico
 > **Periodo:** 2026-09-02, sin cuestionario por decisión suya → ==**cache del Bloque 4 cerrado**== y ==**Bloque 5 arrancado: `reply` genera de punta a punta**==.

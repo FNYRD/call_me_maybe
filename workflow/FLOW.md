@@ -101,9 +101,9 @@ graph LR
 | 1 | Tokenizer | ✅ | ✅ | ✅ |
 | 2 | I/O de archivos | ✅ | ✅ | ✅ |
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
-| 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | 🔵 sin correr |
-| 5 | Bucle de generación | ✅ requisitos 09-02 | ✅ cerrada 09-02 | ⚪ encargo de caja negra |
-| 6 | `Chat` orquestador | ⚪ | ⚪ | ⚪ |
+| 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | ✅ **80 verdes 09-03** |
+| 5 | Bucle de generación | ✅ | ✅ | ✅ **32 verdes 09-03** |
+| 6 | `Chat` orquestador | 🔵 **próximo** | ⚪ | ⚪ |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
@@ -123,6 +123,20 @@ graph LR
 > `_cache_flags` arreglado por él y **verificado contra las listas blancas reales**: 15 estados de `number` con los dos cierres y 7 de `string`, ==ningún par de estados con la misma clave devuelve listas distintas==.
 > `Guardian` gana `get_written()`, que expone lo escrito en la hoja en curso — lo pide el tope del Bloque 5. **Método público nuevo: arrastra su test.**
 > ==**Los 80 tests siguen sin correrse.**== `make` ya funciona: `make testN test=4`, ~4 minutos.
+
+> [!success] ==Bloque 5 — CERRADO (2026-09-03)==
+> `src/interface.py` con `Interface` y `Output`. **32 tests verdes**, `flake8` y `mypy --strict` limpios en `src/` —8 archivos—, y la pasada de estilo hecha.
+> ==**Quedan las docstrings**, por decisión suya: llegan al final del proyecto.== El subject las exige, así que siguen siendo pendiente global, no del bloque.
+> **Siguiente: Bloque 6, `Chat`** — arrastra el decode de los `Ġ` y el `json.loads` del resultado.
+
+> [!success] Bloque 4 — los 80 tests corridos por fin (2026-09-03)
+> `make testN test=4` → ==**80 passed en 2 min 23 s**==. Es la **primera corrida** de la suite completa del bloque, cache incluido: se escribieron el 08-31 y el 09-01 y arrastraban dos sesiones sin ejecutarse.
+
+> [!success] Bloque 5 — contrato y tests cerrados (2026-09-03)
+> **`tests/blackbox_test_bloque_5.md`** —el contrato— y **`tests/test_bloque_5.py`** con ==**32 tests verdes en 1 min 33 s**==, escritos por un agente de caja negra que nunca abrió `src/`.
+> ==**Los cuatro estados de `Output` se disparan**==: los dos que el modelo real no provoca —fallo y tope— se fuerzan con una función de logits fabricada, que el `Callable` del `__init__` admite por diseño. **`get_written()` queda probado.**
+> **El único rojo fue del contrato:** cinco longitudes de prompt contadas a ojo, no medidas. De ahí la **regla de cifras** —lo que mide un artefacto se mide, lo que es promesa se clava— y la regla suya: ==un rojo solo se justifica si rompe su código==.
+> **Falta para cerrar el bloque:** la pasada de estilo, con los docstrings de `src/interface.py`.
 
 > [!success] Bloque 5 — construcción cerrada (2026-09-02)
 > `reply` devuelve `Output`, modelo `pydantic` con `log` y `output`, y **tres estados**: prompt vacío · fallo del modelo · corte por tope · salida correcta.

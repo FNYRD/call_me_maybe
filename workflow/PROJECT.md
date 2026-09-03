@@ -3,7 +3,7 @@ tipo: proyecto
 proyecto: call me maybe
 fecha_inicio: 2026-08-04
 fecha_cierre: 
-fase_actual: FASE 1 — diseño
+fase_actual: FASE 2 — construcción (Bloque 5 probado; falta su pasada de estilo)
 estado: en_progreso
 tags: [42, proyecto]
 ---
@@ -18,7 +18,14 @@ tags: [42, proyecto]
 
 ## 🗺️ Mapa de flujo
 
-> [!success] Dónde estamos — 2026-09-02
+> [!success] Dónde estamos — 2026-09-03
+> ==**El Bloque 5 tiene sus tests y están en verde: 32 de 32, en 1 min 33 s.**== Escritos por un agente de caja negra desde `tests/blackbox_test_bloque_5.md`, y ==**los cuatro estados de `Output` se disparan de verdad**== — el tope por hoja incluido, con logits fabricados, así que `get_written()` deja de estar sin probar.
+> **Del único rojo salió un error del contrato, no del código:** cinco de las once longitudes de prompt de la tabla `R9 · E2` estaban contadas a ojo por el agente. El más largo son **81** caracteres, no 87. Corregido.
+> **Regla que salió de ahí, suya:** ==un rojo solo se justifica si el objetivo del test rompe su código==; un rojo por una cifra mal escrita en el contrato no prueba nada y quema una revisión. De ahí la **regla de cifras** que ahora vive dentro del propio archivo de tests: lo que **mide** un artefacto real se mide en el test; lo que es **promesa del contrato** se clava literal.
+> ==**El bloque queda CERRADO.**== Pasada de estilo hecha: `flake8` y `mypy --strict` limpios sobre los 8 archivos de `src/`, y fuera `src/tempCodeRunnerFile.py`, un artefacto de Code Runner que estaba commiteado y rompía las dos herramientas. ==**Las docstrings van al final del proyecto**, decisión suya del 09-03.==
+> ==**Y los 80 tests del Bloque 4 se corrieron por fin: 80 passed en 2 min 23 s.**== Era la primera corrida de esa suite entera, cache incluido — arrastraba dos sesiones escrita y sin ejecutar.
+
+> [!info]- Dónde estábamos — 2026-09-02, histórico
 > ==**La construcción del Bloque 5 está cerrada.**== `reply` devuelve su modelo `pydantic` con los tres estados, **11 de 11 prompts correctos** (de 1,0 s a 7,0 s), y `flake8` y `mypy --strict` limpios en `src/`.
 > **Lo que queda del bloque:** el **contrato** —el encargo del agente de caja negra— y sus tests. ==El decode del texto crudo ya **no** es suyo: se movió al Bloque 6.==
 > **Regla suya cerrada hoy:** el cuestionario es **solo para teoría**, nunca para un error suyo; no lo hay si la `Lista de refuerzo` no tiene filas abiertas; y ==el agente **no apunta filas por su cuenta**==. Está en `[[SYSTEM#Sistema de refuerzo]]`.
@@ -93,9 +100,9 @@ graph LR
 | 4 — Validez de tokens | Esqueleto inyectado + huecos, lista blanca por token | ✅ | Estado del JSON y schema | Ids permitidos en ese estado |
 | ↳ | *cerrado el 08-31: **64 tests verdes** escritos por un agente ciego, `flake8` y `mypy --strict` limpios, las tres pasadas hechas salvo docstrings* | | | |
 | ↳ | *reabierto el 09-01 por decisión suya para meter el **cache** (bonus 4). **16 tests nuevos** de un segundo agente ciego — sección 10, sin correr todavía. `_cache_flags` tiene un bug abierto* | | | |
-| 5 — Bucle de generación | Logits, máscara, `argmax`, parada. **La validación `pydantic` del resultado sale del bloque** — decisión suya del 09-02 | 🔵 | Un prompt crudo | Un modelo `pydantic`: cómo salió el bucle y lo escrito |
-| ↳ | *lista de requisitos cerrada el 09-02 · `src/interface.py` escrito por él · ==**construcción cerrada el 09-02**==: los tres estados del `Output`, 11/11 prompts, `flake8` y `mypy --strict` limpios. **Falta el contrato y los tests*** | | | |
-| 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | ⚪ | Los bloques ya construidos | N resultados + registro de fallos |
+| 5 — Bucle de generación | Logits, máscara, `argmax`, parada. **La validación `pydantic` del resultado sale del bloque** — decisión suya del 09-02 | ✅ | Un prompt crudo | Un modelo `pydantic`: cómo salió el bucle y lo escrito |
+| ↳ | *==**cerrado el 09-03**==: contrato, **32 tests verdes** de un agente ciego y pasada de estilo hecha. Docstrings, al final del proyecto* | | | |
+| 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | 🔵 **próximo, 09-04** | Los bloques ya construidos | N resultados + registro de fallos |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
@@ -213,9 +220,52 @@ graph LR
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
 
-### Para la sesión siguiente al 2026-09-02
+### Para la sesión siguiente al 2026-09-03
 
-> [!warning] ==Mañana no hay cuestionario== — instrucción suya del 09-02
+> [!info] Cuatro preguntas, **solo teoría** — hay filas 🔴 sin cerrar, así que toca cuestionario
+> Ninguna pregunta por un error suyo: los de hoy los cerró él corrigiéndolos. Todos los identificadores existen hoy en `src/`.
+
+1. Congelado en el hueco del nombre, con el catálogo real y las listas medidas al lado:
+
+```
+get_written() = ''      ->   2 ids permitidos
+get_written() = 'fn'    ->  16 ids
+get_written() = 'fn_'   ->  19 ids
+get_written() = 'fn_g'  ->   6 ids
+```
+
+   En una hoja `number` te bastan dos datos —si ya hay punto y si acaba en dígito— para saber qué se permite. ¿Por qué en el hueco del nombre no existe un par de datos así, y hay que mirar el prefijo entero? *(🔴 sin preguntar nunca — banco de teoría)*
+
+2. Del contrato del Bloque 5, dos frases:
+
+```
+A  "name es uno de los nombres del catálogo que recibió el constructor"
+B  "reply('Greet shrek') devuelve name = fn_greet"
+```
+
+   Una es una invariante y la otra un caso. ¿Cuál es cuál, y qué obliga a hacer la invariante que el caso no obliga? *(🔴 sin preguntar — salió al escribir el contrato)*
+
+3. En `tests/test_bloque_5.py` conviven dos clases de número:
+
+```python
+LOG_BUCLE = 'Model entered an loop'                      # escrito a mano
+tamano = len(modelo.get_logits_from_input_ids([9707]))   # medido
+```
+
+   Los dos describen algo del proyecto. ¿Por qué el segundo se mide y el primero no puede medirse? *(teoría de la regla que fijaste hoy)*
+
+4. El agente de tests no lee `src/`. Además, tampoco corre los tests: los corres tú. ¿Qué se perdería si los corriera él, si al final el resultado es el mismo verde o rojo? *(🔴 banco de teoría)*
+
+> [!note] Banco para más adelante
+> Por qué dos booleanos independientes no caben en una cadena de `elif` · los tres niveles de elemento objetivo · qué es la caché de Hugging Face · qué garantiza `@validate_call` que la anotación sola no garantiza.
+
+---
+
+### Para la sesión del 2026-09-03 — cumplida, sin cuestionario
+
+> [!success] Se cumplió el 09-03: sesión sin cuestionario, encargo de caja negra escrito y 32 tests verdes
+
+> [!warning]- ==Sin cuestionario== — instrucción suya del 09-02, ya cumplida
 > La sesión arranca **directamente** con la redacción del encargo de tests de caja negra del Bloque 5. Ver `[[FIRST]]`, instrucción final.
 > Y recuerda la regla nueva: cuando vuelva a haber cuestionario, ==solo teoría== —el porqué de un mecanismo—, **nunca un error suyo**, y ==el agente no apunta filas de refuerzo por su cuenta==.
 
@@ -224,7 +274,7 @@ graph LR
 
 ---
 
-### Para la sesión siguiente al 2026-09-02
+### Para la sesión siguiente al 2026-09-02 — histórico, no lanzado
 
 > [!warning] ==Antes de lanzarlo: pregúntale si quiere cuestionario==
 > El 09-02 dijo: *"estoy pensando en quitar los cuestionarios posterior a la fase de internalización de conceptos, así que hoy no haremos esa fase"*. **No lo cerró como decisión**, así que las preguntas quedan escritas por si lo mantiene.
@@ -2041,6 +2091,53 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 > **Los 11 prompts reales, 11 de 11 correctos**, de **1,0 s a 7,0 s**. `flake8` y `mypy --strict` limpios en `src/`.
 > **Contra la lista de requisitos: todo cumplido.** Lo único que sale del bloque es el decode del texto crudo, movido al Bloque 6 por decisión suya de hoy.
 > **Falta:** el **contrato** —el encargo del agente de caja negra— y los tests.
+
+#### Contrato y tests — cerrados el 2026-09-03
+
+> [!success] ==32 tests verdes, escritos por un agente de caja negra==
+> **Contrato:** `tests/blackbox_test_bloque_5.md` — parte fija de `[[contract]]` literal, más `R1`–`R12` rellenados contra la clase ya corriendo. **Archivo de tests:** `tests/test_bloque_5.py`. **Corrida:** `make testN test=5`, **1 min 33 s**.
+> ==**Los cuatro estados de `Output` se disparan**==, y los dos que el modelo real nunca provoca se fuerzan con una función de logits fabricada, que el `Callable` del `__init__` admite por diseño:
+> ```
+> real          -> 'The prompt was replied correctly'   json.loads OK, 3 claves
+> ""            -> 'The prompt was empty'               output='' y cero logits pedidos
+> logits lanzan -> 'Model failed while replying'        output = JSON incompleto
+> logits planos -> 'Model entered an loop'              el tope por hoja corta
+> ```
+> ==**`get_written()` queda probado**== por la vía que se había acordado: forzando el tope, que hasta hoy no se había disparado nunca.
+
+> [!bug] El único rojo fue del **contrato**, y lo produjo el agente que lo escribió
+> `test_reply_con_el_prompt_real_mas_largo` → `assert 81 == 87`.
+> Cinco de las once longitudes de la tabla `R9 · E2` estaban **contadas a ojo**, no medidas:
+> ```
+> contrato: 26  30  59  54  87
+> real:     27  31  64  57  81
+> ```
+> Corregidas en el contrato, con su nota de qué estaba mal.
+
+> [!important] ==Regla suya, 2026-09-03 — un rojo se justifica solo si rompe su código==
+> Con sus palabras: *"un rojo solo se justifica si el objetivo de su test rompe mi código, no por un error tuyo"*.
+> **De ahí salió la regla de cifras**, que ahora vive escrita dentro de `tests/test_bloque_5.py`:
+>
+> | Clase de número | Qué se hace | Ejemplo |
+> |---|---|---|
+> | **Mide un artefacto real** | Se mide en el test, nunca se clava | `max(prompts, key=len)` · `len(gestor.get_functions())` · `len(modelo.get_logits_from_input_ids([...]))` |
+> | **Es promesa del contrato** | Se clava literal: eso es lo que se comprueba | Las cuatro cadenas de `log` · las claves `prompt`/`name`/`parameters` |
+>
+> **Motivo:** un número clavado se pone rojo cuando cambia el archivo de entrada, y ese rojo no prueba nada.
+
+> [!important] Segundo ajuste del 09-03 — el prompt no se pega en crudo dentro del JSON esperado
+> Tres `assert` comparaban con `'{"prompt":"%s"' % prompt`. Uno de los prompts reales lleva comillas dobles y dentro del JSON salen **escapadas**:
+> ```
+> prompt:  Replace all numbers in "Hello 34 I'm 233 years old" with NUMBERS
+> output:  {"prompt":"Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS", ...
+> startswith con el prompt crudo -> False
+> json.loads(output)["prompt"] == prompt -> True
+> ```
+> Ahora los cuatro usan `json.dumps(prompt)`. ==El escapado en sí ya estaba probado== por `test_reply_conserva_el_prompt_crudo_en_la_clave_prompt`, sobre los 11 prompts.
+
+> [!info] Cómo se auditó al agente ciego
+> Las transcripciones de cada sesión viven en `~/.claude/projects/<proyecto>/<id>.jsonl`, con **cada llamada a herramienta y su ruta**. Script en `~/.claude/tools/auditar_sesion.py`: imprime las llamadas que tocan `src/` —incluidos los `cat`, `sed` y `grep` metidos dentro de un `Bash`— y todas las rutas visitadas.
+> ==**La sesión del agente de tests no está entre las de este proyecto**==: corrió fuera de él, así que esta tanda no se pudo auditar. `git status` sí confirma que **no escribió** fuera de `tests/`.
 
 > [!info]- Estado — 2026-09-02 · histórico, `reply` genera de punta a punta
 > **Escrito hoy por él:** el `__init__` entero y `reply` hasta el `add_token`. ==**Los 11 prompts reales salen con función y argumentos correctos**==, más uno corto fabricado para forzar el tope:
