@@ -102,8 +102,8 @@ graph LR
 | 2 | I/O de archivos | ✅ | ✅ | ✅ |
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
 | 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | ✅ **80 verdes 09-03** |
-| 5 | Bucle de generación | ✅ | ✅ | ✅ **32 verdes 09-03** |
-| 6 | `Chat` orquestador | 🔵 **próximo** | ⚪ | ⚪ |
+| 5 | Bucle de generación | ✅ | 🔵 **reabierto 09-03** — `Output` pasa a `dict` | ⚠️ 32 verdes; **15 a reescribir** |
+| 6 | `Chat` orquestador | ✅ **requisitos cerrados 09-03** | ⚪ | ⚪ |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
@@ -128,6 +128,19 @@ graph LR
 > `src/interface.py` con `Interface` y `Output`. **32 tests verdes**, `flake8` y `mypy --strict` limpios en `src/` —8 archivos—, y la pasada de estilo hecha.
 > ==**Quedan las docstrings**, por decisión suya: llegan al final del proyecto.== El subject las exige, así que siguen siendo pendiente global, no del bloque.
 > **Siguiente: Bloque 6, `Chat`** — arrastra el decode de los `Ġ` y el `json.loads` del resultado.
+
+> [!success] ==Bloque 6 — lista de requisitos cerrada (2026-09-03, 2ª sesión)==
+> `Chat` recibe las rutas de `src/__main__.py`, construye `FileManager`, el `Small_LLM_Model` —==única pieza que conoce el SDK==— e `Interface`; recorre los N prompts y escribe salida y log.
+> **Sin categoría `model` en el log:** un fallo del modelo tiene índice, va a `prompts`. ==El Bloque 2 no se reabre.==
+> **El prompt fallido conserva su prompt:** `{"prompt": "...", "ERROR": "<el log>"}`. La salida sigue llevando **N objetos**.
+> **Si `FileManager` lanza al construirse, `Chat` escribe `logs/logs.json`** — medido: la alternativa costaba 15 o 24 tests del Bloque 2.
+> **Bonus 3 y 6, encima y después.** Detalle en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`.
+
+> [!bug] ==Bloque 5 — REABIERTO (2026-09-03, 2ª sesión)==
+> `Output.output` pasa de `str` a `dict` ya traducido y validado: la traducción de las hojas, el `json.loads` y la validación de tipos se quedan en **`Interface`**, no en `Chat`.
+> **Ganó su argumento:** *"la maquinaria de generación de output es `Interface` y está devolviendo el trabajo a medias"* — y `Interface` ya tiene el `Tokenizer` y el catálogo dentro.
+> ==**Arrastra 15 de los 32 tests**== y la parte del contrato que los sostiene.
+> **Cortado en rojo:** `mypy --strict` sobre `_costume_translater`, línea 41.
 
 > [!success] Bloque 4 — los 80 tests corridos por fin (2026-09-03)
 > `make testN test=4` → ==**80 passed en 2 min 23 s**==. Es la **primera corrida** de la suite completa del bloque, cache incluido: se escribieron el 08-31 y el 09-01 y arrastraban dos sesiones sin ejecutarse.

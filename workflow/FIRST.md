@@ -151,55 +151,53 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-09-03, al cerrar
+> [!info] Estado — 2026-09-04, 3ª sesión
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 2. **6 bloques**; ==**1, 2, 3, 4 y 5 cerrados**==. Los 80 tests del 4 se corrieron por fin hoy (80 verdes, 2 min 23 s) y el 5 cerró con **32 verdes** en 1 min 33 s
-> **Último hito:** ==**Bloque 5 cerrado**== — contrato de caja negra, 32 tests de un agente ciego, y pasada de estilo hecha: `flake8` y `mypy --strict` limpios sobre los **8** archivos de `src/`
-> **Siguiente:** ==**el Bloque 6, `Chat`**== — es lo del día, empezando por su **lista de requisitos**. Antes, el cuestionario ya redactado en `[[PROJECT#Para la sesión siguiente al 2026-09-03]]`
-> **Qué arrastra el Bloque 6:** el ==**decode del texto crudo**== (`"HelloĠ34Ġ..."`, las hojas `string` salen en el alfabeto del vocabulario) · el `json.loads` y la validación `pydantic` del resultado · construir el `Small_LLM_Model` y sacarle las tres rutas —`Interface` no conoce ningún SDK— · llamar a `write_replies` y `write_logs` · atrapar el fallo de un prompt y mandarlo al log
-> **Abierto:** ==**las docstrings van al final del proyecto**, decisión suya del 09-03==, y el subject las exige (`interface.py` y `guardian.py` no las tienen) · no existe `src/__main__.py` ni la regla `lint` del `Makefile` · falta `mypy_path = "llm_sdk"` en `pyproject.toml` · `src/chat.py` existe vacío, lo creó él
-> ==**Regla suya del 09-03:**== un rojo **solo se justifica si el objetivo del test rompe su código**. De ahí la **regla de cifras**: lo que **mide** un artefacto se mide dentro del test, lo que es **promesa del contrato** se clava literal
-> ==**Regla suya del 09-02 — el cuestionario:**== solo **teoría**, nunca un error suyo; no lo hay si la `Lista de refuerzo` no tiene filas abiertas; y ==el agente **no apunta filas por su cuenta**==
-> ==**Regla suya del 09-02 — el stress:**== hasta **el límite real de uso**, y todo guard declarado tiene que dispararse al menos una vez dentro de él
-> **Herramientas:** siempre `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. Suite del 5: **1 min 33 s**; la del 4: **2 min 23 s**. No se corren por costumbre
+> **Fase:** 2. **6 bloques**; ==**1, 2, 3 y 4 cerrados**==. El **5 está reabierto** (tecleando `Interface`) y el **6 tiene su lista de requisitos cerrada, sin teclear**
+> **Último hito:** `_costume_translater` y `_valid_parameters` escritos en `src/interface.py`, `mypy --strict` verde. Pedida una **pasada de lógica del archivo entero** — salieron **dos fallos reales, sin corregir**
+> **Siguiente:** ==**el fallo 1**==: en `_valid_parameters`, la llamada recursiva para un `dict` anidado no guarda ni comprueba su resultado — un nivel anidado inválido pasa como válido. Detalle exacto en `[[PROJECT#Bloque 5 — Bucle de generación]]`. Se sigue tecleando ahí, no preguntando
+> **Abierto:** el fallo 2 (`self._functions[function_name]` puede lanzar `KeyError` sin atrapar) · `flake8` con 9 avisos de estilo, para la pasada 3 · los **15 tests** de `tests/test_bloque_5.py` que tocan `.output` y su parte del contrato · el hueco de la "api" que conoce el SDK · docstrings al final del proyecto · no existe `src/__main__.py` ni la regla `lint` · falta `mypy_path = "llm_sdk"` en `pyproject.toml` · el atajo `cmd+escape` no funciona
+> **Herramientas:** siempre `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. Suite del 5: 1 min 33 s; la del 4: 2 min 23 s. No se corren por costumbre
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 ---
 
-## Instrucción para el próximo agente — escrita el 2026-09-03, al cerrar
+## Instrucción para el próximo agente — escrita el 2026-09-04, 3ª sesión
 
-> [!important] Dónde quedamos
-> **Bloque 5 cerrado.** `src/interface.py` con `Interface` y `Output`, 32 tests verdes escritos por un agente de caja negra desde `tests/blackbox_test_bloque_5.md`, y la pasada de estilo hecha.
+> [!important] Dónde quedamos, exacto
+> `src/interface.py`, dentro de `_valid_parameters`:
+> ```python
+> elif function_parameters[key].properties and isinstance(value, Dict):
+>     self._valid_parameters(function_parameters[key].properties, value)
+> ```
+> El resultado de esa llamada recursiva **no se guarda ni se comprueba**. Si el nivel anidado (bonus 7) vuelve con `error_return`, la función igual termina devolviendo `parameters` como si todo estuviera bien.
+> ==**Él pidió cerrar exactamente aquí, y decidió empezar por este fallo. Se arranca aquí, tecleando.**==
 
 > [!important] El orden de la sesión
-> **1 ·** El **cuestionario** de `[[PROJECT#Para la sesión siguiente al 2026-09-03]]` — cuatro preguntas, ==solo teoría==, una por mensaje.
-> **2 ·** ==**El Bloque 6, `Chat`.**== Se abre por su **lista de requisitos** —qué debe hacer, qué debe rechazar, qué NO es suyo—, y ==la propone él==. No se teclea una línea hasta cerrarla.
-> **3 ·** Después, construcción: él teclea, tú conduces **un paso por mensaje** y verificas **ejecutando**.
+> **1 ·** El fallo 1, de arriba.
+> **2 ·** El fallo 2, ya localizado y sin tocar: `self._functions[function_name]` puede lanzar `KeyError` sin atrapar —si `function_name` no es una clave real, incluido quedarse en `""`—. El subject exige nunca crashear sin control.
+> **3 ·** `flake8`: 9 avisos de estilo (líneas largas, indentación, línea en blanco con espacios) — pasada 3, al final del bloque.
+> **4 ·** Reescribir los 15 tests de `tests/test_bloque_5.py` que tocan `.output`, y su parte del contrato.
+> **5 ·** Solo entonces, teclear `Chat` — su lista de requisitos ya está cerrada en `[[PROJECT#Bloque 6 — `Chat` orquestador]]` y ==no se toca mientras se teclea==.
+> **Cuestionario:** no se le ofreció esta sesión — cerró directo desde el punto de código. Si lo pide, el banco de teoría sigue en `[[PROJECT#Para la sesión siguiente al 2026-09-03 (2ª sesión)]]`, sin tocar.
 
-> [!warning] Lo que el Bloque 6 arrastra, y no se descubre a mitad
-> · ==**El decode del texto crudo.**== Las hojas `string` salen en el alfabeto del vocabulario (`"HelloĠ34ĠI'mÄł233ĠyearsĠold"`). Se movió aquí el 09-02 porque es donde vive el `json.loads`. Tres vías ya descartadas **ejecutándolas**: `decode(encode(r))` es la identidad · pasar `get_json()` entero por `char_byte` da `KeyError: ' '` porque el JSON mezcla dos alfabetos · token a token revienta con `UnicodeDecodeError`, porque un carácter se reparte entre dos tokens. `Tokenizer.char_byte` ya es público para esto.
-> · **El `json.loads` y la validación `pydantic`** del resultado — salieron del Bloque 5 por decisión suya.
-> · **Construir el `Small_LLM_Model` y sacarle las tres rutas.** `Interface` recibe `Path`es y un `Callable`: quien conoce el SDK concreto es `Chat`, y ahí vive el bonus 1.
-> · **`write_replies` y `write_logs`**, y atrapar el fallo de un prompt para mandarlo al log con su índice.
-> · **`src/chat.py` ya existe, vacío.** Lo creó él el 09-03.
-
-> [!warning] Lo que se aprendió el 09-03, y no se repite
-> ==**Ningún número se escribe sin medirlo.**== Se pusieron once longitudes de prompt en el contrato contadas a ojo; cinco estaban mal y el primer rojo de la suite fue por eso. ==**Un rojo solo se justifica si rompe su código.**==
-> ==**Ejecuta, no argumentes.**== Hoy se cerraron así el escapado de las comillas dentro del JSON, el `-type d` del `Makefile` que no borraba un archivo, y la duda de si los 80 tests del Bloque 4 estaban corridos.
-> **Contextualízate de verdad:** preguntó *"¿leíste todos los .md que te indico?"* después de una cifra sin comprobar. Se le respondió con la tabla honesta de qué se había leído entero y qué a medias.
+> [!warning] Lo que se aprendió el 09-04, y no se repite
+> **Nada nuevo que corregir del agente.** Sesión sin bloqueos ni correcciones de rumbo — encadenó `isinstance` narrowing, extracción de método recursivo y recorrido de dos `dict` por clave compartida sin pedir ayuda de más de un mensaje por pieza.
+> ==**Verificó con datos reales antes de aceptar una simplificación**==: al proponer `isinstance(v, (int, float))` para `"number"` preguntó primero si el modelo siempre escribe `float` — y no: `json.loads('40')` da `int`, con su propio ejemplo ya escrito en `[[PROJECT]]` (`{"a": 2,"b": 3}`, sin punto). No se le corrigió el agente: comprobó antes de asumir.
+> **Pidió, por primera vez, una revisión de lógica del archivo entero** —no de un método—. Salieron dos fallos reales; el segundo aún sin corregir, ver arriba.
 
 > [!important] Cómo se trabaja con él
 > ==**Sus identificadores, y solo lo que existe hoy en `src/`.**==
-> **Un paso por mensaje.** Una idea, una pregunta.
-> ==**Respuestas cortas.**== Reincidió hoy: *"sé mucho más breve"*. Si algo está verde, se dice cuántos pasan y qué queda.
+> **Un paso por mensaje.** Una idea, una pregunta. ==**Respuestas cortas.**==
 > **Cuando dice que no sabe, dale las opciones reales con su coste y una recomendación** — y elige él.
 > **Di con qué certeza afirmas algo**: dato, verificado ejecutando, convención o suposición.
 > ==**Le llevas la contraria cuando toca**==, y rectificas en voz alta cuando pierdes.
+> ==**El agente no apunta filas de refuerzo por su cuenta.**== Sigue pendiente una sugerida —*alias de tipo recursivo*— esperando su aprobación; no volvió a salir esta sesión, no insistir con ella.
 
 > [!bug] Con lo que te vas a tropezar
 > **`mypy` da un error falso con `llm_sdk`** si falta `mypy_path = "llm_sdk"` en `pyproject.toml`.
 > Llama a las herramientas con `./callme/bin/python -m ...`, y un script suelto que corra `Interface` necesita `PYTHONPATH=.`.
 > **A `tests/` no se le pasa `flake8` ni `mypy`** — regla suya del 09-01.
-> **Sin docstrings** en `src/interface.py` ni en `src/guardian.py`: ==van al final del proyecto, decisión suya del 09-03==. No las repongas por tu cuenta.
+> **Sin docstrings** en `src/interface.py` ni en `src/guardian.py`: ==van al final del proyecto==. No las repongas por tu cuenta.
 > **Auditar una sesión ajena:** `~/.claude/tools/auditar_sesion.py` sobre el `.jsonl` de `~/.claude/projects/<proyecto>/`.

@@ -305,7 +305,90 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 20 — activo
+> [!info] Agente 22 — activo
+> **Periodo:** 2026-09-04 → ==**`_costume_translater` y `_valid_parameters` escritos**==, `mypy --strict` verde, y **una pasada de lógica pedida por él** que sacó dos fallos sin corregir. Cerrada por decisión suya, en el punto exacto donde queda el segundo fallo.
+>
+> **Qué se hizo:**
+> - **La línea 41 de `src/interface.py`** (donde quedó el Agente 21): el `Dict` sin argumentos y el tipo incompatible en la 43 se cerraron con `ParamValue` — el alias recursivo ya enseñado la sesión anterior, aplicado sin fricción.
+> - ==**`_costume_translater` reescrito como método recursivo aparte**==, no embebido en el traductor principal: recibe `Dict[str, ParamValue]`, traduce hojas `str` con `char_byte`, y cuando una hoja es `dict` (bonus 7) entra un nivel más. **Bug propio, encontrado por él vía `flake8` (`F841`):** la rama `dict` estaba anidada dentro de la rama `str` — inalcanzable, `leaf` ya estrechado a `str` ahí — y la movió al mismo nivel.
+> - **Decidido el quinto estado de `Output`:** si `response_formated["parameters"]` no es `dict` tras el `json.loads`, `log="Model produced malformed parameters"`. Discutidas dos opciones con su coste (nuevo estado vs. reusar `"Model failed while replying"`) — eligió el nuevo estado.
+> - ==**Los cuatro `Output.output` del Bloque 5 reabierto, ya `dict`.**== `Output.output: str` pasó a `ParamValue` en la clase; los tres estados de fallo devuelven `{"prompt": user_prompt}` — uno de ellos (`"empty"`) se quedó en `output=""` hasta que se le señaló, y lo corrigió.
+> - **`self._functions` añadido al `__init__`** — `Dict[str, Function]` indexado por nombre. `functions: List[Function]` entraba y se repartía a `PromptBuilder` y `Guardian`, pero `Interface` nunca se la quedaba para buscar la `Function` del `name` que devuelve el modelo.
+> - ==**`_valid_parameters` escrito**==: compara cada hoja de `parameters` contra el `TypeSpec.type` de la `Function` real —`"number"` acepta `int` o `float`, `"string"` exige `str`—, y cuando `TypeSpec.properties` existe y el valor es `dict`, se llama a sí mismo un nivel más adentro.
+> - ==**Pidió una pasada de lógica del archivo entero**==, primera vez que la pide así —todo el archivo, no un método— y **cerrado sin correr**: solo lectura, sin ejecutar nada, salieron dos fallos reales.
+>
+> **Dónde se quedó:** `src/interface.py`, dentro de `_valid_parameters`, en la rama que baja a un nivel anidado:
+> ```python
+> elif function_parameters[key].properties and isinstance(value, Dict):
+>     self._valid_parameters(function_parameters[key].properties, value)
+> ```
+> El resultado de esa llamada no se guarda ni se comprueba: si el nivel anidado devuelve `error_return`, la función de todos modos termina devolviendo `parameters` como válido. **Es el primero de los dos fallos, y el que decidió corregir primero, la próxima sesión.**
+>
+> **Decisiones tomadas:**
+> - ==**Quinto estado de `Output`: `"Model produced malformed parameters"`**==, distinto de `"Model failed while replying"` — ocurre **después** de que el modelo terminó bien, no durante la generación.
+> - **La validación de tipos es método aparte de la traducción** (`_valid_parameters`, no dentro de `_costume_translater`) — su decisión, para que formateo y validación vivan en el mismo punto de llamada sin mezclar responsabilidades dentro del mismo método.
+> - **`self._functions` indexado por `name`**, no lista — para buscar por la clave que trae `response_formated["name"]`, no recorrer.
+>
+> **Callejones sin salida:**
+> - ==**La rama `dict` dentro de la rama `str`.**== Escribió el `isinstance(leaf, Dict)` anidado bajo `if isinstance(leaf, str):`, lo que lo hacía inalcanzable. Se cerró señalando el código congelado y preguntando "¿al mismo nivel, o una dentro de la otra?" — lo vio solo.
+> - **Ninguna otra.** Sesión sin bloqueos: cada pieza —narrowing con `isinstance`, `Dict` recursivo, recorrer dos `dict` por clave compartida— la resolvió en un mensaje o dos, sin "no entiendo".
+>
+> **Abierto:**
+> - ==**Los dos fallos de la pasada de lógica**== — el de la llamada recursiva descartada (empieza por aquí) y el `KeyError` sin atrapar de `self._functions[function_name]`.
+> - `flake8`: **9 avisos de estilo** (líneas largas, indentación, línea en blanco con espacios) — para la pasada 3, no bloquean.
+> - Reescribir los 15 tests de `tests/test_bloque_5.py` que tocan `.output`, y la parte del contrato que los sostiene — sigue esperando a que `Interface` esté cerrada.
+> - El hueco de la "api" que conoce el SDK, docstrings al final del proyecto, `src/__main__.py`, la regla `lint`, `mypy_path = "llm_sdk"` en `pyproject.toml` — sin tocar, heredado.
+> - **Fila sugerida y no escrita:** *alias de tipo recursivo* en la `Lista de refuerzo` — sigue sin su aprobación. No volvió a salir esta sesión.
+>
+> **Sobre el estudiante:** sesión de tecleo sin un solo bloqueo — encadenó `isinstance` narrowing, extracción de método recursivo, y recorrido paralelo de dos `dict` por clave compartida sin pedir ayuda de más de un mensaje. Verificó con datos reales antes de aceptar una simplificación (`"number"` no siempre es `float` — lo comprobó con `json.loads` y con su propio ejemplo ya escrito en `[[PROJECT]]`) en vez de asumirla. Pidió expresamente una revisión de lógica del archivo entero, no de un método — primera vez con ese alcance.
+>
+> **Siguiente paso:** corregir el fallo 1 —la llamada recursiva descartada— en `_valid_parameters`.
+
+> [!info]- Agente 21 — histórico
+> **Periodo:** 2026-09-03, **2ª sesión del día** → ==**lista de requisitos del Bloque 6 cerrada**== y ==**Bloque 5 reabierto**==. Cortada por él tecleando, con `mypy --strict` en rojo.
+>
+> **Qué se hizo:**
+> - **Cuestionario:** dijo que no hacía falta, pidió ver las cuatro preguntas y eligió **una**, la de la invariante. ==Cerrada== — entrada en `[[REVIEWS]]`, fila a ✅ en la `Lista de refuerzo`. Su formulación final: *"una promesa del código de devolver o hacer algo, y en su test se debe hacer con todo el universo que representa un caso real"*.
+> - ==**Lista de requisitos del Bloque 6 cerrada**==, discutida punto por punto. Está entera en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`.
+> - ==**El Bloque 5 se reabre:**== `Output.output` pasa de `str` a `dict` ya traducido y validado. **La traducción de hojas, el `json.loads` y la validación de tipos se quedan en `Interface`.**
+> - **Se midió antes de decidir, dos veces:** `tests/test_bloque_5.py` → 32 tests, **15 tocan `.output`** · `tests/test_bloque_2.py` → 46 tests, **15 usan los métodos de log** y **24 construyen `FileManager`**.
+> - **Se ejecutó un prompt real** para tener el artefacto del disfraz delante, en 5,6 s: `"source_string": "ProgrammingĠisĠfun"`, con `json.loads` tragándoselo tal cual.
+> - **Atajo `cmd+escape`** en `keybindings.json` (con `.bak` al lado) para alternar el foco editor↔chat: `claude-vscode.focus` / `claude-vscode.blur`. ==**No funciona**==, y él lo dejó para después.
+>
+> **Dónde se quedó:** ==tecleando `_costume_translater` en `src/interface.py`==, en rojo:
+> ```
+> 41    reponse2process: ParamValue = json.loads(raw_response)
+> 42    parameters2process: ParamValue = reponse2process["parameters"]
+>
+> 42: error: Value of type "str | float | dict[str, ParamValue]" is not indexable
+> ```
+> **La causa:** la **41** tiene que ser `Dict[str, ParamValue]` —un `ParamValue` es *hoja o dict*, y una hoja no se indexa—; la **42** está bien. Después falta el `isinstance` que estrecha a `dict` y el cuerpo de la traducción. `src/chat.py` tiene ya un `class Chat` con `__init__` vacío.
+>
+> **Decisiones tomadas (todas suyas, con el detalle en `[[PROJECT]]`):**
+> - `src/__main__.py` parsea los argumentos; `Chat` no hace `argparse`.
+> - ==**Sin categoría `model` en el log:**== un fallo del modelo tiene índice, luego va a `prompts`. **No se reabre el Bloque 2.**
+> - El objeto de un prompt fallido conserva el prompt: `{"prompt": "...", "ERROR": "<el log de Interface>"}`.
+> - Si `FileManager` lanza al construirse, ==**`Chat` escribe `logs/logs.json` él mismo**==. Objeción anotada: la forma del log queda en dos clases.
+> - **Bonus 3 y 6 van encima**, con `Chat` ya cerrado.
+> - **Solo se traduce `parameters`** — `prompt` y `name` nunca llevan disfraz.
+>
+> **Callejones sin salida:**
+> - ==**Recomendar un alias recursivo sin enseñar qué es un alias.**== *"Claramente nunca usé un maldito alias"*. Costó media hora y acabó cerrando la sesión. Lo que funcionó: **tres piezas, una por mensaje, con `mypy --strict` corriendo delante**. Regla nueva en `[[PSYCHOLOGY]]`: **preguntar si ha usado la herramienta antes de meterla en su código**.
+> - **Decirle "usa `isinstance` para estrechar" sin enseñar el error real.** Contestó *"mucho complique, vamos de la forma fácil"*.
+> - **El atajo `cmd+escape`.** Probadas dos vías —`toggleFocusView` y el par `focus`/`blur` sin la condición `useTerminal`—, ninguna responde. Sin diagnosticar.
+>
+> **Abierto:**
+> - ==**El rojo de `mypy` en `_costume_translater`**== — es por donde se sigue.
+> - **Reescribir los 15 tests que tocan `.output`** y la parte del contrato que los sostiene, cuando el `dict` esté.
+> - **El hueco de la "api" que conoce el SDK** —clase aparte en `src/chat.py` o dentro de `Chat`—: *"lo definimos llegados ahí"*.
+> - Docstrings (van al final del proyecto) · no existe `src/__main__.py` ni la regla `lint` · falta `mypy_path = "llm_sdk"` en `pyproject.toml`.
+> - **Fila sugerida y no escrita:** *alias de tipo recursivo* en la `Lista de refuerzo`. ==La aprueba él o no entra.==
+>
+> **Sobre el estudiante:** ganó la discusión de diseño con mejor argumento que el agente —tercera vez—, retiró él solo su propia propuesta de la categoría `model` en cuanto vio el dato, y cortó la sesión nombrando el bloqueo sin disfrazarlo. Detalle en `[[PSYCHOLOGY]]`.
+>
+> **Siguiente paso:** la línea 41 de `src/interface.py`.
+
+> [!info]- Agente 20 — histórico
 > **Periodo:** 2026-09-03, sin cuestionario por instrucción suya del día anterior → ==**contrato del Bloque 5 escrito y sus 32 tests en verde**==.
 >
 > **Qué se hizo:**

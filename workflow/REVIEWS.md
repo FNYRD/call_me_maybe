@@ -23,6 +23,34 @@ tags: [42, repasos, cuestionarios, historico]
 
 ---
 
+## Repaso 2026-09-03 (2ª sesión del día) — ==una sola pregunta, elegida por él==
+
+> [!info] Dio el cuestionario por innecesario y luego pidió ver las preguntas
+> Abrió con *"no hay cuestionario porque no hay ningún tema a reforzar"*. Se le respondió con el dato —quedaban filas 🔴— sin insistir, y pidió las cuatro preguntas para elegir: *"dime cuáles son las preguntas del cuestionario y las elijo"*. Escogió **solo la 2**, la de la invariante.
+> ==**Elegir de una lista le funcionó mejor que aceptar o rechazar el cuestionario entero.**== Es el mismo patrón ya registrado: convertir la pregunta en una elección entre artefactos.
+
+| # | Tema | Resultado |
+|---|---|---|
+| 2 | **Invariante vs caso** — `A: name ∈ catálogo` frente a `B: reply('Greet shrek') -> fn_greet` | ==**Cerrado, en cuatro turnos.**== Arrancó con *"no sé qué es una invariante"* → respuesta directa. Corrigió solo dos veces sobre su propia formulación |
+
+**Cómo fue, turno a turno:**
+
+1. *"No sé qué es una invariante"* → directo, con sus dos frases al lado: **caso = un punto** · **invariante = cierto siempre, para todo el universo**.
+2. Devolvió *"¿entonces invariante es un test que se debe hacer de una manera específica y ya?"* → ==confundía la promesa con su comprobación==. Lo cerró separarlo en dos líneas: la invariante es **propiedad del código y existe aunque nadie escriba el test**; recorrer el universo es **consecuencia**, no definición.
+3. Reformuló bien: *"una promesa que el artefacto dice cumplir sí o sí y se debe testar en todos los casos"*. Se aceptó con el matiz de qué se hace cuando el universo no cabe.
+4. **Preguntó por el matiz** —*"estado de qué, qué lista"*—, y con razón: se le había dicho *"congelar un estado y recorrer su lista"* **en abstracto**. Lo cerró el artefacto suyo: `_slot='number'`, `_written='40'` → los **12 ids** de `get_valid_ids()`, los 12 y no tres a mano.
+
+> [!success] Cierre con sus palabras
+> *"Una invariante es una promesa del código de devolver o hacer algo, y en su test se debe hacer con todo el universo que representa un caso real; si no, no se estaría testando que cumpla en todos los casos."*
+
+> [!warning] El fallo del agente, otra vez el mismo
+> ==**"Se congela un estado y se recorre su lista" no es un artefacto: es prosa.**== Tuvo que pedir *"estado de qué, qué lista"*. Enésima confirmación de la regla del 08-29 — la explicación empieza por el artefacto, y aquí el artefacto estaba a mano: su `Guardian` congelado y los ids reales.
+
+> [!note] Sin lanzar
+> Las preguntas **1** (por qué en `name` no cabe flag), **3** (la regla de cifras) y **4** (por qué el agente de tests tampoco ejecuta) quedan en el banco, sin preguntar.
+
+---
+
 ## Sesión 2026-09-02 — ==sin repaso, por decisión suya==
 
 > [!info] No hubo cuestionario, y puede que no vuelva a haberlo

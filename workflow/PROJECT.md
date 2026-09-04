@@ -3,7 +3,7 @@ tipo: proyecto
 proyecto: call me maybe
 fecha_inicio: 2026-08-04
 fecha_cierre: 
-fase_actual: FASE 2 — construcción (Bloque 5 probado; falta su pasada de estilo)
+fase_actual: FASE 2 — Bloque 6 con lista de requisitos cerrada; Bloque 5 reabierto (Output pasa a dict)
 estado: en_progreso
 tags: [42, proyecto]
 ---
@@ -18,7 +18,18 @@ tags: [42, proyecto]
 
 ## 🗺️ Mapa de flujo
 
-> [!success] Dónde estamos — 2026-09-03
+> [!success] Dónde estamos — 2026-09-04, 3ª sesión
+> ==**`_costume_translater` y `_valid_parameters` escritos**==, con `mypy --strict` verde en `src/interface.py`. Los cuatro `Output.output` del Bloque 5 reabierto ya son `dict`, no `str`.
+> **Pedido un repaso de lógica del archivo entero** (pasada 1, sin guards ni estilo): salieron **dos fallos reales, sin corregir** — el resultado de la llamada recursiva de `_valid_parameters` para un `dict` anidado se descarta, y `self._functions[function_name]` puede lanzar `KeyError` sin atrapar. ==**Empieza por el primero**==, decisión suya al cerrar. Detalle exacto en `[[PROJECT#Bloque 5 — Bucle de generación]]`.
+
+> [!info]- Dónde estábamos — 2026-09-03, 2ª sesión, histórico
+> ==**Bloque 6 abierto: su lista de requisitos está cerrada**==, discutida entera y sin teclear una línea de `Chat`. Vive en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`.
+> ==**Y el Bloque 5 se reabre por decisión suya**==: `Output.output` deja de ser un `str` a medias y pasa a ser un `dict` ya traducido y validado. La traducción de las hojas, el `json.loads` y la validación de tipos contra el catálogo **viven en `Interface`**, no en `Chat`.
+> **Su argumento, que ganó la discusión:** *"la maquinaria de generación de output es `Interface` y está devolviendo el trabajo a medias"*. Y es mejor que el del agente: `Interface` ya tiene **las dos piezas** en su `__init__` —`self._tokenizer` (con `char_byte`) y la `List[Function]`—, mientras que `Chat` tendría que volver a buscar la función por `name`.
+> **Coste medido antes de decidir:** de los 32 tests de `tests/test_bloque_5.py`, ==**15 tocan `.output`**==.
+> **Dónde se cortó la sesión:** tecleando `_costume_translater` en `src/interface.py`, con `mypy --strict` en rojo por las anotaciones del alias recursivo. Ver `[[PROJECT#Bloque 5 — Bucle de generación]]`.
+
+> [!info]- Dónde estábamos — 2026-09-03, 1ª sesión, histórico
 > ==**El Bloque 5 tiene sus tests y están en verde: 32 de 32, en 1 min 33 s.**== Escritos por un agente de caja negra desde `tests/blackbox_test_bloque_5.md`, y ==**los cuatro estados de `Output` se disparan de verdad**== — el tope por hoja incluido, con logits fabricados, así que `get_written()` deja de estar sin probar.
 > **Del único rojo salió un error del contrato, no del código:** cinco de las once longitudes de prompt de la tabla `R9 · E2` estaban contadas a ojo por el agente. El más largo son **81** caracteres, no 87. Corregido.
 > **Regla que salió de ahí, suya:** ==un rojo solo se justifica si el objetivo del test rompe su código==; un rojo por una cifra mal escrita en el contrato no prueba nada y quema una revisión. De ahí la **regla de cifras** que ahora vive dentro del propio archivo de tests: lo que **mide** un artefacto real se mide en el test; lo que es **promesa del contrato** se clava literal.
@@ -102,7 +113,8 @@ graph LR
 | ↳ | *reabierto el 09-01 por decisión suya para meter el **cache** (bonus 4). **16 tests nuevos** de un segundo agente ciego — sección 10, sin correr todavía. `_cache_flags` tiene un bug abierto* | | | |
 | 5 — Bucle de generación | Logits, máscara, `argmax`, parada. **La validación `pydantic` del resultado sale del bloque** — decisión suya del 09-02 | ✅ | Un prompt crudo | Un modelo `pydantic`: cómo salió el bucle y lo escrito |
 | ↳ | *==**cerrado el 09-03**==: contrato, **32 tests verdes** de un agente ciego y pasada de estilo hecha. Docstrings, al final del proyecto* | | | |
-| 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | 🔵 **próximo, 09-04** | Los bloques ya construidos | N resultados + registro de fallos |
+| 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | 🔵 **lista de requisitos cerrada 09-03** | Los bloques ya construidos | N resultados + registro de fallos |
+| ↳ | *reabre el Bloque 5: `Output.output` pasa de `str` a `dict`, y la traducción + validación se quedan en `Interface`* | | | |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
@@ -186,7 +198,7 @@ graph LR
 | **Un número se acumula entre pasos, no llega como token** | ❌ 08-31 | ✅ 08-31 | Sostuvo que `07` no podía salir *"porque el modelo da dígito por dígito"*. Lo cerró la traza de dos pasos (`_written=""` → `"0"` → `"07"`) y la salida real del rojo. **El token es de un carácter; el número es lo acumulado** |
 | **Quitar un permiso vs añadir otro** — cómo se corrige una lista blanca | 🔍 08-31 | ✅ 08-31 | Al arreglar el cero a la izquierda añadió una rama que **permitía** en vez de restringir la que ya daba el paso. Lo cerró ejecutar su propia rama y enseñarle `text='0' + '7' -> True`. **Ante un permiso de más, la corrección quita, no añade** |
 | **Contrato sin pasos numerados — el lado del que implementa** | ❌ 08-31 | 🟡 | El lado del que **testea** lo tiene entero (*"ninguno tuviera manera de hacer trampa, ni prepararse para los tests, ni testar basado en lo que existe"*). Del implementador dijo *"no sé, tu pregunta es confusa"* → directo: con el paso numerado delante no le queda **ningún** trabajo, transcribe; y si el paso está mal, el código sale mal sin que nadie lo revise. Es lo que él nombró el 08-29: *"es casi copiar código"*. **La pregunta que falló comparaba dos redacciones en abstracto — reformular con un método concreto suyo** |
-| **Qué es una invariante** y en qué se diferencia de un caso de test | 🔍 08-29 | 🔴 | Sin preguntar. Salió al escribir el contrato. Una invariante se contrasta contra el **universo entero**; un caso es un punto suelto. Preguntar con una de las 16 del contrato delante |
+| **Qué es una invariante** y en qué se diferencia de un caso de test | 🔍 08-29 | ✅ 09-03 | **09-03, cerrado en cuatro turnos.** Arrancó con *"no sé qué es una invariante"* → directo, con sus dos frases al lado (`name ∈ catálogo` vs `reply('Greet shrek') -> fn_greet`). Falló una vez en lo mismo de siempre: *"¿entonces es un test que se debe hacer de una manera específica?"* — ==confundía la promesa con su comprobación==. Lo cerró separar las dos líneas: la invariante es **propiedad del código y existe aunque nadie escriba el test**; recorrer el universo es **consecuencia**. Su formulación final: *"una promesa del código de devolver o hacer algo, y en su test se debe hacer con todo el universo que representa un caso real"*. **Lo que hizo falta corregir del agente:** *"congelar un estado y recorrer su lista"* se dijo **en abstracto** y tuvo que pedir *"estado de qué, qué lista"* — se cerró con `_slot='number'`, `_written='40'` → los **12 ids** de `get_valid_ids()` |
 | **Cache de la lista blanca** — explicado otra vez el 08-29 | ❌ 08-11 · 🙋 diferir · 🔍 08-29 | ✅ 09-01 | Se cerró el 09-01 implementándolo. Ver la fila de arriba |
 | **Estados que colisionan en una clave normalizada** — `0.` y `0.5` | 🔍 09-01 · ❌ 09-02 | 🟡 | **09-02: lo arregló en dos pasadas.** La primera separó `0.` de `0.5` y dejó colisionando `40` con `0.5` — ==movió la colisión en vez de matarla==. La segunda partió por las dos preguntas independientes (*tiene punto* · *acaba en dígito*) y quedó bien, verificado contra las listas reales. Lo que lo cerró las dos veces fue **la tabla de estados con sus listas al lado**, nunca el código de `_cache_flags`. **Sin verificar:** por qué dos booleanos independientes no caben en una cadena de `elif` |
 | **El id de un token es su índice en los logits** — no hay búsqueda | 🔍 09-02 | 🟡 | Preguntó *"¿lo que hago es una búsqueda indexada?"*. Lo cerró `vocab['fn'] = 8822` al lado de `logits[8822] = 0.4438` y `len(logits) = 151936`. **Preguntar con los tres números delante**, nunca en abstracto |
@@ -220,7 +232,47 @@ graph LR
 > **Cómo se lanza:** 4–6 preguntas · **una por mensaje** · en orden de ejecución del programa · un fallo **no se corrige dando la respuesta**, se le pone el caso límite concreto — solo si dice *"no sé"* se responde directo.
 > **Al terminar:** la entrada del repaso va a `[[REVIEWS]]`, y la `Lista de refuerzo` se actualiza (nuevas filas, estados que cambian).
 
+### Para la sesión siguiente al 2026-09-03 (2ª sesión)
+
+> [!warning] ==Se retoma tecleando, no preguntando==
+> La sesión se cortó a mitad de `_costume_translater`, con `mypy --strict` en rojo. ==**Eso no es material de cuestionario**== —regla suya del 09-02: nunca un error que cometió, lo cierra resolviéndolo—. Se arranca ahí.
+> **Si él pide cuestionario**, estas tres son solo teoría y todos sus identificadores existen hoy en `src/`.
+
+1. Congelado en el hueco del nombre, con el catálogo real y las listas medidas al lado:
+
+```
+get_written() = ''      ->   2 ids permitidos
+get_written() = 'fn'    ->  16 ids
+get_written() = 'fn_'   ->  19 ids
+get_written() = 'fn_g'  ->   6 ids
+```
+
+   En una hoja `number` te bastan dos datos —si ya hay punto y si acaba en dígito— para saber qué se permite. ¿Por qué en el hueco del nombre no existe un par de datos así, y hay que mirar el prefijo entero? *(🔴 sin preguntar nunca)*
+
+2. En `tests/test_bloque_5.py` conviven dos clases de número:
+
+```python
+LOG_BUCLE = 'Model entered an loop'                      # escrito a mano
+tamano = len(modelo.get_logits_from_input_ids([9707]))   # medido
+```
+
+   Los dos describen algo del proyecto. ¿Por qué el segundo se mide y el primero no puede medirse? *(🔴 sin preguntar)*
+
+3. El agente de tests no lee `src/`. Además, tampoco corre los tests: los corres tú. ¿Qué se perdería si los corriera él, si al final el resultado es el mismo verde o rojo? *(🔴 sin preguntar)*
+
+> [!question] ==Fila que el agente **sugiere** y no ha escrito== — decides tú
+> **Alias de tipo recursivo** — por qué un `Union` sin recursión solo cubre un nivel. Es teoría de mecanismo, no un error tuyo, y `ParamValue` ya vive en `src/interface.py`. **Dilo y se apunta; si no, no.**
+
+> [!note] Banco para más adelante
+> Por qué dos booleanos independientes no caben en una cadena de `elif` · los tres niveles de elemento objetivo · qué es la caché de Hugging Face · qué garantiza `@validate_call` que la anotación sola no garantiza.
+
+---
+
 ### Para la sesión siguiente al 2026-09-03
+
+> [!success] Lanzado el 2026-09-03 (2ª sesión) — ==solo la 2, elegida por él==
+> Abrió con *"no hay cuestionario porque no hay ningún tema a reforzar"*, y al ver la lista escogió **la 2**. ==**Cerrada**== — ver `[[REVIEWS]]` y la fila de la invariante en la `Lista de refuerzo`.
+> **Las 1, 3 y 4 quedan sin lanzar**, en el banco.
 
 > [!info] Cuatro preguntas, **solo teoría** — hay filas 🔴 sin cerrar, así que toca cuestionario
 > Ninguna pregunta por un error suyo: los de hoy los cerró él corrigiéndolos. Todos los identificadores existen hoy en `src/`.
@@ -2092,6 +2144,97 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 > **Contra la lista de requisitos: todo cumplido.** Lo único que sale del bloque es el decode del texto crudo, movido al Bloque 6 por decisión suya de hoy.
 > **Falta:** el **contrato** —el encargo del agente de caja negra— y los tests.
 
+#### ==Reabierto el 2026-09-03 (2ª sesión) — `Output.output` pasa a `dict`==
+
+> [!important] Por qué se reabre, y quién ganó la discusión
+> El agente recomendó dejar el `json.loads` y la validación en `Chat`, para no tocar un bloque cerrado. ==**Ganó él**==, con este argumento: *"la maquinaria de generación de output es `Interface` y está devolviendo el trabajo a medias"*.
+> Y su versión es mejor por un dato que el agente no había mirado: **`Interface` ya tiene las dos piezas** en su `__init__` —`self._tokenizer`, y con él `char_byte`, y la `List[Function]` del catálogo—. `Chat` tendría que volver a buscar la función por `name`.
+> **Coste medido antes de decidir:** `tests/test_bloque_5.py` tiene 32 tests y ==**15 tocan `.output`**==.
+
+**Lo que cambia**
+
+| Antes | Ahora |
+|---|---|
+| `Output.output: str` — el JSON crudo de `get_json()`, con las hojas en disfraz | `Output.output: Dict[...]` — ya traducido y validado |
+| `Chat` hacía `json.loads`, traducía y validaba | `Interface` hace las tres cosas |
+
+**Los cuatro estados quedan así:**
+
+```python
+Output(log="The prompt was replied correctly",
+       output={"prompt": "Greet shrek", "name": "fn_greet", "parameters": {"name": "shrek"}})
+Output(log="The prompt was empty",         output={"prompt": ""})
+Output(log="Model failed while replying",  output={"prompt": user_prompt})
+Output(log="Model entered an loop",        output={"prompt": user_prompt})
+```
+
+> [!important] En los tres estados de fallo no se traduce ni se parsea — decisión suya
+> El JSON quedó a medias, así que no hay nada que cargar. El `prompt` que va dentro sale del **argumento de `reply`**, no de `get_json()`.
+
+> [!important] Solo se traduce `parameters` — suya
+> *"Puedo extraer el diccionario de `parameters` y trabajar sobre él específicamente; luego basta con cambiar el `parameters` antiguo por el actual."* Y es exacto: `prompt` lo inyecta `start` con `json.dumps` del prompt crudo —texto real— y `name` sale del catálogo. ==El disfraz solo entra por las hojas.==
+> El recorrido tiene tres ramas, y las dio él: **`str` → traducir · `dict` → volver a entrar** (el anidado del bonus 7) **· `float` → se queda**.
+
+> [!info] El artefacto real, corrido el 09-03 en 5,6 s
+> ```
+> prompt: Replace all vowels in 'Programming is fun' with asterisks
+> log:    The prompt was replied correctly
+> output: {"prompt":"Replace all vowels in 'Programming is fun' with asterisks",
+>          "name": "fn_substitute_string_with_regex",
+>          "parameters": {"source_string": "ProgrammingĠisĠfun", "regex": ".*[aeiouAEIOU].*", "replacement": "asterisk"}}
+> ```
+> ==`json.loads` se lo traga tal cual==: el JSON es válido, lo que está en disfraz es el **valor** de la hoja.
+> El dato que hace falta para traducir: `char_byte['Ġ'] = 32`, y `char_byte[' ']` lanza `KeyError` — el espacio real no está en la tabla.
+
+> [!bug] ==Dónde se cortó la sesión — `mypy --strict` en rojo==
+> Tecleando `_costume_translater` en `src/interface.py`. Estado exacto al cerrar:
+> ```python
+> 40    def _costume_translater(self, raw_response: str) -> Dict[str, Union[str, Dict[str, str | float]]]:
+> 41        reponse2process: ParamValue = json.loads(raw_response)
+> 42        parameters2process: ParamValue = reponse2process["parameters"]
+> ```
+> ```
+> 42: error: Value of type "str | float | dict[str, ParamValue]" is not indexable
+> 42: error: Invalid index type "str" for "str"
+> ```
+> **La causa:** la **41** quedó anotada como `ParamValue`, que es *hoja o dict*, y una hoja no se indexa. Tiene que ser `Dict[str, ParamValue]`; la **42** sí está bien como `ParamValue`, porque sacar un valor de ese dict da un `ParamValue`.
+> **Lo que falta después:** el `isinstance` que estrecha ese `ParamValue` a `dict` —que es la misma rama del recorrido— y el cuerpo de la traducción.
+
+> [!important] El alias recursivo, enseñado ejecutando — 09-03
+> Nunca había usado uno: *"claramente nunca usé un maldito alias"*. Se cerró en tres piezas con `mypy --strict` delante:
+> **1 · Un alias es solo un nombre para un tipo.** `Numero = Union[int, float]` → el error dice `expected "int | float"`: sustituye el nombre por su valor, no crea un tipo nuevo.
+> **2 · Se nombra a sí mismo porque no sabes cuántos niveles vienen.** Los mismos tres datos contra los dos alias:
+> ```
+>                                     SinRecursion   ParamValue
+> {"a": 2.0}                              ✅             ✅
+> {"user": {"name": "shrek"}}             ❌             ✅
+> {"user": {"casa": {"calle": "x"}}}      ❌             ✅
+> ```
+> **3 · Indexar un `ParamValue` no está permitido**, porque puede ser hoja.
+
+#### ==Sesión del 2026-09-04 — `_costume_translater` y `_valid_parameters` escritos==
+
+> [!success] `_costume_translater`, cerrado
+> Método recursivo: por cada hoja de `parameters`, si es `str` la traduce con `char_byte`; si es `dict` (anidado, bonus 7), vuelve a entrar. La primera versión tenía la rama `dict` **dentro** de la rama `str` —nunca alcanzable, `leaf` ya estrechado a `str` ahí— y se corrigió al mismo nivel.
+> **Guard antes de llamarlo, en `reply`:** `response_formated["parameters"]` es `ParamValue`, no `Dict` seco — hace falta `isinstance(..., Dict)` para que `mypy` lo acepte, y si no es `dict`, `Output(log="Model produced malformed parameters", output={"prompt": user_prompt})`. **Nuevo estado, quinto**, con su razón: es un fallo **después** de que el modelo terminó bien —el JSON cerró—, distinto de `"Model failed while replying"` que es fallo del modelo a medio generar.
+
+> [!success] Los cuatro `Output.output` del Bloque 5 reabierto, todos a `dict`
+> `Output.output` pasó de `str` a `ParamValue` en la clase. Los tres estados de fallo (`empty` · `failed while replying` · `entered an loop`) devuelven `{"prompt": user_prompt}`; el de éxito, `response_formated` entero ya traducido y validado.
+
+> [!success] `self._functions` — la lista que faltaba guardar
+> `functions: List[Function]` entraba al `__init__` y se repartía a `PromptBuilder` y `Guardian`, pero `Interface` nunca se la quedaba. Añadido: `self._functions: Dict[str, Function] = {f.name: f for f in functions}`, indexado por nombre para buscar la `Function` que corresponde a `response_formated["name"]`.
+
+> [!success] `_valid_parameters`, primera versión
+> Recibe la `Function` (o su `Dict[str, TypeSpec]` cuando la llamada es recursiva) y el `parameters` ya traducido; compara `type` contra el valor real —`"number"` acepta `int` o `float`, `"string"` exige `str`— y cuando `TypeSpec.properties` existe y el valor es `dict`, entra un nivel más.
+
+> [!bug] ==Pedida una pasada de lógica del archivo entero — dos fallos, sin corregir==
+> **1 · La llamada recursiva no se usa.** `elif function_parameters[key].properties and isinstance(value, Dict): self._valid_parameters(function_parameters[key].properties, value)` — el resultado no se guarda ni se comprueba. Si el nivel anidado está mal, la función igual devuelve `parameters` como si todo estuviera bien.
+> **2 · `self._functions[function_name]` puede lanzar `KeyError` sin atrapar** — si `function_name` no es una clave real, incluido quedarse en `""` cuando `isinstance(response_formated["name"], str)` da `False`. Contradice la exigencia del subject de nunca crashear sin controlar.
+> ==**Decidido: empieza por el 1, la próxima sesión.**==
+> `mypy --strict` verde. `flake8`: 9 avisos de estilo, para la pasada 3.
+
+---
+
 #### Contrato y tests — cerrados el 2026-09-03
 
 > [!success] ==32 tests verdes, escritos por un agente de caja negra==
@@ -2234,6 +2377,92 @@ Los tres casos que esas reglas matan, sacados por él uno a uno: `{"a": ,` (cier
 
 > [!info] Cierra una decisión que estaba abierta desde el 08-31
 > El **prompt vacío** ya no espera al Bloque 6: lo filtra el Bloque 5, decisión suya del 09-02. La propuesta anterior —que lo atrapara `Chat` y fuera a `logs/logs.json`— queda descartada.
+
+---
+
+### Bloque 6 — `Chat` orquestador
+
+> [!info] Estado — 2026-09-03 · ==lista de requisitos cerrada, sin teclear==
+> Se cerró discutiéndola punto por punto. ==No se toca mientras se teclea==: si aparece algo que no está aquí, se para, se decide entre los dos y se anota.
+> **Dónde vive:** `src/chat.py` — clase `Chat`. Hoy solo tiene el `class Chat:` con un `__init__` vacío.
+
+**Descripción:** el orquestador. Recibe las rutas ya parseadas, construye las piezas, recorre los N prompts y escribe la salida y el log.
+
+**Depende de:** `[[PROJECT#Bloque 2 — I/O de archivos|Bloque 2]]` · `[[PROJECT#Bloque 5 — Bucle de generación|Bloque 5]]`.
+**Qué recibe:** las tres rutas, ya parseadas por `src/__main__.py`.
+**Qué entrega:** el archivo de salida con **N objetos** y, si hubo fallos, `logs/logs.json`.
+
+#### La lista de requisitos — cerrada el 2026-09-03
+
+**Qué debe hacer**
+
+- Recibir las tres rutas de `src/__main__.py`. ==`Chat` no hace `argparse`==
+- Construir `FileManager` con ellas
+- Construir el `Small_LLM_Model` —==es la única pieza del proyecto que conoce el SDK==— y sacarle las tres rutas y `get_logits_from_input_ids`
+- Construir `Interface` con el catálogo, las rutas y esa función
+- Recorrer los N prompts, **uno por llamada a `reply`**
+- Acumular con `charge_replies` y escribir con `write_replies`
+- Registrar los fallos con `charge_logs` y escribir con `write_logs`
+
+**Qué debe rechazar**
+
+| Caso | Qué hace |
+|---|---|
+| **`FileManager` lanza al construirse** — ruta ausente, JSON corrupto, catálogo vacío | ==`Chat` escribe `logs/logs.json` él mismo==, con la misma forma, y termina. No hay `FileManager` con el que registrar |
+| **Un prompt vuelve con un `log` de fallo** | El objeto de la salida es `{"prompt": "...", "ERROR": "<el log>"}` y se registra en `prompts` con su índice |
+| **Falla algo dentro del propio `Chat`** — `json.loads`, la validación | El texto del `ERROR` lo escribe `Chat`; el de `Interface` se copia tal cual |
+
+**Qué NO es suyo**
+
+| Fuera | De quién |
+|---|---|
+| `argparse` | `src/__main__.py` |
+| Generar, traducir las hojas y validar tipos | `Interface` — Bloque 5 |
+| Las reglas de formato JSON | `Guardian` — Bloque 4 |
+| Abrir archivos, salvo el log de rutas fallidas | `FileManager` — Bloque 2 |
+
+#### Las decisiones del 2026-09-03, con su razón
+
+> [!important] `src/__main__.py` parsea y le pasa las rutas — suya
+> El subject fija `uv run python -m src --functions_definition ... --input ... --output ...`, y en Fase 1 ya estaba escrito que los argumentos se parsean fuera de los bloques. Elegida sobre la alternativa de meter el `argparse` dentro de `Chat`.
+
+> [!important] ==Sin categoría `model` en el log== — la propuso él y la retiró él
+> Su primera idea fue añadir `"model"` a `FileManager._logs`. Se cayó con su propia decisión del 08-18 delante: **la clave del log es el índice del prompt**, y `files` existe aparte solo porque ahí no hay índice que poner.
+> Un fallo del modelo ocurre generando **un** prompt concreto: tiene índice, luego va a `prompts`. ==Y así no se reabre el Bloque 2.==
+> ```
+> charge_logs("2", "Model failed while replying", "prompts")
+> ```
+
+> [!important] La salida lleva siempre N objetos, y el fallido conserva su `prompt` — suya
+> Su primera forma fue `{"ERROR": "el error"}` a secas. Se movió con el caso delante: quien lea el archivo recorre haciendo `obj["prompt"]` y revienta en ese objeto, y además no se sabe qué prompt falló sin contar posiciones.
+> ```json
+> {"prompt": "Greet shrek", "ERROR": "Model failed while replying"}
+> ```
+> El texto del `ERROR` **se copia del `Output.log`** cuando viene de `Interface`; lo que falle dentro de `Chat` lo escribe `Chat`.
+
+> [!important] Si `FileManager` no llega a existir, el log lo escribe `Chat` — suya
+> El problema, ejecutado con sus archivos:
+> ```
+> FileManager(Path("no_existe.json"), ...)   ->  ValidationError
+>     gestor.charge_logs(...)                ->  NameError: name 'gestor' is not defined
+> ```
+> `charge_logs` y `write_logs` son métodos de `FileManager`: si el constructor lanza, no hay instancia con la que registrar.
+> **Las tres salidas que se midieron sobre `tests/test_bloque_2.py` (46 tests):**
+> ```
+> A  llevarse los logs a Chat            15 tests a reescribir  + rompe "todo el disco en un sitio" (08-18)
+> B  construir sin rutas y cargar luego  24 construcciones a reescribir
+> C  Chat escribe ese log él mismo        0 tests, ~5 líneas
+> ```
+> Eligió **C**, con su razón: *"si las rutas fallan el programa no corrió"*.
+> ==**Objeción anotada:** la forma del log queda escrita en dos clases.== Si cambia, hay que tocar `FileManager` y `Chat`. Se mitiga sola: son mutuamente excluyentes — si `FileManager` existe, `Chat` nunca escribe.
+
+> [!important] Bonus 3 y bonus 6 van encima, no dentro — suya
+> **Bonus 3, recuperación de errores.** Lo que dice el subject es una línea: *"Advanced error recovery mechanisms"*. Él lo situó bien al entenderlo: con `argmax` reintentar sin cambiar nada es ==*"un reintento necio"*==, porque la salida es idéntica byte a byte.
+> Se aplaza porque para saber **qué** recuperar hay que ver cuántos y cómo fallan los 11 prompts reales, y eso solo se mide con `Chat` corriendo.
+> **Bonus 6, la animación.** Misma forma: envuelve el bucle, no lo cambia. `\r` para volver al principio de la línea, `\033[K` para borrarla, y un hilo rotando los frames.
+
+> [!question] Hueco abierto a propósito — la pieza que conoce el SDK
+> El 09-02 lo dijo como *"en chat se cree una parte donde se defina una api"*. Queda por decidir si es una **clase aparte dentro de `src/chat.py`** o va dentro de `Chat`. Con sus palabras hoy: *"el hueco lo definimos llegados ahí"*.
 
 ---
 
