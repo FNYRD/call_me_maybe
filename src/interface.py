@@ -10,7 +10,8 @@ import numpy as np
 import numpy.typing as npt
 import json
 
-ParamValue = Union[str, float, Dict[str, "ParamValue"]]
+type ParamValue = Union[str, float, Dict[str, "ParamValue"]]
+
 
 class Output(BaseModel):
     log: str
@@ -43,18 +44,21 @@ class Interface:
         for parameter, leaf in parameters.items():
             if isinstance(leaf, str):
                 parameters[parameter] = bytearray(
-                    self._tokenizer.char_byte[char] for char in leaf).decode("utf-8")
+                    self._tokenizer.char_byte[char]
+                    for char in leaf).decode("utf-8")
             if isinstance(leaf, Dict):
                 parameters[parameter] = self._costume_translater(leaf)
         return parameters
 
     def _valid_parameters(
-        self, function: Union[Function, Union[Dict[str, TypeSpec], None]], parameters:
-                    Dict[str, ParamValue]) -> Dict[str, ParamValue]:
+            self,
+            function: Union[Function, Union[Dict[str, TypeSpec], None]],
+            parameters: Dict[str, ParamValue]) -> Dict[str, ParamValue]:
         error_return: Dict[str, ParamValue] = {
             "ERROR": "processed function doesn't match "
             "the function parameters"}
-        function_parameters: Union[Function, Union[Dict[str, TypeSpec], None]] = {}
+        function_parameters: Union[Function,
+                                   Union[Dict[str, TypeSpec], None]] = {}
         if isinstance(function, Function):
             function_parameters = function.parameters
         else:
@@ -68,8 +72,15 @@ class Interface:
                 elif (function_parameters[key].type == "string"
                         and not isinstance(value, str)):
                     return error_return
-                elif function_parameters[key].properties and isinstance(value, Dict):
-                    self._valid_parameters(function_parameters[key].properties, value)
+                elif (function_parameters[key].properties
+                        and isinstance(value, Dict)):
+                    nested_result = self._valid_parameters(
+                        function_parameters[key].properties, value)
+                    if "ERROR" in nested_result:
+                        return error_return
+                elif (function_parameters[key].properties
+                        and not isinstance(value, Dict)):
+                    return error_return
         return parameters
 
     @validate_call
@@ -117,8 +128,11 @@ class Interface:
             response_formated["parameters"] = self._valid_parameters(
                 self._functions[function_name],
                 self._costume_translater(
-                response_formated["parameters"]))
-            
+                    response_formated["parameters"]))
+            if "ERROR" in response_formated["parameters"]:
+                return Output(
+                    log=str(response_formated["parameters"]["ERROR"]),
+                    output={"prompt": user_prompt})
             return Output(
                 log="The prompt was replied correctly",
                 output=response_formated)

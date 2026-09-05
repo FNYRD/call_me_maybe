@@ -102,13 +102,20 @@ graph LR
 | 2 | I/O de archivos | ✅ | ✅ | ✅ |
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
 | 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | ✅ **80 verdes 09-03** |
-| 5 | Bucle de generación | ✅ | 🔵 **reabierto 09-03** — `Output` pasa a `dict` | ⚠️ 32 verdes; **15 a reescribir** |
+| 5 | Bucle de generación | ✅ | ✅ **cerrado de nuevo 09-05** — `Output` en `dict` | ✅ **38 verdes** |
 | 6 | `Chat` orquestador | ✅ **requisitos cerrados 09-03** | ⚪ | ⚪ |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
 > [!note] Se actualiza al cerrar cada bloque
 > Este archivo es la vista rápida. La fuente de verdad sigue siendo `[[PROJECT]]`.
+
+> [!success] ==Bloque 5 — CERRADO DE NUEVO (2026-09-05)==
+> Tercer fallo de la recursión de `_valid_parameters`, encontrado estresándola con una `Function` fabricada de dos niveles: un nivel que debía ser objeto y llegaba con otro tipo no se rechazaba. Corregido sin romper los casos válidos.
+> **Alias recursivo a PEP 695** (`type ParamValue = ...`): el implícito rompía con `RecursionError` al construir `Output`, nunca disparado antes porque nadie había corrido `reply()` completo con `Output.output` como `dict`.
+> **Contrato `tests/blackbox_test_bloque_5.2.md`**, con una excepción autorizada a la regla de corte para testear `_valid_parameters`/`_costume_translater` directo. **38/38 tests verdes**, `flake8` y `mypy --strict` limpios en los 8 archivos de `src/`.
+> Un `Ġ` suelto encontrado en una hoja `string` real, cerrado como *acierto del modelo* — no del código.
+> **Siguiente: Bloque 6, `Chat`** — requisitos ya cerrados.
 
 > [!success] Bloques 2 y 3 — cerrados (2026-08-25)
 > `src/filemanager.py` con los seis métodos y los tres getters (**46 tests**), y `src/promptbuilder.py` con la plantilla de chat de Qwen y el catálogo en JSON (**20 tests**). `flake8` y `mypy --strict` limpios en los dos.

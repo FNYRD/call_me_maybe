@@ -20,7 +20,7 @@ import pytest
 from pydantic import ValidationError
 
 from llm_sdk import Small_LLM_Model
-from src.filemanager import FileManager, Function, Prompt
+from src.filemanager import FileManager, Function, Prompt, TypeSpec
 from src.interface import Interface, Output
 
 
@@ -263,16 +263,16 @@ def test_reply_deja_algun_prompt_real_en_estado_correcto(correctos, resultados_r
 
 
 def test_reply_devuelve_json_parseable_de_tres_claves(correctos):
-    """R6.6: en estado correcto output es JSON parseable con exactamente prompt, name y parameters."""
+    """R6.6: en estado correcto output es un dict con exactamente prompt, name y parameters."""
     for texto, resultado in correctos.items():
-        objeto = json.loads(resultado.output)
+        objeto = resultado.output
         assert set(objeto) == CLAVES_DEL_JSON, (texto, objeto)
 
 
 def test_reply_conserva_el_prompt_crudo_en_la_clave_prompt(correctos):
-    """Garantiza que la clave prompt del JSON es el mismo texto que se le paso a reply."""
+    """Garantiza que la clave prompt del dict es el mismo texto que se le paso a reply."""
     for texto, resultado in correctos.items():
-        assert json.loads(resultado.output)["prompt"] == texto
+        assert resultado.output["prompt"] == texto
 
 
 # ==========================================================================
@@ -283,14 +283,14 @@ def test_reply_elige_siempre_un_nombre_del_catalogo(correctos, funciones):
     """R6.8: name es uno de los nombres del catalogo que recibio el constructor."""
     nombres = {f.name for f in funciones}
     for texto, resultado in correctos.items():
-        assert json.loads(resultado.output)["name"] in nombres, texto
+        assert resultado.output["name"] in nombres, texto
 
 
 def test_reply_escribe_exactamente_los_parametros_del_schema(correctos, funciones):
     """R6.9: las claves de parameters son las del schema de esa funcion, todas y sin sobrantes."""
     schema = {f.name: set(f.parameters) for f in funciones}
     for texto, resultado in correctos.items():
-        objeto = json.loads(resultado.output)
+        objeto = resultado.output
         assert set(objeto["parameters"]) == schema[objeto["name"]], (texto, objeto)
 
 
@@ -298,7 +298,7 @@ def test_reply_respeta_el_tipo_declarado_de_cada_parametro(correctos, funciones)
     """R6.10: un parametro number sale como numero JSON y uno string sale como cadena."""
     tipos = {f.name: {n: p.type for n, p in f.parameters.items()} for f in funciones}
     for texto, resultado in correctos.items():
-        objeto = json.loads(resultado.output)
+        objeto = resultado.output
         for nombre, valor in objeto["parameters"].items():
             declarado = tipos[objeto["name"]][nombre]
             if declarado == "number":
@@ -313,7 +313,7 @@ def test_reply_no_deja_vacia_una_hoja_string(correctos, funciones):
     """R8.1: no se exige texto legible, pero si que el valor de una hoja string no este vacio."""
     tipos = {f.name: {n: p.type for n, p in f.parameters.items()} for f in funciones}
     for texto, resultado in correctos.items():
-        objeto = json.loads(resultado.output)
+        objeto = resultado.output
         for nombre, valor in objeto["parameters"].items():
             if tipos[objeto["name"]][nombre] == "string":
                 assert valor != "", (texto, nombre)
@@ -322,7 +322,7 @@ def test_reply_no_deja_vacia_una_hoja_string(correctos, funciones):
 def test_reply_recorre_el_catalogo_entero_sin_inventar_nombres(correctos, funciones):
     """R6.8 por el otro lado: ningun nombre devuelto queda fuera del catalogo, ni siquiera por mayusculas o espacios."""
     nombres = {f.name for f in funciones}
-    devueltos = {json.loads(r.output)["name"] for r in correctos.values()}
+    devueltos = {r.output["name"] for r in correctos.values()}
     assert devueltos <= nombres, devueltos - nombres
 
 
@@ -375,10 +375,10 @@ def test_reply_con_el_prompt_real_mas_corto(resultados_reales, prompts, prompt_m
 
 
 def test_reply_con_prompt_vacio_devuelve_el_estado_vacio(cara):
-    """R4 y R6.2: la cadena vacia devuelve log 'The prompt was empty' y output vacio."""
+    """R4 y R6.2: la cadena vacia devuelve log 'The prompt was empty' y output {"prompt": ""}."""
     resultado = cara.reply("")
     assert resultado.log == LOG_VACIO
-    assert resultado.output == ""
+    assert resultado.output == {"prompt": ""}
 
 
 def test_reply_con_prompt_vacio_no_pide_ni_un_logit(funciones, modelo, tamano_vocabulario):
@@ -386,7 +386,7 @@ def test_reply_con_prompt_vacio_no_pide_ni_un_logit(funciones, modelo, tamano_vo
     logits = hacer_logits_contadores(tamano_vocabulario)
     resultado = cara_simulada(funciones, modelo, logits).reply("")
     assert logits.estado["llamadas"] == 0
-    assert resultado.log == LOG_VACIO and resultado.output == ""
+    assert resultado.log == LOG_VACIO and resultado.output == {"prompt": ""}
 
 
 # ==========================================================================
@@ -398,15 +398,15 @@ def test_reply_atrapa_el_fallo_de_los_logits_en_la_primera_vuelta(funciones, mod
     face = cara_simulada(funciones, modelo, hacer_logits_que_lanzan(tamano_vocabulario, vuelta=1))
     resultado = face.reply(prompt_mas_corto)
     assert resultado.log == LOG_FALLO
-    assert resultado.output.startswith('{"prompt":%s' % json.dumps(prompt_mas_corto))
+    assert resultado.output == {"prompt": prompt_mas_corto}
 
 
 def test_reply_atrapa_el_fallo_de_los_logits_en_una_vuelta_posterior(funciones, modelo, tamano_vocabulario, prompt_mas_corto):
-    """R6.3: el fallo tardio tambien se atrapa y devuelve el JSON incompleto escrito hasta ahi."""
+    """R6.3: el fallo tardio tambien se atrapa y devuelve el mismo estado {"prompt": user_prompt}."""
     face = cara_simulada(funciones, modelo, hacer_logits_que_lanzan(tamano_vocabulario, vuelta=5))
     resultado = face.reply(prompt_mas_corto)
     assert resultado.log == LOG_FALLO
-    assert resultado.output.startswith('{"prompt":%s' % json.dumps(prompt_mas_corto))
+    assert resultado.output == {"prompt": prompt_mas_corto}
 
 
 def test_reply_atrapa_el_fallo_con_todos_los_prompts_reales(funciones, modelo, tamano_vocabulario, prompts):
@@ -416,7 +416,7 @@ def test_reply_atrapa_el_fallo_con_todos_los_prompts_reales(funciones, modelo, t
         resultado = face.reply(texto)
         assert resultado.log == LOG_FALLO, texto
         assert isinstance(resultado, Output)
-        assert resultado.output.startswith('{"prompt":%s' % json.dumps(texto)), texto
+        assert resultado.output == {"prompt": texto}, texto
 
 
 def test_reply_corta_por_el_tope_de_hoja_con_logits_planos(funciones, modelo, tamano_vocabulario, prompt_mas_largo):
@@ -424,7 +424,7 @@ def test_reply_corta_por_el_tope_de_hoja_con_logits_planos(funciones, modelo, ta
     face = cara_simulada(funciones, modelo, hacer_logits_planos(tamano_vocabulario))
     resultado = face.reply(prompt_mas_largo)
     assert resultado.log == LOG_BUCLE
-    assert resultado.output.startswith('{"prompt":%s' % json.dumps(prompt_mas_largo))
+    assert resultado.output == {"prompt": prompt_mas_largo}
 
 
 def test_reply_corta_por_el_tope_con_el_prompt_real_mas_corto(funciones, modelo, tamano_vocabulario, prompt_mas_corto):
@@ -510,3 +510,89 @@ def test_reply_rechaza_un_user_prompt_que_no_es_str(cara):
     for invalido in (5, None, ["Greet shrek"], 3.5, {"prompt": "Greet shrek"}):
         with pytest.raises(ValidationError):
             cara.reply(invalido)
+
+
+# ==========================================================================
+# 8 - ADENDA 5.2: _valid_parameters y _costume_translater, en directo (A4)
+#
+# Excepcion autorizada por el estudiante a la regla de corte: estos dos
+# metodos privados se llaman de forma directa sobre la fixture `cara`,
+# porque a traves de reply es estructuralmente imposible llegar a los casos
+# 5 y 6 de log (A2). E6 y E7 son elementos de nivel 2 - fabricados, pero
+# cubren todas las combinaciones de profundidad y tipo que la clase declara
+# aceptar (F3).
+# ==========================================================================
+
+@pytest.fixture(scope="session")
+def funcion_simple() -> Function:
+    """E6 - una Function de un solo parametro number, sin anidar."""
+    return Function(
+        name="fn_test_simple",
+        description="funcion fabricada para probar _valid_parameters sin anidar",
+        parameters={"a": TypeSpec(type="number")},
+        returns=TypeSpec(type="string"),
+    )
+
+
+@pytest.fixture(scope="session")
+def funcion_anidada() -> Function:
+    """E7 - una Function con dos niveles de objeto anidado (bonus 7)."""
+    return Function(
+        name="fn_test_anidada",
+        description="funcion fabricada para probar _valid_parameters con dos niveles",
+        parameters={
+            "user": TypeSpec(type="object", properties={
+                "name": TypeSpec(type="string"),
+                "address": TypeSpec(type="object", properties={
+                    "city": TypeSpec(type="string"),
+                    "zip": TypeSpec(type="number"),
+                }),
+            }),
+            "active": TypeSpec(type="string"),
+        },
+        returns=TypeSpec(type="string"),
+    )
+
+
+ERROR_TIPO = {"ERROR": "processed function doesn't match the function parameters"}
+
+
+def test_valid_parameters_acepta_un_parametro_simple_correcto(cara, funcion_simple):
+    """Caso 1 de A5: un unico parametro number con el tipo correcto pasa sin ERROR."""
+    assert cara._valid_parameters(funcion_simple, {"a": 3}) == {"a": 3}
+
+
+def test_valid_parameters_acepta_los_dos_niveles_de_anidamiento_correctos(cara, funcion_anidada):
+    """Caso 3 de A5: user.address.city/zip y active, todos con el tipo correcto, pasan sin tocar el dict."""
+    entrada = {
+        "user": {"name": "shrek", "address": {"city": "Duloc", "zip": 12345}},
+        "active": "yes",
+    }
+    assert cara._valid_parameters(funcion_anidada, entrada) == entrada
+
+
+def test_valid_parameters_rechaza_un_tipo_equivocado_sin_anidar(cara, funcion_simple):
+    """Caso 2 de A5: 'a' deberia ser number y llega como str."""
+    assert cara._valid_parameters(funcion_simple, {"a": "x"}) == ERROR_TIPO
+
+
+def test_valid_parameters_propaga_el_error_desde_el_nivel_mas_profundo(cara, funcion_anidada):
+    """Caso 4 de A5, la invariante central de esta adenda: zip deberia ser number y llega como str
+    dentro de user.address, y el error se propaga hasta la raiz en vez de quedar enmascarado."""
+    entrada = {
+        "user": {"name": "shrek", "address": {"city": "Duloc", "zip": "12345"}},
+        "active": "yes",
+    }
+    assert cara._valid_parameters(funcion_anidada, entrada) == ERROR_TIPO
+
+
+def test_valid_parameters_rechaza_un_nivel_intermedio_que_no_es_objeto(cara, funcion_anidada):
+    """Caso 5 de A5: 'user' deberia ser un objeto y llega como str."""
+    entrada = {"user": "no soy un dict", "active": "yes"}
+    assert cara._valid_parameters(funcion_anidada, entrada) == ERROR_TIPO
+
+
+def test_costume_translater_traduce_una_hoja_con_disfraz_real(cara):
+    """Caso 6 de A5: una hoja con el disfraz real del vocabulario (Ġ) sale traducida a texto legible."""
+    resultado = cara._costume_translater({"source_string": "ProgrammingĠisĠfun"})
+    assert resultado == {"source_string": "Programming is fun"}

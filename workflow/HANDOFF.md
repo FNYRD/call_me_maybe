@@ -305,7 +305,40 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 22 — activo
+> [!info] Agente 23 — activo
+> **Periodo:** 2026-09-05 → ==**Bloque 5 cerrado de nuevo**== y ==**Bloque 6 (`Chat`) arrancado a teclear**==, con dos decisiones suyas que reabren su lista de requisitos el mismo día que empieza. Cerrada por él, a media construcción del `__init__` de `Chat`.
+>
+> **Qué se hizo:**
+> - **Los dos fallos de la pasada de lógica del 09-04, cerrados.** El primero (llamada recursiva de `_valid_parameters` descartada): guardó el resultado y comprobó `"ERROR" in nested_result`. El segundo (`KeyError` de `self._functions[function_name]`): descartado como caso real —`Guardian._char_ok` solo permite cerrar el `name` cuando ya coincide exacto con una clave del catálogo, así que si `reply` llega a `json.loads`, el nombre ya es válido por construcción.
+> - ==**`RecursionError` bloqueando toda la suite, encontrado al intentar correr los tests por primera vez.**== `ParamValue = Union[str, float, Dict[str, "ParamValue"]]` era una asignación normal, no un alias nombrado — pydantic no podía resolver el forward-ref recursivo al construir `Output`. Corregido con sintaxis PEP 695: `type ParamValue = Union[...]`. Nunca se había disparado porque nadie había corrido `reply()` completo desde que `Output.output` es `dict`.
+> - ==**Tercer fallo, encontrado estresando la recursión a propósito**== con una `Function` fabricada de dos niveles de anidamiento (`user.address`): cuando un nivel debía ser objeto (`properties` declarado) y llegaba con otro tipo, ninguna de las tres ramas de `_valid_parameters` lo rechazaba — corregido con un `else: return error_return`. Su primer intento rompió el caso válido más básico (`{"name": "shrek"}` empezó a salir con `ERROR`) por mezclar *"es de tipo X"* con *"está mal"* en una sola condición; lo vio él mismo con la traza delante.
+> - **Contrato `tests/blackbox_test_bloque_5.2.md`**, con una excepción autorizada a la regla de corte —testear `_valid_parameters`/`_costume_translater` directo, porque a través de `reply` es estructuralmente imposible llegar a esos casos—. El agente ciego migró los 13 tests que trataban `.output` como `str` y escribió 6 nuevos. **38/38 en verde.**
+> - **Un `Ġ` suelto en una hoja `string` real** (`"I'mĠ233"` en vez de `"I'm 233"`), investigado a fondo: verificado que la reconstrucción multi-byte de `_costume_translater` es correcta (probado con `café`), así que el `Ġ` es el modelo escribiendo bytes distintos a un espacio, no un bug de traducción. Cerrado como *acierto del modelo*, fuera del alcance de la clase — mismo trato que ya tenía el acierto de nombre de función.
+> - **Bloque 6 arrancado.** Dos decisiones suyas, las dos con el mismo argumento —simetría con el desacoplamiento de SDK que ya tiene `Interface`—: `Small_LLM_Model` se construye en `src/__main__.py`, no en `Chat`; y el `try/except` alrededor de `FileManager(...)` se quita de `Chat` entero, porque su propio `@validate_call` intercepta una ruta ausente **antes** de que el cuerpo de `Chat` pueda atraparla — lo vio él ejecutando, con el mismo patrón del fallo 2 de `Interface`. `src/__main__.py` pasa a construir el modelo y a atrapar el fallo de `FileManager`.
+>
+> **Dónde se quedó:** `src/chat.py`, `__init__` con las siete rutas/función en la firma y `self._file_manager = FileManager(...)` sin `try/except`. Checklist en comentario bajo la clase, con 3 de 7 ítems marcados. Import `ValidationError` en el archivo, ya sin uso — quedó de antes de quitar el `try`.
+>
+> **Decisiones tomadas:**
+> - ==**`Small_LLM_Model` se construye en `src/__main__.py`.**== `Chat` recibe las tres rutas del modelo y `get_logits_from_input_ids` ya extraídas — igual que `Interface` recibe las de `Chat`. Ventaja medible: se puede testear `Chat` con un `Callable` fabricado sin cargar el modelo real.
+> - ==**El guard de `FileManager` al construirse vive en `src/__main__.py`, no en `Chat`.**== Revierte la decisión del 09-03 (*"Chat escribe el log él mismo"*) por una razón técnica, no de gusto: con `functions_path: FilePath` en la propia firma de `Chat`, una ruta ausente nunca llega al `try` interno.
+> - **Los tres fallos de `_valid_parameters` quedaron: 1 corregido, 2 descartado por invariante real, 3 encontrado y corregido.** Los tres documentados en `[[PROJECT#Bloque 5 — Bucle de generación]]`.
+>
+> **Callejones sin salida:**
+> - **El primer intento del fallo 3** (`else: return error_return` sin más) rompió el caso `string` válido — combinaba *tipo* y *validez* en la misma condición del `elif`. Se cerró con la traza del `elif` evaluado paso a paso, no explicándolo.
+> - **Ninguna otra.** Sesión sin bloqueos de concepto — el único "no entendí" fue de redacción (pidió más brevedad dos veces), no de contenido.
+>
+> **Abierto:**
+> - `src/chat.py`: falta `Interface`, el recorrido de los N prompts, `charge_replies`/`write_replies`, `charge_logs`/`write_logs`, y **cómo exactamente registra el log cuando `FileManager` no llega a existir** — decidido que va en `__main__`, pero el `#ESCRIBIR EL LOG` de la forma exacta (JSON con `"prompts"`/`"files"`) sigue sin escribir, por decisión suya de dejarlo para cuando llegue ahí.
+> - `src/__main__.py` no existe todavía — ahora con más trabajo que antes: además de `argparse`, construye `Small_LLM_Model` y el `try/except` de `FileManager`.
+> - `import ValidationError` sin usar en `src/chat.py`, tras quitar el `try`.
+> - Docstrings (van al final del proyecto), `mypy_path = "llm_sdk"` en `pyproject.toml`, la regla `lint` del `Makefile` — heredado, sin tocar.
+> - **Fila nueva en la `Lista de refuerzo`**, aprobada por él: alias implícito vs alias de verdad (PEP 695), 🟡 sin verificar con pregunta.
+>
+> **Sobre el estudiante:** pidió explícitamente una pasada de estrés con "fallos bien profundos, dentro de rangos de realismo funcional" — y de ahí salió un fallo real que ni él ni el agente habían anticipado. Encontró solo, ejecutando, que un guard que acababa de escribir era redundante por la misma razón que uno anterior (transferencia del fallo 2 a una clase nueva, sin pista). Propuso — sin que se le preguntara — bajar el acoplamiento del SDK una capa más, con el mismo argumento y la misma técnica que ya usó en `Interface` el 08-27. Cortó dos respuestas largas pidiendo *"sé más breve y conciso"*.
+>
+> **Siguiente paso:** seguir tecleando `Chat.__init__` — construir `Interface` con el catálogo, las rutas y la función de logits.
+
+> [!info]- Agente 22 — histórico
 > **Periodo:** 2026-09-04 → ==**`_costume_translater` y `_valid_parameters` escritos**==, `mypy --strict` verde, y **una pasada de lógica pedida por él** que sacó dos fallos sin corregir. Cerrada por decisión suya, en el punto exacto donde queda el segundo fallo.
 >
 > **Qué se hizo:**

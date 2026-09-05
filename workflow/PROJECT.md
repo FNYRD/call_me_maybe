@@ -3,7 +3,7 @@ tipo: proyecto
 proyecto: call me maybe
 fecha_inicio: 2026-08-04
 fecha_cierre: 
-fase_actual: FASE 2 — Bloque 6 con lista de requisitos cerrada; Bloque 5 reabierto (Output pasa a dict)
+fase_actual: FASE 2 — Bloque 5 cerrado de nuevo; Bloque 6 con lista de requisitos cerrada, sin teclear
 estado: en_progreso
 tags: [42, proyecto]
 ---
@@ -18,9 +18,15 @@ tags: [42, proyecto]
 
 ## 🗺️ Mapa de flujo
 
-> [!success] Dónde estamos — 2026-09-04, 3ª sesión
-> ==**`_costume_translater` y `_valid_parameters` escritos**==, con `mypy --strict` verde en `src/interface.py`. Los cuatro `Output.output` del Bloque 5 reabierto ya son `dict`, no `str`.
-> **Pedido un repaso de lógica del archivo entero** (pasada 1, sin guards ni estilo): salieron **dos fallos reales, sin corregir** — el resultado de la llamada recursiva de `_valid_parameters` para un `dict` anidado se descarta, y `self._functions[function_name]` puede lanzar `KeyError` sin atrapar. ==**Empieza por el primero**==, decisión suya al cerrar. Detalle exacto en `[[PROJECT#Bloque 5 — Bucle de generación]]`.
+> [!success] Dónde estamos — 2026-09-05, 4ª sesión
+> ==**Bloque 5 cerrado de nuevo.**== Los dos fallos de la pasada de lógica del 09-04 corregidos, más un tercero encontrado estresando la recursión (`_valid_parameters` no validaba cuando un nivel debía ser objeto y llegaba como otro tipo). Alias recursivo corregido a PEP 695 (`type ParamValue = ...`) — pydantic no resolvía el forward-ref implícito y `RecursionError` bloqueaba toda la suite. `flake8` y `mypy --strict` limpios en los 8 archivos de `src/`.
+> **Contrato `tests/blackbox_test_bloque_5.2.md`** escrito y ejecutado por el agente de tests: 13 tests migrados (typing de `.output`, sin tocar qué prueban) + 6 nuevos sobre `_valid_parameters`/`_costume_translater` con una `Function` fabricada de dos niveles de anidamiento — excepción autorizada a la regla de corte, justificada en el propio contrato. **38/38 en verde.**
+> **Hallazgo cerrado sin tocar código:** un `Ġ` suelto en una hoja `string` real (`"I'mĠ233"`) no es un disfraz sin traducir — es el modelo escribiendo bytes distintos a un espacio. Verificado que la traducción reconstruye bien lo multi-byte (`café`). Cae en *"acierto del modelo"*, fuera del alcance de la clase — mismo trato que ya tenía el acierto de nombre de función.
+> **Siguiente:** Bloque 6, `Chat` — su lista de requisitos ya está cerrada en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`.
+
+> [!info]- Dónde estábamos — 2026-09-04, 3ª sesión, histórico
+> `_costume_translater` y `_valid_parameters` escritos, con `mypy --strict` verde en `src/interface.py`. Los cuatro `Output.output` del Bloque 5 reabierto ya eran `dict`, no `str`.
+> Pedido un repaso de lógica del archivo entero: salieron dos fallos reales, sin corregir — el resultado de la llamada recursiva de `_valid_parameters` para un `dict` anidado se descartaba, y `self._functions[function_name]` podía lanzar `KeyError` sin atrapar.
 
 > [!info]- Dónde estábamos — 2026-09-03, 2ª sesión, histórico
 > ==**Bloque 6 abierto: su lista de requisitos está cerrada**==, discutida entera y sin teclear una línea de `Chat`. Vive en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`.
@@ -210,6 +216,7 @@ graph LR
 | **Por qué en el hueco `name` no cabe una flag** | 🔍 09-01 | 🔴 | Sin preguntar. La lista depende del prefijo exacto: `fn_` deja 19 tokens y `fn_g` otros. Preguntar con las dos listas puestas al lado |
 | **Dónde poner un cache: 1 llamada contra 151.000** | 🔍 09-01 | 🟡 | Lo eligió bien con el dato delante, pero primero dijo que *"ambos llaman al vocabulario 151.000 veces"* — confundía el trabajo total con el número de consultas. Preguntar por **cuántas veces se consulta el `dict`**, nunca por cuál recorre más |
 | **`startswith` vs `in`** — prefijo, no contención | 🔍 08-27 | ✅ 08-27 | Lo pidió directo y cortó la explicación de más: *"aquí sirve `.startswith` y ya"*. Tenía razón |
+| **Alias implícito vs alias de verdad (PEP 695)** — por qué `X = Union[...]` recursivo revienta en pydantic y `type X = Union[...]` no | 🔍 09-03 · 🙋 09-05 | 🟡 | Salió el 09-05 con `ParamValue` real: `RecursionError` al construir `Output.output` porque `ParamValue = Union[str, float, Dict[str, "ParamValue"]]` es una asignación normal, no un alias nombrado — pydantic no tiene dónde cortar la resolución del forward-ref. Con `type ParamValue = ...` (PEP 695) se resuelve. Aplicado sin fricción en cuanto se le dio la línea; preguntar con el mismo `RecursionError` delante, no en abstracto |
 
 > [!warning] Regla de reincidencia
 > Un tema que falla **tres veces** baja de ✅ a 🟡 en el `[[PROJECT#Cuestionario de verificación]]`, y la explicación que se usó las veces anteriores se busca en `[[REVIEWS]]` — para no repetir la que ya no funcionó.
@@ -2378,27 +2385,32 @@ Output(log="Model entered an loop",        output={"prompt": user_prompt})
 > [!info] Cierra una decisión que estaba abierta desde el 08-31
 > El **prompt vacío** ya no espera al Bloque 6: lo filtra el Bloque 5, decisión suya del 09-02. La propuesta anterior —que lo atrapara `Chat` y fuera a `logs/logs.json`— queda descartada.
 
+> [!success] ==Cerrado de nuevo — 2026-09-05==
+> Tercer fallo encontrado estresando `_valid_parameters` con una `Function` fabricada de dos niveles de anidamiento: cuando un nivel debía ser objeto (`properties` declarado) y llegaba con otro tipo, ninguna rama lo rechazaba — corregido con un `else: return error_return` propio, sin romper los casos válidos. Alias recursivo pasado a PEP 695 (`type ParamValue = ...`): el implícito hacía que pydantic reventara con `RecursionError` al construir `Output`, y nunca se había disparado porque nadie había corrido `reply()` completo desde que `Output.output` es `dict`.
+> **Contrato `tests/blackbox_test_bloque_5.2.md`**, con una excepción autorizada a la regla de corte (testear `_valid_parameters`/`_costume_translater` directo, porque a través de `reply` es estructuralmente imposible llegar a esos casos). **38/38 tests en verde.** `flake8` y `mypy --strict` limpios en los 8 archivos de `src/`.
+> Un `Ġ` suelto encontrado en una hoja `string` real, verificado y cerrado como *acierto del modelo* — no del código. Detalle en `[[FIRST]]`.
+
 ---
 
 ### Bloque 6 — `Chat` orquestador
 
-> [!info] Estado — 2026-09-03 · ==lista de requisitos cerrada, sin teclear==
-> Se cerró discutiéndola punto por punto. ==No se toca mientras se teclea==: si aparece algo que no está aquí, se para, se decide entre los dos y se anota.
-> **Dónde vive:** `src/chat.py` — clase `Chat`. Hoy solo tiene el `class Chat:` con un `__init__` vacío.
+> [!info] Estado — 2026-09-05 · 🔵 tecleando
+> **Dónde vive:** `src/chat.py` — clase `Chat`. `__init__` recibe las siete rutas/función y construye `FileManager`, sin `try/except` propio — ver el revertido de abajo.
+> Lista de requisitos con dos cambios el mismo día de empezar a teclear (`Small_LLM_Model` a `main`, el guard de `FileManager` a `main`) — anotados aquí mismo, no resueltos de paso en el código.
 
 **Descripción:** el orquestador. Recibe las rutas ya parseadas, construye las piezas, recorre los N prompts y escribe la salida y el log.
 
 **Depende de:** `[[PROJECT#Bloque 2 — I/O de archivos|Bloque 2]]` · `[[PROJECT#Bloque 5 — Bucle de generación|Bloque 5]]`.
-**Qué recibe:** las tres rutas, ya parseadas por `src/__main__.py`.
+**Qué recibe:** las tres rutas de datos ya parseadas por `src/__main__.py`, más las tres rutas del modelo y la función de logits, ya extraídas del SDK por `src/__main__.py`.
 **Qué entrega:** el archivo de salida con **N objetos** y, si hubo fallos, `logs/logs.json`.
 
-#### La lista de requisitos — cerrada el 2026-09-03
+#### La lista de requisitos — cerrada el 2026-09-03, actualizada el 2026-09-05
 
 **Qué debe hacer**
 
-- Recibir las tres rutas de `src/__main__.py`. ==`Chat` no hace `argparse`==
+- Recibir las tres rutas de datos de `src/__main__.py`. ==`Chat` no hace `argparse`==
 - Construir `FileManager` con ellas
-- Construir el `Small_LLM_Model` —==es la única pieza del proyecto que conoce el SDK==— y sacarle las tres rutas y `get_logits_from_input_ids`
+- ==Recibir las tres rutas del modelo y la función de logits ya extraídas de `src/__main__.py`== — decisión del 09-05, ver abajo
 - Construir `Interface` con el catálogo, las rutas y esa función
 - Recorrer los N prompts, **uno por llamada a `reply`**
 - Acumular con `charge_replies` y escribir con `write_replies`
@@ -2408,15 +2420,16 @@ Output(log="Model entered an loop",        output={"prompt": user_prompt})
 
 | Caso | Qué hace |
 |---|---|
-| **`FileManager` lanza al construirse** — ruta ausente, JSON corrupto, catálogo vacío | ==`Chat` escribe `logs/logs.json` él mismo==, con la misma forma, y termina. No hay `FileManager` con el que registrar |
-| **Un prompt vuelve con un `log` de fallo** | El objeto de la salida es `{"prompt": "...", "ERROR": "<el log>"}` y se registra en `prompts` con su índice |
-| **Falla algo dentro del propio `Chat`** — `json.loads`, la validación | El texto del `ERROR` lo escribe `Chat`; el de `Interface` se copia tal cual |
+| **`FileManager` lanza al construirse** — ruta ausente, JSON corrupto, catálogo vacío | ==Lo atrapa `src/__main__.py`, no `Chat`==, decisión del 09-05, ver abajo. Escribe `logs/logs.json` él mismo, con la misma forma, y termina |
+| **Un prompt vuelve con un `log` de fallo** — incluido cualquier fallo de `json.loads` o de validación, que ahora ocurren dentro de `Interface` | El objeto de la salida es `{"prompt": "...", "ERROR": "<el log>"}` y se registra en `prompts` con su índice. El texto del `ERROR` es el `log` de `Interface`, copiado tal cual |
 
 **Qué NO es suyo**
 
 | Fuera | De quién |
 |---|---|
 | `argparse` | `src/__main__.py` |
+| ==Construir `Small_LLM_Model` y sacarle las rutas y la función de logits== | `src/__main__.py` — decisión del 09-05, ver abajo |
+| ==Atrapar el fallo de `FileManager` al construirse y escribir `logs/logs.json`== | `src/__main__.py` — revertido el 09-05, ver abajo |
 | Generar, traducir las hojas y validar tipos | `Interface` — Bloque 5 |
 | Las reglas de formato JSON | `Guardian` — Bloque 4 |
 | Abrir archivos, salvo el log de rutas fallidas | `FileManager` — Bloque 2 |
@@ -2425,6 +2438,11 @@ Output(log="Model entered an loop",        output={"prompt": user_prompt})
 
 > [!important] `src/__main__.py` parsea y le pasa las rutas — suya
 > El subject fija `uv run python -m src --functions_definition ... --input ... --output ...`, y en Fase 1 ya estaba escrito que los argumentos se parsean fuera de los bloques. Elegida sobre la alternativa de meter el `argparse` dentro de `Chat`.
+
+> [!important] ==`Small_LLM_Model` se construye en `src/__main__.py`, no en `Chat`== — decisión suya, 2026-09-05
+> Reabre la fila de arriba: hasta hoy `Chat` construía el modelo por dentro. Se mueve a `__main__` para que `Chat` quede **tan desacoplado del SDK como `Interface`** — recibe las tres rutas del modelo y la función de logits ya extraídas, igual que `Interface` recibe las de `Chat` hoy.
+> **Ventaja real, no cosmética:** sin esto, testear `Chat` con una función de logits fabricada exigiría cargar el modelo real igual, porque `Chat` lo construye él mismo. Con esto, se le puede inyectar un `Callable` falso sin tocar el SDK — la misma técnica que ya usa `cara_simulada` en los tests de `Interface`.
+> **Lo que cambia en `src/__main__.py`:** deja de ser solo `argparse`. Construye `Small_LLM_Model`, le saca las tres rutas y `get_logits_from_input_ids`, y se lo pasa todo a `Chat` junto con las rutas de datos.
 
 > [!important] ==Sin categoría `model` en el log== — la propuso él y la retiró él
 > Su primera idea fue añadir `"model"` a `FileManager._logs`. Se cayó con su propia decisión del 08-18 delante: **la clave del log es el índice del prompt**, y `files` existe aparte solo porque ahí no hay índice que poner.
@@ -2455,6 +2473,16 @@ Output(log="Model entered an loop",        output={"prompt": user_prompt})
 > ```
 > Eligió **C**, con su razón: *"si las rutas fallan el programa no corrió"*.
 > ==**Objeción anotada:** la forma del log queda escrita en dos clases.== Si cambia, hay que tocar `FileManager` y `Chat`. Se mitiga sola: son mutuamente excluyentes — si `FileManager` existe, `Chat` nunca escribe.
+
+> [!warning] ==Revertido — 2026-09-05: no es `Chat` quien puede atraparlo, es `src/__main__.py`==
+> Al teclear el `__init__` de `Chat`, con `functions_path: FilePath` en su propia firma, se ejecutó con una ruta ausente:
+> ```
+> ValidationError : 1 validation error for Chat.__init__
+>   Path does not point to a file [type=path_not_file, ...]
+> ```
+> **De dónde salió:** de `@validate_call` sobre el propio `__init__` de `Chat` — **antes** de entrar al cuerpo. El `try` alrededor de `FileManager(...)` dentro de `Chat` nunca llega a ejecutarse con una ruta mala, porque `Chat` ya la rechaza un nivel más arriba, en su propia firma.
+> ==**Consecuencia:** `Chat` no puede atrapar ese caso en su propio cuerpo — quien construye `Chat` es quien lo recibe.== Es quien llama a `Chat(...)`, es decir `src/__main__.py`.
+> **Decisión suya:** se quita el `try/except` de `Chat` entero — ya no reescribe nada, deja pasar lo que sea que lance `FileManager` o su propio `@validate_call`. `src/__main__.py` envuelve la construcción de `Chat` en un único `try/except (ValidationError, ValueError)`, y ahí escribe `logs/logs.json` y termina. Cubre ruta ausente y contenido malo **en un solo sitio**.
 
 > [!important] Bonus 3 y bonus 6 van encima, no dentro — suya
 > **Bonus 3, recuperación de errores.** Lo que dice el subject es una línea: *"Advanced error recovery mechanisms"*. Él lo situó bien al entenderlo: con `argmax` reintentar sin cambiar nada es ==*"un reintento necio"*==, porque la salida es idéntica byte a byte.
