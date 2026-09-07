@@ -103,12 +103,18 @@ graph LR
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
 | 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | ✅ **80 verdes 09-03** |
 | 5 | Bucle de generación | ✅ | ✅ **cerrado de nuevo 09-05** — `Output` en `dict` | ✅ **38 verdes** |
-| 6 | `Chat` orquestador | ✅ **requisitos cerrados 09-03** | ⚪ | ⚪ |
+| 6 | `Chat` orquestador | ✅ **requisitos cerrados 09-03** | 🔴 escrita, corre, **2 hallazgos sin resolver 09-07** | ⚪ |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
 > [!note] Se actualiza al cerrar cada bloque
 > Este archivo es la vista rápida. La fuente de verdad sigue siendo `[[PROJECT]]`.
+
+> [!bug] ==Bloque 6 — escrito y corriendo, 2 hallazgos reales sin resolver (2026-09-07)==
+> `Chat` completo, `src/__main__.py` escrito, los dos con `mypy --strict`/`flake8` limpios. Primera corrida real de punta a punta: 11/11 prompts sin crash.
+> **Hallazgo 1:** `charge_replies(answer.model_dump())` guarda `{"log":..., "output":{...}}` — el subject exige `prompt`/`name`/`parameters` sin anidar. Arreglo identificado, sin aplicar.
+> **Hallazgo 2:** un `Ġ` sin traducir en la salida real, pese a que `_costume_translater` traduce bien el mismo string llamado suelto. Reabre lo cerrado el 09-05 (*"acierto del modelo"*), que nunca se probó de punta a punta. **Prioridad de la próxima sesión.**
+> Detalle completo en `[[PROJECT#Sesión del 2026-09-07 — `Chat` y `__main__.py` construidos, dos hallazgos reales sin resolver]]`.
 
 > [!success] ==Bloque 5 — CERRADO DE NUEVO (2026-09-05)==
 > Tercer fallo de la recursión de `_valid_parameters`, encontrado estresándola con una `Function` fabricada de dos niveles: un nivel que debía ser objeto y llegaba con otro tipo no se rechazaba. Corregido sin romper los casos válidos.

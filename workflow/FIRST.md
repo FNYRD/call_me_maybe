@@ -151,51 +151,52 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!info] Estado — 2026-09-05, 4ª sesión
+> [!bug] Estado — 2026-09-07, 5ª sesión
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 2. **6 bloques**; ==**1, 2, 3, 4 y 5 cerrados**==. El **6 está tecleando** (`Chat.__init__`, a medias)
-> **Último hito:** Bloque 5 cerrado de nuevo — tres fallos de `_valid_parameters` resueltos, alias recursivo a PEP 695, contrato `5.2` con **38/38 tests verdes**. Arrancado `Chat`, con dos decisiones que reabrieron su lista de requisitos el mismo día: `Small_LLM_Model` se construye en `src/__main__.py`, y el guard de `FileManager` también vive ahí, no en `Chat`
-> **Siguiente:** seguir tecleando `Chat.__init__` — construir `Interface` con el catálogo, las rutas y la función de logits. Detalle exacto en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`
-> **Abierto:** el resto de `Chat` (recorrer prompts, `charge_replies`/`write_replies`, `charge_logs`/`write_logs`) · **cómo exactamente registra el log cuando `FileManager` no existe** — va en `__main__`, forma sin decidir todavía, por decisión suya · `src/__main__.py` no existe, y ahora hace más que `argparse` · `import ValidationError` sin uso en `src/chat.py` · el hueco de la "api" que conoce el SDK ya resuelto (es `__main__`) · docstrings al final del proyecto · falta `mypy_path = "llm_sdk"` en `pyproject.toml` · el atajo `cmd+escape` no funciona
-> **Herramientas:** siempre `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. Suite del 5: ~1 min 30 s; la del 4: 2 min 23 s. No se corren por costumbre
+> **Fase:** 2. **6 bloques**; ==**1, 2, 3, 4 y 5 cerrados**==. El **6 está escrito y corre**, pero **no cierra**: dos hallazgos reales sin resolver
+> **Último hito:** `Chat` y `src/__main__.py` completos, `mypy --strict`/`flake8` limpios, primera corrida real de punta a punta (11/11 prompts sin crash). Verificando esa salida contra el subject salieron dos bugs: la forma de `charge_replies` no cumple `V.4`, y un `Ġ` que traduce bien suelto pero no dentro de `reply()` — reabre lo cerrado el 09-05
+> **Siguiente:** ==investigar el hallazgo 2 antes de nada más==. Detalle exacto en `[[PROJECT#Sesión del 2026-09-07 — `Chat` y `__main__.py` construidos, dos hallazgos reales sin resolver]]`
+> **Abierto:** hallazgo 1 (`charge_replies(answer.output)`, sin aplicar) · `Makefile` sin `run`/`debug`/`lint`/`lint-strict` · contrato del Bloque 6 sin escribir · bonus 3 y 6 sin aplicar · docstrings al final del proyecto · README sin revisar contra `HANDOFF` · el atajo `cmd+escape` no funciona
+> **Herramientas:** siempre `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. `PYTHONPATH=.` para correr `Interface`/`Chat`/`__main__` sueltos
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 ---
 
-## Instrucción para el próximo agente — escrita el 2026-09-05, 4ª sesión
+## Instrucción para el próximo agente — escrita el 2026-09-07, 5ª sesión
 
-> [!important] Dónde quedamos, exacto
-> `src/chat.py`, `__init__` con las siete rutas/función en la firma, construye `FileManager` sin `try/except` propio:
+> [!bug] Antes de decir "estoy listo": investigar el hallazgo 2
+> `_costume_translater` traduce bien el `Ġ` a espacio **llamado suelto**:
 > ```python
-> self._file_manager: FileManager = FileManager(
->     functions_path, prompts_path, output_path)
+> >>> itf._costume_translater({'source_string': "I'mĠ233"})
+> {'source_string': "I'm 233"}
 > ```
-> Checklist en comentario bajo la clase, 3 de 7 ítems marcados con `[X]`. ==**Se sigue tecleando ahí, no preguntando.**==
+> Pero el mismo string real, salido de `reply()` de punta a punta con el prompt *"Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS"*, llega a `data/output/function_calling_results.json` con el `Ġ` **sin traducir**. Reabre lo cerrado el 09-05 (*"acierto del modelo"*), que solo se había verificado con `café`, nunca con este caso de punta a punta.
+> **Trázalo:** corre `reply()` paso a paso con ese prompt exacto y encuentra dónde se pierde la traducción entre el `_costume_translater` suelto (que funciona) y el flujo real (que no). Detalle completo en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`.
 
 > [!important] El orden de la sesión
-> **1 ·** Seguir el `__init__` de `Chat`: construir `Interface` con el catálogo, las rutas del modelo y la función de logits que ya llegan por parámetro.
-> **2 ·** El resto del checklist en `src/chat.py`, en el orden que ya está escrito ahí.
-> **3 ·** Cuando `Chat` esté completo: `src/__main__.py` — `argparse` + construir `Small_LLM_Model` + extraerle las rutas y la función + el `try/except (ValidationError, ValueError)` alrededor de `Chat(...)`, escribiendo `logs/logs.json` si falla.
-> **Cuestionario:** no se le ofreció esta sesión. Fila nueva en la `Lista de refuerzo`, aprobada por él: alias implícito vs. alias de verdad (PEP 695) — con el `RecursionError` real de hoy como artefacto.
+> **1 ·** Investigar y resolver el hallazgo 2, de arriba.
+> **2 ·** Corregir el hallazgo 1: `chat.py:33`, `charge_replies(answer.model_dump())` → `charge_replies(answer.output)`. El subject exige tres claves sin anidar (`prompt`, `name`, `parameters`); `model_dump()` guarda `{"log":..., "output":{...}}`.
+> **3 ·** Solo con los dos cerrados: el contrato del Bloque 6, desde `[[contract]]`, con la clase corriendo.
+> **Cuestionario:** no se lanzó esta sesión — la prioridad es investigar, no repasar. Hay filas 🔴 en la `Lista de refuerzo` esperando si él lo pide.
 
-> [!warning] Lo que se aprendió el 09-05, y no se repite
-> **Nada que corregir del agente en el código.** Un solo tropiezo del agente: dio por sentado *"ya habíamos decidido que el `try/except` va en `Chat`"* sin comprobar el archivo — él lo corrigió con el código delante, y el agente lo admitió en voz alta.
-> ==**Encontró solo, ejecutando, que un guard recién escrito era redundante**== — el mismo patrón del fallo 2 de `Interface` (un `@validate_call` más arriba ya garantiza lo que el `try` de abajo pretendía atrapar), aplicado a `Chat` sin que nadie se lo señalara. Generalizó la razón, no memorizó el caso.
-> **Pidió estrés deliberado con rango explícito** —*"anidamientos correctos y fallos bien profundos, dentro de rangos de realismo funcional"*— y de ahí salió el tercer fallo real de `_valid_parameters`. Cuando su primer intento de arreglo rompió el caso válido básico, lo vio con la traza del `elif` delante, sin que se le diera la corrección.
+> [!warning] Lo que se aprendió el 09-07, y no se repite
+> **Verificar contra la salida real, no solo contra `mypy`/`flake8`.** Los dos hallazgos de hoy salieron de correr `Chat.chatting()` de punta a punta por primera vez y leer el JSON producido — ninguno lo hubiera visto un check estático. **No des un bloque por cerrado con solo lint y tests unitarios en verde si nunca corrió completo.**
+> ==**Una decisión de diseño cerrada con un solo caso de prueba puede estar mal.**== El cierre del `Ġ` el 09-05 se apoyaba solo en `café` (multi-byte); nunca se probó el caso de un solo byte disfrazado (el espacio, `Ġ`) de punta a punta. Antes de dar por buena una conclusión antigua, reproducirla con el caso real que la puso en duda.
+> Pidió cuidar el contexto al enseñar algo nuevo (`argparse`) **antes** de tropezar, no después — primera vez así.
 
 > [!important] Cómo se trabaja con él
 > ==**Sus identificadores, y solo lo que existe hoy en `src/`.**==
-> **Un paso por mensaje.** Una idea, una pregunta. ==**Respuestas cortas — lo pidió explícitamente dos veces hoy.**==
+> **Un paso por mensaje.** Una idea, una pregunta. Respuestas cortas.
 > **Cuando dice que no sabe, dale las opciones reales con su coste y una recomendación** — y elige él.
 > **Di con qué certeza afirmas algo**: dato, verificado ejecutando, convención o suposición.
-> ==**Le llevas la contraria cuando toca**==, y rectificas en voz alta cuando pierdes — pasó dos veces hoy (el `try/except` de `Chat`, y no haber leído el archivo antes de corregirlo).
-> ==**El agente no apunta filas de refuerzo por su cuenta.**== La de *alias de tipo recursivo* del 09-03 fue reemplazada hoy por una más precisa —alias implícito vs. de verdad (PEP 695)— y **aprobada por él**, pero sigue 🟡: la aplicó sin fricción, no la explicó sin ayuda.
+> ==**Le llevas la contraria cuando toca**==: hoy dos veces (la clave nueva de logs, el mensaje fijo "ruta inexistente") con el mismo argumento de unicidad que él mismo acababa de aceptar — las dos veces cedió con el caso delante.
+> **Herramienta nueva, pieza por mensaje, con salida real** — igual que siempre, pero hoy lo pidió él mismo antes del primer tropiezo, no después.
 
 > [!bug] Con lo que te vas a tropezar
-> **`mypy` da un error falso con `llm_sdk`** si falta `mypy_path = "llm_sdk"` en `pyproject.toml`.
-> Llama a las herramientas con `./callme/bin/python -m ...`, y un script suelto que corra `Interface` o `Chat` necesita `PYTHONPATH=.`.
+> **`mypy_path = "llm_sdk"` ya está en `pyproject.toml`** — el falso positivo de `mypy` con `llm_sdk` quedó cerrado hoy, no lo repitas.
+> Llama a las herramientas con `./callme/bin/python -m ...`, y un script suelto que corra `Interface`/`Chat`/`__main__` necesita `PYTHONPATH=.`.
 > **A `tests/` no se le pasa `flake8` ni `mypy`** — regla suya del 09-01.
 > **Sin docstrings** en ningún archivo de `src/`: ==van al final del proyecto==. No las repongas por tu cuenta.
-> **`Chat.__init__` con `FilePath` en su propia firma intercepta rutas ausentes antes que cualquier `try/except` interno** — no repitas el error de meter un guard redundante en una clase por no revisar qué garantiza ya su firma.
+> **`data/output/function_calling_results.json` y `logs/` de esta sesión son artefactos de prueba** — bórralos o vuelve a correr antes de fiarte de su contenido.
 > **Auditar una sesión ajena:** `~/.claude/tools/auditar_sesion.py` sobre el `.jsonl` de `~/.claude/projects/<proyecto>/`.

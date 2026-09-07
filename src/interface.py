@@ -87,7 +87,7 @@ class Interface:
     def reply(self, user_prompt: str) -> Output:
         if not user_prompt or len(user_prompt) < 1:
             return Output(
-                log="The prompt was empty",
+                log="Empty prompt",
                 output={"prompt": user_prompt})
         function_name: str = ""
         response_formated: Dict[str, ParamValue] = {}

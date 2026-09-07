@@ -305,7 +305,42 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!info] Agente 23 — activo
+> [!bug] Agente 24 — activo
+> **Periodo:** 2026-09-07 → ==**`Chat` y `src/__main__.py` completos y corriendo**==, `mypy --strict` y `flake8` limpios en los dos, primera corrida real de punta a punta (11/11 prompts sin crash). Cerrada por decisión suya, con **dos hallazgos reales sin resolver** encontrados al verificar la salida.
+>
+> **Qué se hizo:**
+> - ==**`chat.py:chatting()` cerrado**==: discriminante `len(answer.output) == 3` en vez de `answer.log.startswith("The")` — pasó por tres intentos suyos (`len(answer.log)==3`, `len(answer) == 3`) hasta el correcto, cada uno cerrado ejecutando y viendo el `TypeError`/valor real, no explicado.
+> - **Bug real encontrado y corregido en `chatting()`:** `charge_logs(answer.log, log_answer, "Prompt")` — `"Prompt"` no es clave válida de `FileManager._logs` (son `"prompts"`/`"files"`, minúscula y plural). `ValueError` real, reproducido y corregido a `"prompts"`.
+> - ==**`src/__main__.py` escrito de cero**==: `argparse` con los tres defaults del subject (`data/input/functions_definition.json`, `data/input/function_calling_tests.json`, `data/output/function_calling_results.json` — verificados contra `V.4`/`V.6` del PDF, que contradice su propio ejemplo de la pág. 9), construye `Small_LLM_Model()`, le saca las tres rutas y `get_logits_from_input_ids` sin invocar, y arma `Chat(...)`.
+> - **`try/except` alrededor de todo el script**, no solo de `Chat(...)` — decisión suya, *"no quiero que ocurra una excepción que no supe controlar"*. Colapsado de `(ValidationError, ValueError, KeyError, FileNotFoundError)` a `except Exception` con el `__mro__` de `ValidationError` como prueba (termina en `Exception`). `write_logs` con su propio `try/except` interno — si también revienta, `print(..., file=sys.stderr)` como última red.
+> - ==**Decisión de forma del log de construcción, con su argumento de unicidad**==: propuso primero un mensaje fijo `"ruta inexistente"` — se cayó con el caso de JSON corrupto (la ruta sí existe). Propuso después una categoría nueva para separar fallos de `FileManager` de fallos de `Tokenizer` — se cayó con el mismo argumento que él mismo aceptó minutos antes (unicidad de forma en `logs/logs.json` para quien lo lea). Quedó: `{"prompts": [], "files": [{"An error occurred while reading and processing project files": str(e)}]}`.
+> - **`mypy_path = "llm_sdk"` añadido a `pyproject.toml`** — cerraba el falso positivo de `mypy` con `llm_sdk` que arrastraba el proyecto desde el Agente 20.
+> - ==**Corrida real de punta a punta, primera vez**==: `uv run`-equivalente con los tres archivos reales de `data/input/`. 11/11 prompts con `"log": "The prompt was replied correctly"`, sin crash. Verificando la salida contra el subject salieron los dos hallazgos de abajo.
+> - **Revisado si el subject exige clase para `__main__.py`:** no, ninguna línea de `IV.1`/`IV.3.1` lo pide — solo *"All classes must use pydantic"*, y `__main__.py` no declara clase. Su propio argumento cerró la duda: *"todo es muy diferente entre sí como para decir que una clase realmente puede representar todo"*.
+>
+> **Dónde se quedó:** los dos hallazgos de abajo, **sin tocar código todavía** — se encontraron verificando la salida real al cerrar la sesión.
+>
+> **Decisiones tomadas:**
+> - `__main__.py` sigue **script plano**, no clase — sin ganancia medible y el subject no lo exige.
+> - Categoría de log de construcción **única, `"files"`**, sin clave nueva para `Tokenizer`/`Interface` — mismo argumento de unicidad.
+> - `except Exception` en vez de cuatro tipos específicos — subclases todas, sin pérdida de información porque el mensaje siempre es `str(e)`.
+>
+> **Callejones sin salida:**
+> - Ninguno de diseño. Los tres intentos del discriminante en `chatting()` fueron suyos, cada uno cerrado con la traza real (`TypeError`, valor imprimido), no con la corrección dada.
+>
+> **Abierto — el más importante primero:**
+> - ==**Hallazgo 1, sin corregir:**== `chat.py:33`, `charge_replies(answer.model_dump())` guarda `{"log":..., "output":{...}}`. El subject exige tres claves sin anidar: `prompt`, `name`, `parameters`. Arreglo ya identificado: `charge_replies(answer.output)`.
+> - ==**Hallazgo 2, sin investigar — prioridad de la próxima sesión, antes que nada más:**== `_costume_translater` traduce bien el `Ġ` a espacio **llamado suelto** (`itf._costume_translater({'source_string': "I'mĠ233"})` → `{'source_string': "I'm 233"}`), pero el mismo string real, salido de `reply()` de punta a punta, llega a `data/output/` con el `Ġ` sin traducir. Reabre la conclusión del 09-05 (*"acierto del modelo"*), que solo se había verificado con `café`, nunca con este caso completo. **Trazar `reply()` paso a paso con el prompt real** *"Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS"* y encontrar dónde se pierde la traducción.
+> - `Makefile`: comparado contra `IV.2` del subject, faltan las reglas `run`, `debug`, `lint`, `lint-strict`. Tiene `test`, `testN`, `install-model`, `clean-files`, `push`, `venv`.
+> - Contrato del Bloque 6 sin escribir — era el objetivo de la sesión, no se llegó por los dos hallazgos.
+> - Bonus 3 (recuperación de errores) y bonus 6 (visualización de generación) sin aplicar — decisión del 09-03, *"con `Chat` ya cerrado"*, y `Chat` no cierra hasta que los dos hallazgos se resuelvan.
+> - Docstrings (al final del proyecto, decisión suya), README sin revisar contra el checklist de `HANDOFF`.
+>
+> **Sobre el estudiante:** pidió explícitamente cuidar el contexto al enseñar algo nuevo (`argparse`) — primera vez que lo pide *antes* de tropezar, no después. Razonó por su cuenta, sin que se le diera, por qué el `Ġ` podría ser el modelo reutilizando el símbolo de su propio vocabulario BPE como si fuera un carácter — mecanismo correcto, aunque no cambia que sea responsabilidad del modelo. Fue él quien insistió en verificar la salida real en vez de dar la sesión por cerrada con los checks estáticos (`mypy`/`flake8`) en verde — de ahí salieron los dos hallazgos.
+>
+> **Siguiente paso:** investigar el hallazgo 2 antes de decir "estoy listo". Después, corregir el hallazgo 1, y solo entonces el contrato del Bloque 6.
+
+> [!info]- Agente 23 — histórico
 > **Periodo:** 2026-09-05 → ==**Bloque 5 cerrado de nuevo**== y ==**Bloque 6 (`Chat`) arrancado a teclear**==, con dos decisiones suyas que reabren su lista de requisitos el mismo día que empieza. Cerrada por él, a media construcción del `__init__` de `Chat`.
 >
 > **Qué se hizo:**

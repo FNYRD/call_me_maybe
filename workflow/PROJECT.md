@@ -3,7 +3,7 @@ tipo: proyecto
 proyecto: call me maybe
 fecha_inicio: 2026-08-04
 fecha_cierre: 
-fase_actual: FASE 2 — Bloque 5 cerrado de nuevo; Bloque 6 con lista de requisitos cerrada, sin teclear
+fase_actual: FASE 2 — Bloque 6 escrito y corriendo, con un bug real de formato de salida y un hallazgo del 09-05 reabierto, sin cerrar
 estado: en_progreso
 tags: [42, proyecto]
 ---
@@ -18,7 +18,13 @@ tags: [42, proyecto]
 
 ## 🗺️ Mapa de flujo
 
-> [!success] Dónde estamos — 2026-09-05, 4ª sesión
+> [!bug] ==Dónde estamos — 2026-09-07, 5ª sesión== — bug real abierto, investigar antes de nada
+> `Chat`, `__main__.py` y el `Makefile` (parcial) escritos y corriendo — `mypy --strict` y `flake8` limpios en los tres, corrida real de los 11 prompts sin crash. Pero **dos hallazgos reales, sin resolver**, encontrados corriendo `Chat.chatting()` de punta a punta por primera vez:
+> **1 · La forma de `charge_replies` no cumple el subject.** `chat.py:33` llama `self._file_manager.charge_replies(answer.model_dump())` — eso guarda `{"log": "...", "output": {"prompt":..., "name":..., "parameters":...}}`, y el subject (`V.4`, pág. 14) exige exactamente tres claves por objeto: `prompt`, `name`, `parameters`, sin anidar. Verificado contra la salida real de `data/output/function_calling_results.json` — las 11 entradas tienen la forma mala. **Se corrige pasando `answer.output`, no `answer.model_dump()`.**
+> **2 · `_costume_translater` traduce bien suelto, no dentro del flujo real — contradice lo cerrado el 09-05.** Con el string exacto de una salida real, `itf._costume_translater({'source_string': "I'mĠ233"})` devuelve `{'source_string': "I'm 233"}` — traduce el `Ġ` a espacio correctamente. Pero la misma cadena, salida de `reply()` de punta a punta con el mismo prompt real, llega a `data/output/` con el `Ġ` **sin traducir**: `"I'mĠ233"`. Mismo método, mismo dato, dos resultados. La conclusión del 09-05 (*"acierto del modelo, fuera de alcance"*) se apoyaba solo en la prueba con `café`, nunca en este caso de punta a punta — **queda sin verificar y hay que reabrirla.**
+> **Instrucción para el próximo agente:** investigar el hallazgo 2 **antes de decir "estoy listo"** — trazar `Interface.reply()` con el prompt real *"Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS"* paso a paso y encontrar dónde se pierde la traducción entre el `_costume_translater` suelto (que funciona) y el flujo real (que no). Detalle completo en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`.
+
+> [!success]- Dónde estábamos — 2026-09-05, 4ª sesión, histórico
 > ==**Bloque 5 cerrado de nuevo.**== Los dos fallos de la pasada de lógica del 09-04 corregidos, más un tercero encontrado estresando la recursión (`_valid_parameters` no validaba cuando un nivel debía ser objeto y llegaba como otro tipo). Alias recursivo corregido a PEP 695 (`type ParamValue = ...`) — pydantic no resolvía el forward-ref implícito y `RecursionError` bloqueaba toda la suite. `flake8` y `mypy --strict` limpios en los 8 archivos de `src/`.
 > **Contrato `tests/blackbox_test_bloque_5.2.md`** escrito y ejecutado por el agente de tests: 13 tests migrados (typing de `.output`, sin tocar qué prueban) + 6 nuevos sobre `_valid_parameters`/`_costume_translater` con una `Function` fabricada de dos niveles de anidamiento — excepción autorizada a la regla de corte, justificada en el propio contrato. **38/38 en verde.**
 > **Hallazgo cerrado sin tocar código:** un `Ġ` suelto en una hoja `string` real (`"I'mĠ233"`) no es un disfraz sin traducir — es el modelo escribiendo bytes distintos a un espacio. Verificado que la traducción reconstruye bien lo multi-byte (`café`). Cae en *"acierto del modelo"*, fuera del alcance de la clase — mismo trato que ya tenía el acierto de nombre de función.
@@ -119,8 +125,9 @@ graph LR
 | ↳ | *reabierto el 09-01 por decisión suya para meter el **cache** (bonus 4). **16 tests nuevos** de un segundo agente ciego — sección 10, sin correr todavía. `_cache_flags` tiene un bug abierto* | | | |
 | 5 — Bucle de generación | Logits, máscara, `argmax`, parada. **La validación `pydantic` del resultado sale del bloque** — decisión suya del 09-02 | ✅ | Un prompt crudo | Un modelo `pydantic`: cómo salió el bucle y lo escrito |
 | ↳ | *==**cerrado el 09-03**==: contrato, **32 tests verdes** de un agente ciego y pasada de estilo hecha. Docstrings, al final del proyecto* | | | |
-| 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | 🔵 **lista de requisitos cerrada 09-03** | Los bloques ya construidos | N resultados + registro de fallos |
+| 6 — `Chat` orquestador | Recorre los N prompts y junta los resultados. Recibe las piezas hechas | 🔴 **bug real abierto, no cierra** | Los bloques ya construidos | N resultados + registro de fallos |
 | ↳ | *reabre el Bloque 5: `Output.output` pasa de `str` a `dict`, y la traducción + validación se quedan en `Interface`* | | | |
+| ↳ | *09-07: `Chat` y `__main__.py` completos, `mypy --strict`/`flake8` limpios, corrida real 11/11 sin crash. **Dos hallazgos sin resolver**: `charge_replies` guarda una forma que el subject no pide, y un `Ġ` que traduce bien suelto pero no dentro de `reply()` de punta a punta — reabre lo cerrado el 09-05. Ver `[[PROJECT#Sesión del 2026-09-07 — `Chat` y `__main__.py` construidos, dos hallazgos reales sin resolver]]`* | | | |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
@@ -2394,9 +2401,11 @@ Output(log="Model entered an loop",        output={"prompt": user_prompt})
 
 ### Bloque 6 — `Chat` orquestador
 
-> [!info] Estado — 2026-09-05 · 🔵 tecleando
-> **Dónde vive:** `src/chat.py` — clase `Chat`. `__init__` recibe las siete rutas/función y construye `FileManager`, sin `try/except` propio — ver el revertido de abajo.
-> Lista de requisitos con dos cambios el mismo día de empezar a teclear (`Small_LLM_Model` a `main`, el guard de `FileManager` a `main`) — anotados aquí mismo, no resueltos de paso en el código.
+> [!bug] Estado — 2026-09-07 · 🔴 escrito y corriendo, con un bug real de formato de salida
+> **Dónde vive:** `src/chat.py` — clase `Chat`, completa, los 7 ítems del checklist cumplidos. `mypy --strict` y `flake8` limpios.
+> **`src/__main__.py` escrito**: `argparse` con defaults del subject, construye `Small_LLM_Model`, envuelve todo en `try/except Exception` con `write_logs` (más su propio `try/except` interno, por si `write_logs` también revienta) y `print(..., file=sys.stderr)` como última red. `mypy --strict` y `flake8` limpios.
+> **Corrida real, 11/11 prompts sin crash** — pero `charge_replies(answer.model_dump())` en `chat.py:33` guarda la forma equivocada: falta cambiar a `answer.output`. Ver el callout de arriba, hallazgo 1.
+> **`pyproject.toml`:** `mypy_path = "llm_sdk"` añadido — cerraba el falso positivo de `mypy` con `llm_sdk` que arrastraba el proyecto desde el Agente 20.
 
 **Descripción:** el orquestador. Recibe las rutas ya parseadas, construye las piezas, recorre los N prompts y escribe la salida y el log.
 
@@ -2491,6 +2500,42 @@ Output(log="Model entered an loop",        output={"prompt": user_prompt})
 
 > [!question] Hueco abierto a propósito — la pieza que conoce el SDK
 > El 09-02 lo dijo como *"en chat se cree una parte donde se defina una api"*. Queda por decidir si es una **clase aparte dentro de `src/chat.py`** o va dentro de `Chat`. Con sus palabras hoy: *"el hueco lo definimos llegados ahí"*.
+
+#### Sesión del 2026-09-07 — `Chat` y `__main__.py` construidos, dos hallazgos reales sin resolver
+
+> [!important] Decisión — `__main__.py` sigue plano, no clase
+> Preguntado si convenía convertirlo en clase. Su propio argumento cerró la discusión: *"todo es muy diferente entre sí como para decir que una clase realmente puede representar todo"*. Verificado contra el subject (`IV.1`, `IV.3.1`): ninguna restricción exige estructura interna de `__main__.py`, solo que `All classes must use pydantic` — y `__main__.py` no declara ninguna clase.
+
+> [!important] Decisión — categoría única `"files"` para todo fallo de construcción, sin categoría nueva
+> Propuso una clave más genérica para separar fallos de `FileManager` de fallos de `Tokenizer`/`Interface` (`KeyError`, `FileNotFoundError`, que también pueden saltar al construir). Se cerró con el mismo argumento que él aceptó minutos antes al pasar `files` de `dict` a `list` (unicidad de forma para quien lee `logs/logs.json`): los cuatro orígenes ocurren **antes** de que exista un prompt procesado, ninguno tiene índice — es la misma razón por la que `"files"` ya existe. `except (ValidationError, ValueError, KeyError, FileNotFoundError)`, luego colapsado a `except Exception` porque las cuatro son subclases suyas.
+> **Molde final de `write_logs`:** `{"prompts": [], "files": [{"An error occurred while reading and processing project files": str(e)}]}` — mensaje genérico porque el fallo puede venir de `FileManager` **o** de `Interface`/`Tokenizer`, construidos los dos dentro del mismo `try`.
+
+> [!bug] Hallazgo 1 — `charge_replies` guarda una forma que el subject no pide, sin corregir
+> `chat.py:33`: `self._file_manager.charge_replies(answer.model_dump())`. `answer` es `Output` (`log` + `output`), así que `model_dump()` guarda `{"log": ..., "output": {...}}`. El subject (`V.4`, pág. 14) exige por objeto exactamente `prompt`, `name`, `parameters` — sin anidar, sin claves de más. Verificado contra la salida real:
+> ```json
+> {
+>     "log": "The prompt was replied correctly",
+>     "output": {"prompt": "...", "name": "...", "parameters": {...}}
+> }
+> ```
+> **Arreglo:** `charge_replies(answer.output)` en vez de `answer.model_dump()`. Sin tocar todavía — se encontró al cerrar la sesión.
+
+> [!bug] Hallazgo 2 — el `Ġ` no traducido reabre la conclusión del 09-05
+> El 09-05 cerró un `Ġ` suelto (`"I'mĠ233"`) como *"acierto del modelo, fuera de alcance"*, verificado solo con la reconstrucción de `café`. Hoy, con la clase completa corriendo, el mismo string real sale igual en `data/output/`: `"I'mĠ233"`.
+> **Pero llamado suelto, traduce bien:**
+> ```python
+> >>> itf._costume_translater({'source_string': "I'mĠ233"})
+> {'source_string': "I'm 233"}
+> ```
+> Mismo método, mismo dato de entrada, dos resultados distintos según se llame aislado o dentro de `reply()` de punta a punta. Eso dice que en el flujo real **no se está llamando `_costume_translater` sobre el dato que finalmente se escribe**, o se llama sobre algo distinto a lo que aparece en la salida. **Sin investigar — es la prioridad de la próxima sesión, antes que nada más.**
+
+> [!info] Lo demás pendiente para cerrar el proyecto, sin tocar hoy
+> - **`Makefile`** — comparado contra `IV.2` del subject, faltan `run`, `debug`, `lint`, `lint-strict`. Tiene `test`, `testN`, `install-model`, `clean-files`, `push`, `venv`
+> - **Contrato del Bloque 6** — sin escribir, era el objetivo de la sesión, no se llegó por los dos hallazgos
+> - **Bonus 3 y 6** — sin aplicar, esperando a que `Chat` cierre (decisión del 09-03)
+> - **Docstrings** — en ningún archivo de `src/`, al final del proyecto por decisión suya
+> - **README** — existe, sin revisar contra el checklist de `[[HANDOFF#📄 README.md — requisitos]]`
+> - **Hoja de evaluación del peer review** — diferida desde el 08-17, define cómo se mide el 90%
 
 ---
 
