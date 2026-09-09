@@ -63,8 +63,9 @@ class Guardian:
                     for function_name in self._functions
                 ) and candidate2add == '"':
                     return True
-            case "number":
-                if (text and all(c in DIGITS for c in text)
+            case "number" | "integer":
+                if (self._slot == "number" and text
+                        and all(c in DIGITS for c in text)
                         and candidate2add == "."):
                     return True
                 elif candidate2add in DIGITS and text != "0":
@@ -72,7 +73,14 @@ class Guardian:
                 elif (candidate2add == self._closing_char()
                       and (text and text[-1] in DIGITS)):
                     return True
-            case "string":
+            case "boolean":
+                if ("true".startswith(text + candidate2add)
+                        or "false".startswith(text + candidate2add)):
+                    return True
+                elif (text in ("true", "false")
+                        and candidate2add == self._closing_char()):
+                    return True
+            case _:
                 if candidate2add == '"' and '"' not in text:
                     return True
                 elif '"' in text and self._closing_char() == candidate2add:
@@ -86,11 +94,9 @@ class Guardian:
             return False
         if self._slot == "name":
             return text.endswith('"')
-        if self._slot == "string":
-            return '"' in text and text[-1] == self._closing_char()
-        if self._slot == "number":
+        if self._slot in ("number", "integer", "boolean"):
             return text[-1] == self._closing_char()
-        return False
+        return '"' in text and text[-1] == self._closing_char()
 
     def _token_ok(self, token_text: str) -> bool:
         draft: str = self._written
@@ -104,7 +110,7 @@ class Guardian:
 
     def _cache_flags(self) -> int:
         match self._slot:
-            case "number":
+            case "number" | "integer":
                 if not self._written:
                     return 1
                 elif self._written == "0":
@@ -115,7 +121,7 @@ class Guardian:
                     return 4
                 elif self._written[-1].endswith("."):
                     return 5
-            case "string":
+            case _:
                 if '"' in self._written:
                     return 1
         return 0
@@ -125,8 +131,8 @@ class Guardian:
             raise ValueError("Guardian has no open session. Call start first")
         close: str = ('"' if self._slot == "name" else self._closing_char())
         flag: Union[str, int] = (
-            self._written if self._slot ==
-            "name" else self._cache_flags())
+            self._written if self._slot in ("name", "boolean")
+            else self._cache_flags())
         current_state: Tuple[Optional[str], Union[str, int], str] = (
             self._slot, flag, close)
         if posible_cache := self._cache.get(current_state, []):
@@ -151,7 +157,7 @@ class Guardian:
             return
         self._slot = spec.type
         self._written = ""
-        if spec.type == "string":
+        if spec.type not in ("number", "integer", "boolean"):
             self._json_str += '"'
 
     def _close_level(self) -> None:

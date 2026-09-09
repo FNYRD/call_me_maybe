@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 import json
 
-type ParamValue = Union[str, float, Dict[str, "ParamValue"]]
+type ParamValue = Union[str, float, bool, Dict[str, "ParamValue"]]
 
 
 class Output(BaseModel):
@@ -45,7 +45,8 @@ class Interface:
             if isinstance(leaf, str):
                 parameters[parameter] = bytearray(
                     self._tokenizer.char_byte[char]
-                    for char in leaf).decode("utf-8")
+                    for char in leaf).replace(
+                        bytes([196, 160]), bytes([32])).decode("utf-8")
             if isinstance(leaf, Dict):
                 parameters[parameter] = self._costume_translater(leaf)
         return parameters
@@ -69,8 +70,14 @@ class Interface:
                     if not (isinstance(value, int)
                             or isinstance(value, float)):
                         return error_return
+                elif (function_parameters[key].type == "integer"
+                        and not isinstance(value, int)):
+                    return error_return
                 elif (function_parameters[key].type == "string"
                         and not isinstance(value, str)):
+                    return error_return
+                elif (function_parameters[key].type == "boolean"
+                        and not isinstance(value, bool)):
                     return error_return
                 elif (function_parameters[key].properties
                         and isinstance(value, Dict)):

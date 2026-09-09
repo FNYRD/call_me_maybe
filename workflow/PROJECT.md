@@ -2537,6 +2537,64 @@ Output(log="Model entered an loop",        output={"prompt": user_prompt})
 > - **README** — existe, sin revisar contra el checklist de `[[HANDOFF#📄 README.md — requisitos]]`
 > - **Hoja de evaluación del peer review** — diferida desde el 08-17, define cómo se mide el 90%
 
+#### Sesión del 2026-09-08 — los dos hallazgos del 09-07 cerrados, dos hallazgos nuevos abiertos
+
+> [!success] Hallazgo 1 — cerrado
+> `src/chat.py:33`: `charge_replies(answer.output)` en vez de `.model_dump()`. Sin anidar, tres claves exactas.
+
+> [!success] Hallazgo 2 — cerrado, trazado hasta el mecanismo exacto
+> `_costume_translater` traducía bien byte a byte, pero el modelo escribió el par `Ä`+`ł` (bytes `196,160`) en vez del disfraz de espacio de un solo carácter (`Ġ`, byte `32`). Verificado: `bytes([196,160])` decodifica exactamente a `'Ġ'.encode('utf-8')` — es el propio glifo del vocabulario colado como contenido literal (mojibake de doble BPE), no un fallo de traducción.
+> **Arreglo:** `src/interface.py:46-49`, `.replace(bytes([196, 160]), bytes([32]))` antes del `.decode("utf-8")` — un solo caso, verificado contra los 11 prompts reales (solo ahí aparece, 3 veces).
+> **Descartado:** guard en la máscara de `Guardian` para los 67 glifos de control — de los 67, solo 1 se disparó en los 11 prompts reales; reabrir Bloque 4 (17 construcciones de test) no se justificaba con esa evidencia.
+> **Descartado:** doble traducción genérica (reinterpretar cualquier `Ġ` sobrante como espacio) — probado, funciona para este caso, pero rompe con `KeyError` ante cualquier carácter real fuera de latín-1 (`中`, emoji) porque `char_byte` solo tiene 256 claves contra ~1.1M de codepoints Unicode posibles.
+
+> [!bug] Efecto colateral del hallazgo 1 — resuelto
+> `Output.output` es `ParamValue` (recursivo, `interface.py`), y `charge_replies` solo aceptaba una forma plana — `mypy` lo cazó. Ensanchar el tipo de `FileManager` para que conozca `ParamValue` de `Interface` crea un **import circular** (reproducido y revertido: `ImportError: cannot import name 'Function' from partially initialized module`). Cerrado con `TYPE_CHECKING` + anotaciones en string (`src/filemanager.py:1,6-7,38,87-89`) — sin ciclo en ejecución, `mypy --strict` limpio.
+
+> [!bug] Hallazgo nuevo — el modelo pierde precisión copiando cadenas largas, ==no corregible en `Interface`/`Guardian`==
+> Estresado con prompts inventados (no del set real). Copiando texto letra a letra dentro de un `string`, la precisión se degrada a partir de **~36 caracteres** copiados — antes de eso, limpio; desde ahí, palabras completas se pegan en camelCase (`"theLazyDogAndRanAway"`) o se pierden. No es la ventana de contexto (40960 tokens del modelo contra 13 usados en el caso de prueba) — es capacidad del modelo de 0.6B en tareas de copia exacta sostenida.
+> **No afecta a números** (probado hasta 15 dígitos, limpio) **ni a nombres del catálogo** (`Guardian` los inyecta, el modelo no los copia).
+> **No afecta a los 11 prompts reales de `data/input/`** — todos bajo el límite, 11/11 correctos.
+> **Nada que corregir en código** — `Guardian` no tiene forma de obligar al modelo a recordar bien; queda para el README (`Performance analysis`, `Challenges faced`).
+
+> [!bug] Hallazgo nuevo — claves de salida no coinciden con la hoja de evaluación
+> `data/Desktop/Intra Projects Call Me Maybe Edit.pdf` (moulinette del peer review) exige `prompt`, **`fn_name`**, **`args`**. El proyecto usa `prompt`, `name`, `parameters` — igual que `[[HANDOFF]]`. Cambio de texto puro, sin tocar lógica. **No se aplica ahora** — se deja para justo antes de entregar, por si la hoja se actualiza antes.
+> El PDF también confirma: `moulinette prepare_exercises --set private` genera su **propio set de prompts**, no necesariamente `data/input/function_calling_tests.json` — no hay forma de saber su longitud desde aquí.
+
+> [!info] Rojos pre-existentes, sin tocar — no relacionados con hoy
+> `tests/test_bloque_5.py`: 4 rojos, mismo choque: el contrato (`blackbox_test_bloque_5.md`) promete `log='The prompt was empty'`, `src/interface.py:91` dice `"Empty prompt"`. Confirmado con `git stash` que ya fallaban antes de esta sesión.
+> `tests/test_bloque_3.py`: 1 rojo en `promptbuilder`, sin relación, sin tocar hoy.
+
+#### Sesión del 2026-09-09 — soporte para `"integer"`, código escrito por el agente
+
+> [!warning] Rompe la regla 1 ("el código lo escribe él") — decisión suya, explícita y repetida tres veces
+> Encontró un `functions_definition.json` de otro proyecto con `"type": "integer"` (además de `number`, `string`, `boolean`), no soportado hoy. Diseñó él la solución: tratar `integer` como `number` pero sin permitir el `.`. Pedido de discutirlo primero, cortó tres veces seguidas — *"esto no me enseña nada, solo me quita tiempo, yo monté todo el proyecto"* — y pidió que el agente escribiera los 5 cambios directamente.
+
+> [!success] Los 5 cambios quirúrgicos, escritos por el agente y verificados ejecutando
+> `guardian.py:66` — `case "number" | "integer":`, el permiso del `.` queda condicionado a `self._slot == "number"`.
+> `guardian.py:97` — `_slot_closed`: `self._slot in ("number", "integer", "boolean")`.
+> `guardian.py:113` — `_cache_flags`: `case "number" | "integer":` (los estados 3 y 5, del `.`, simplemente no se disparan para `integer`).
+> `guardian.py:160` — `_open_key`: `spec.type not in ("number", "integer", "boolean")` (sin comillas alrededor).
+> `interface.py:69` — nueva rama `elif type == "integer": isinstance(value, int)` (sin `float`), antes de la rama `"string"`.
+> **Verificado:** `mypy --strict` y `flake8` limpios en `src/`. `_char_ok` con `self._slot = "integer"` rechaza `.`, con `"number"` lo sigue aceptando. `_valid_parameters` con `TypeSpec(type="integer")` acepta `{"n": 4}` y rechaza `{"n": 4.5}` con `ERROR`.
+> **No verificado de punta a punta** con `Chat.chatting()` real ni con `pytest` — solo con llamadas directas a los métodos.
+
+> [!bug] Rojos viejos, confirmados como ruido — decisión suya
+> Corrida completa de `pytest`: 6 rojos. **5 son de contrato desactualizado**, ya documentados el 09-08 (`test_bloque_5.py` × 4, `"Empty prompt"` vs `"The prompt was empty"`; `test_bloque_3.py` × 1, el prompt builder). **El 6º es nuevo:** `test_bloque_1.py::test_tabla_de_bytes_es_biyectiva` pide `tokenizer._char_byte`, el atributo es público (`char_byte`, sin guión) desde que lo usa `interface.py`. Decisión suya: **todos descartados**, son bloques antiguos que cambiaron con el 6, no cuentan.
+
+> [!success] Bonus 3 — recuperación de errores, escrito por él
+> Diseño discutido en varias vueltas: primero softmax puro (subject lo permite — *"sample from this distribution or pick the highest probability token"*, `V.3.3`), descartado por el caso límite de los cierres estrechos (`whith_list` con 1 solo id válido, pedir el N-ésimo mejor revienta). Luego "N-ésimo mejor logit, letra por letra" — descartado también: el `ERROR` de `_valid_parameters` que se quería recuperar quedó demostrado **estructuralmente inalcanzable** desde `reply()` (`PROJECT.md` sesión 09-04, *"a través de reply es estructuralmente imposible llegar a esos casos"* — `Guardian` fuerza el schema al generar, así que ese contenido nunca llega mal formado).
+> **Mecanismo final, suyo:** en `chat.py`, antes del `if` que ya mira `len(answer.output) == 3`, si `answer.log == "Model failed while replying"` (la excepción real del SDK al pedir logits, no un fallo de contenido), reintenta `self._interface.reply(prompt)` hasta 3 veces con `break` en cuanto sale bien. `mypy --strict` y `flake8` limpios. **No verificado de punta a punta** (no hay forma barata de forzar esa excepción con el modelo real corriendo).
+> **Verificado contra la hoja de evaluación** (`~/Desktop/Intra Projects Call Me Maybe Edit.pdf`): los 9 bonus se califican con **una sola nota 0-5**, no uno por uno — pesó en la decisión de no perseguir algo elaborado sobre un caso inalcanzable.
+
+> [!success] `except KeyboardInterrupt` — escrito por él, verificado
+> `src/__main__.py`: nuevo `except KeyboardInterrupt:` antes del `except Exception as e:` genérico —`KeyboardInterrupt` hereda de `BaseException`, no de `Exception`, así que sin esto un `Ctrl+C` se colaba con traceback crudo, sin pasar por `write_logs`. Llama a `write_logs("The keyboard has interrupted the generation process")`.
+> **Verificado forzando la excepción** en el punto de carga del modelo (parchando `Small_LLM_Model.__init__` para que lance `KeyboardInterrupt` después de inicializar) — un `SIGINT` real mandado a un proceso en background no llegaba de forma fiable dentro del sandbox del agente, así que se abandonó esa vía de prueba. `logs/logs.json` salió con el mensaje exacto. `mypy --strict`/`flake8` limpios.
+
+> [!info] `demo_menu.py` — prototipo del bonus 6, en la raíz del proyecto, sin integrar
+> Script suelto (fuera de `src/`), escrito por el agente a pedido explícito, para que él viera **cómo se vería** la animación antes de decidir qué entra al proyecto real. Usa las clases reales (`Tokenizer`, `Guardian`, `PromptBuilder`, el modelo) — nada inventado. Tiene: menú interactivo (generar respuesta / ver proceso de tokenización sin tocar el modelo), texto que se escribe letra por letra, colores ANSI (turquesa = lo que escribió el modelo, rojo = bytes disfrazados sin traducir, verde = ya traducido), y una animación de header con LEDs recorriendo el borde.
+> ==**Pendiente de la próxima sesión: decidir qué mecanismo entra a `src/` (y cómo) para que cuente como el bonus 6 real, y revisar el prototipo entero con `mypy --strict`/`flake8` antes de integrar nada.**==
+
 ---
 
 ### Bloque [N] — [nombre]

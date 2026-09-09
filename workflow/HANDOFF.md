@@ -305,7 +305,40 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!bug] Agente 24 — activo
+> [!bug] Agente 25 — activo
+> **Periodo:** 2026-09-09 → ==**soporte `"integer"`, bonus 3 escrito, guard de `KeyboardInterrupt`, prototipo del bonus 6**==. Los dos hallazgos que dejó el Agente 24 abiertos (`charge_replies` y el `Ġ`) **ya estaban cerrados al empezar esta sesión** — los cerró el Agente 24.5, del 09-08, que nunca actualizó este archivo (solo `PROJECT.md`/`FLOW.md`). Ver ese resumen en `Agente 24 — histórico`, abajo.
+>
+> **Qué se hizo:**
+> - **Soporte para `"type": "integer"`** en el catálogo de funciones (encontrado en un `functions_definition.json` de otro proyecto, no soportado hasta hoy). Diseño discutido primero (`Guardian._char_ok`, el `.` solo válido si `self._slot == "number"`), y los **5 cambios quirúrgicos los escribió el agente**, a pedido explícito y repetido tres veces del estudiante (*"esto no me enseña nada, quita tiempo, yo monté todo el proyecto"*) — rompe la regla 1 del sistema, con su consentimiento. `mypy --strict`/`flake8` limpios, verificado con llamadas directas a `_char_ok`/`_valid_parameters`.
+> - ==**Bonus 3 (recuperación de errores), diseñado en varias vueltas y escrito por él.**== Se descartó softmax-sampling (permitido por el subject, pero rompe en cierres estrechos con 1 solo id válido) y "N-ésimo mejor logit" (mismo problema). Se descubrió que el `ERROR` de `_valid_parameters` — lo que se quería recuperar — es **estructuralmente inalcanzable** desde `reply()` (ya documentado el 09-04). Mecanismo final: en `Chat.chatting()`, reintenta hasta 3 veces cuando `answer.log == "Model failed while replying"` (fallo real del SDK, no de contenido).
+> - ==**`except KeyboardInterrupt` en `src/__main__.py`, escrito por él.**== `KeyboardInterrupt` no hereda de `Exception`, se colaba sin pasar por `write_logs`. Loguea `"The keyboard has interrupted the generation process"`. Verificado forzando la excepción en el punto de carga del modelo — un `SIGINT` real a un proceso en background no llega de forma fiable dentro del sandbox del agente.
+> - **`demo_menu.py` en la raíz del proyecto**, prototipo del bonus 6 (visualización) — escrito por el agente, fuera de `src/`, para que el estudiante viera cómo se vería antes de decidir. Usa las clases reales del proyecto. **No integrado.**
+> - Corrida completa de `pytest`: 6 rojos, todos confirmados como contrato desactualizado de bloques cerrados antes del 6 (`test_bloque_5.py` ×4, `test_bloque_3.py` ×1, `test_bloque_1.py` ×1 nuevo — `_char_byte` vs `char_byte` público). Decisión suya: se ignoran, no cuentan para este bloque.
+>
+> **Dónde se quedó:** todo lo de arriba escrito y con `mypy --strict`/`flake8` limpios, pero **nada corrido de punta a punta con `Chat.chatting()` real** desde estos cambios — ni el bonus 3, ni el `KeyboardInterrupt` en el flujo completo (solo forzado), ni el soporte de `integer`.
+>
+> **Decisiones tomadas:**
+> - Los 9 bonus se califican con **una sola nota 0-5 en conjunto** (`~/Desktop/Intra Projects Call Me Maybe Edit.pdf`, verificado) — no hay rúbrica por bonus.
+> - El bonus 3 recupera sobre **fallo real del SDK**, no sobre contenido — el caso de contenido no existe en la práctica.
+>
+> **Callejones sin salida:**
+> - Softmax puro y "N-ésimo mejor logit" para el bonus 3 — los dos rotos por los cierres de `Guardian` con un solo id válido.
+> - `SIGINT` real vía `kill -INT` a un proceso en background, para probar `KeyboardInterrupt` — no llega de forma fiable en el sandbox del agente. Se resolvió forzando la excepción directamente en el código de prueba.
+>
+> **Abierto — el más importante primero:**
+> - ==**Próxima sesión, en orden:**== revisar/integrar `demo_menu.py` a `src/` como el bonus 6 real (decidir qué mecanismo entra y cómo) · escribir la **suite de tests del proyecto completo**, incluyendo los catálogos con `integer`/`float`/otros tipos que el estudiante traiga · correr todo de punta a punta con `Chat.chatting()` real antes de dar nada por cerrado.
+> - `Makefile` sin `run`/`debug`/`lint`/`lint-strict` — **decisión suya del 09-09: se olvida, ya no es prioridad**.
+> - Contrato del Bloque 6 sin escribir.
+> - Docstrings (al final del proyecto, decisión suya), README sin revisar contra el checklist de este archivo.
+>
+> **Sobre el estudiante:** insistió tres veces en que el agente escribiera código trivial directamente, con el mismo argumento cada vez (*"yo monté todo el proyecto, esto no me enseña nada"*) — la tercera vez se cedió. Encontró por su cuenta un catálogo de otro proyecto con un tipo (`"integer"`) no soportado, y trajo la hoja de evaluación real del peer review sin que se le pidiera, cambiando el diseño del bonus 3 dos veces al verla. Corrigió al agente cuando afirmó con exceso de confianza que el `ERROR` de contenido *"sí puede venir del modelo"* — tenía razón él, quedó demostrado inalcanzable.
+>
+> **Siguiente paso:** integrar `demo_menu.py` al proyecto (bonus 6) y escribir la suite de tests completa, con los tipos nuevos incluidos.
+
+> [!info]- Agente 24 — histórico
+> Los dos hallazgos que dejó abiertos (`charge_replies` sin aplicar, `Ġ` sin traducir de punta a punta) **se cerraron el 09-08** por el agente siguiente, que no actualizó este archivo — resumen de ese cierre arriba, en `Agente 25`. `chat.py:33` pasó a `charge_replies(answer.output)`; el `Ġ` resultó ser el par de bytes `196,160` (el propio glifo del vocabulario colado como contenido, mojibake de doble BPE) — parche puntual en `_costume_translater`. Efecto colateral: tipar `charge_replies` con `ParamValue` creaba un import circular con `Interface`, cerrado con `TYPE_CHECKING`. Detalle completo en `[[PROJECT#Sesión del 2026-09-08 — los dos hallazgos del 09-07 cerrados, dos hallazgos nuevos abiertos]]`.
+>
+> **Sesión original, sin editar:**
 > **Periodo:** 2026-09-07 → ==**`Chat` y `src/__main__.py` completos y corriendo**==, `mypy --strict` y `flake8` limpios en los dos, primera corrida real de punta a punta (11/11 prompts sin crash). Cerrada por decisión suya, con **dos hallazgos reales sin resolver** encontrados al verificar la salida.
 >
 > **Qué se hizo:**

@@ -1,8 +1,11 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, TYPE_CHECKING
 from pathlib import Path
 from pydantic import validate_call, FilePath, BaseModel
 from pydantic import ConfigDict, TypeAdapter, ValidationError
 import json
+
+if TYPE_CHECKING:
+    from .interface import ParamValue
 
 
 class Prompt(BaseModel):
@@ -35,7 +38,7 @@ class FileManager:
         self._load_json(functions_path, "functions")
         self._n_logs: int = 0
         self._n_replies: int = 0
-        self._replies: List[Dict[str, Union[str, Dict[str, str | float]]]] = []
+        self._replies: List["Dict[str, ParamValue]"] = []
         if output_path.suffix == ".json":
             self._output_path: Path = Path(output_path)
             self._output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -82,7 +85,7 @@ class FileManager:
 
     def charge_replies(
             self, reply:
-            Dict[str, Union[str, Dict[str, str | float]]]) -> None:
+            "Dict[str, ParamValue]") -> None:
         self._replies.append(reply)
 
     def write_replies(self) -> None:

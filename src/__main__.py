@@ -10,7 +10,7 @@ import sys
 
 def write_logs(reason: str) -> None:
     logs: Dict[str, List[Dict[str, str]]] = {
-            "prompts": [], "files": []}
+        "prompts": [], "files": []}
     log_path: Path = Path("logs/logs.json")
     log_path.parent.mkdir(parents=True, exist_ok=True)
     logs["files"].append(
@@ -46,6 +46,13 @@ try:
         Path(tokenizer),
         logits_function)
     chat.chatting()
+except KeyboardInterrupt:
+    try:
+        write_logs("The keyboard has interrupted the generation process")
+    except Exception as e:
+        print(
+            f"An unexpected error occurs out of our scope: {e}",
+            file=sys.stderr)
 except Exception as e:
     try:
         write_logs(str(e))

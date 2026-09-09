@@ -151,52 +151,49 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!bug] Estado — 2026-09-07, 5ª sesión
+> [!bug] Estado — 2026-09-09, 7ª sesión
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 2. **6 bloques**; ==**1, 2, 3, 4 y 5 cerrados**==. El **6 está escrito y corre**, pero **no cierra**: dos hallazgos reales sin resolver
-> **Último hito:** `Chat` y `src/__main__.py` completos, `mypy --strict`/`flake8` limpios, primera corrida real de punta a punta (11/11 prompts sin crash). Verificando esa salida contra el subject salieron dos bugs: la forma de `charge_replies` no cumple `V.4`, y un `Ġ` que traduce bien suelto pero no dentro de `reply()` — reabre lo cerrado el 09-05
-> **Siguiente:** ==investigar el hallazgo 2 antes de nada más==. Detalle exacto en `[[PROJECT#Sesión del 2026-09-07 — `Chat` y `__main__.py` construidos, dos hallazgos reales sin resolver]]`
-> **Abierto:** hallazgo 1 (`charge_replies(answer.output)`, sin aplicar) · `Makefile` sin `run`/`debug`/`lint`/`lint-strict` · contrato del Bloque 6 sin escribir · bonus 3 y 6 sin aplicar · docstrings al final del proyecto · README sin revisar contra `HANDOFF` · el atajo `cmd+escape` no funciona
+> **Fase:** 2. **6 bloques**; ==**1, 2, 3, 4 y 5 cerrados**==. El **6 escrito y corriendo**, no cierra: falta contrato, bonus 6 sin integrar
+> **Último hito:** soporte para `"type": "integer"` en el catálogo (5 cambios quirúrgicos) · bonus 3 (recuperación de errores) diseñado y escrito · `except KeyboardInterrupt` en `src/__main__.py`, escrito y verificado · prototipo del bonus 6 (`demo_menu.py`, en la raíz del proyecto, **sin integrar todavía**)
+> **Siguiente:** ==revisar e integrar `demo_menu.py` al proyecto (bonus 6) y escribir la suite de tests del proyecto completo, incluyendo catálogos con `integer`/`float`/otros tipos que él traiga==. Nada de lo de hoy se corrió de punta a punta con `Chat.chatting()` real — solo con `mypy`/`flake8` y llamadas directas. Detalle en `[[PROJECT#Bloque 6 — `Chat` orquestador]]` y `[[HANDOFF#Agente 25 — activo]]`
+> **Abierto:** contrato del Bloque 6 sin escribir · docstrings al final del proyecto · README sin revisar contra `HANDOFF` · el atajo `cmd+escape` no funciona
+> **Descartado el 09-09, ya no es pendiente:** `Makefile` sin `run`/`debug`/`lint`/`lint-strict` — decisión suya, se olvida
 > **Herramientas:** siempre `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. `PYTHONPATH=.` para correr `Interface`/`Chat`/`__main__` sueltos
 > **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 ---
 
-## Instrucción para el próximo agente — escrita el 2026-09-07, 5ª sesión
-
-> [!bug] Antes de decir "estoy listo": investigar el hallazgo 2
-> `_costume_translater` traduce bien el `Ġ` a espacio **llamado suelto**:
-> ```python
-> >>> itf._costume_translater({'source_string': "I'mĠ233"})
-> {'source_string': "I'm 233"}
-> ```
-> Pero el mismo string real, salido de `reply()` de punta a punta con el prompt *"Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS"*, llega a `data/output/function_calling_results.json` con el `Ġ` **sin traducir**. Reabre lo cerrado el 09-05 (*"acierto del modelo"*), que solo se había verificado con `café`, nunca con este caso de punta a punta.
-> **Trázalo:** corre `reply()` paso a paso con ese prompt exacto y encuentra dónde se pierde la traducción entre el `_costume_translater` suelto (que funciona) y el flujo real (que no). Detalle completo en `[[PROJECT#Bloque 6 — `Chat` orquestador]]`.
+## Instrucción para el próximo agente — escrita el 2026-09-09, 7ª sesión
 
 > [!important] El orden de la sesión
-> **1 ·** Investigar y resolver el hallazgo 2, de arriba.
-> **2 ·** Corregir el hallazgo 1: `chat.py:33`, `charge_replies(answer.model_dump())` → `charge_replies(answer.output)`. El subject exige tres claves sin anidar (`prompt`, `name`, `parameters`); `model_dump()` guarda `{"log":..., "output":{...}}`.
-> **3 ·** Solo con los dos cerrados: el contrato del Bloque 6, desde `[[contract]]`, con la clase corriendo.
-> **Cuestionario:** no se lanzó esta sesión — la prioridad es investigar, no repasar. Hay filas 🔴 en la `Lista de refuerzo` esperando si él lo pide.
+> **1 ·** Revisar `demo_menu.py` (raíz del proyecto) con `mypy --strict`/`flake8` y decidir con él **qué mecanismo entra a `src/`** como bonus 6 real, y cómo — hoy es solo un prototipo suelto, nada integrado.
+> **2 ·** Escribir la **suite de tests del proyecto completo** — incluye catálogos de funciones con `"integer"`, `"number"`/`float` y cualquier otro tipo que él traiga, no solo los que ya existían.
+> **3 ·** Antes de dar nada de hoy por cerrado, **correr `Chat.chatting()` de punta a punta**: el soporte de `integer`, el bonus 3 y el `except KeyboardInterrupt` solo se verificaron con `mypy`/`flake8` y pruebas aisladas — ninguno corrió dentro del flujo real completo.
+> **Cuestionario:** no se lanzó esta sesión.
 
-> [!warning] Lo que se aprendió el 09-07, y no se repite
-> **Verificar contra la salida real, no solo contra `mypy`/`flake8`.** Los dos hallazgos de hoy salieron de correr `Chat.chatting()` de punta a punta por primera vez y leer el JSON producido — ninguno lo hubiera visto un check estático. **No des un bloque por cerrado con solo lint y tests unitarios en verde si nunca corrió completo.**
-> ==**Una decisión de diseño cerrada con un solo caso de prueba puede estar mal.**== El cierre del `Ġ` el 09-05 se apoyaba solo en `café` (multi-byte); nunca se probó el caso de un solo byte disfrazado (el espacio, `Ġ`) de punta a punta. Antes de dar por buena una conclusión antigua, reproducirla con el caso real que la puso en duda.
-> Pidió cuidar el contexto al enseñar algo nuevo (`argparse`) **antes** de tropezar, no después — primera vez así.
+> [!warning] Rompió la regla 1 tres veces, con su consentimiento explícito
+> Pidió que el agente escribiera código directamente — los 5 cambios de `integer` y la corrección de indentación de `flake8` — con el mismo argumento cada vez: *"esto no me enseña nada, solo me quita tiempo, yo monté todo el proyecto"*. Se sostuvo la regla dos veces antes de ceder la tercera. **No es la nueva norma** — sigue siendo la excepción, a pedir él, no a ofrecer.
+> El bonus 3 y el `except KeyboardInterrupt` sí los escribió él, guiado paso a paso, como de costumbre.
+
+> [!warning] Lo que se aprendió el 09-09, y no se repite
+> **Verificar un mecanismo de recuperación de errores contra dónde puede fallar de verdad, no contra dónde "suena razonable" que falle.** El diseño inicial del bonus 3 (softmax, luego N-ésimo mejor logit) apuntaba al `ERROR` de `_valid_parameters` — que ya estaba documentado como **estructuralmente inalcanzable** desde el 09-04. Se perdieron varias vueltas de diseño antes de notarlo. Antes de diseñar una recuperación, comprobar que el fallo que se quiere recuperar puede ocurrir de verdad.
+> **`kill -INT` a un proceso en background no llega de forma fiable dentro del sandbox del agente** — para probar `KeyboardInterrupt` hay que forzarlo en el código (monkeypatch del punto donde se quiere interrumpir), no mandar la señal real.
+> **La hoja de evaluación real del peer review** (`~/Desktop/Intra Projects Call Me Maybe Edit.pdf`) califica los 9 bonus con **una sola nota 0-5 en conjunto** — no hay rúbrica por bonus. Él la trajo sin que se le pidiera; cambia cómo priorizar esfuerzo entre bonus.
 
 > [!important] Cómo se trabaja con él
 > ==**Sus identificadores, y solo lo que existe hoy en `src/`.**==
 > **Un paso por mensaje.** Una idea, una pregunta. Respuestas cortas.
 > **Cuando dice que no sabe, dale las opciones reales con su coste y una recomendación** — y elige él.
 > **Di con qué certeza afirmas algo**: dato, verificado ejecutando, convención o suposición.
-> ==**Le llevas la contraria cuando toca**==: hoy dos veces (la clave nueva de logs, el mensaje fijo "ruta inexistente") con el mismo argumento de unicidad que él mismo acababa de aceptar — las dos veces cedió con el caso delante.
-> **Herramienta nueva, pieza por mensaje, con salida real** — igual que siempre, pero hoy lo pidió él mismo antes del primer tropiezo, no después.
+> **Le llevas la contraria cuando toca**: hoy dos veces (bonus 3 sobre un caso inalcanzable, "el modelo sí puede fallar en contenido") — las dos veces tenía razón él en el fondo, y ayudó a encontrar la vía real (el fallo del SDK, no de contenido).
 
 > [!bug] Con lo que te vas a tropezar
-> **`mypy_path = "llm_sdk"` ya está en `pyproject.toml`** — el falso positivo de `mypy` con `llm_sdk` quedó cerrado hoy, no lo repitas.
+> **`demo_menu.py` en la raíz del proyecto** — script suelto, prototipo del bonus 6, no pasó por `mypy`/`flake8` todavía, y usa rutas absolutas al cache de Hugging Face (`~/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/...`) que hay que revisar antes de integrarlo.
+> **`Guardian` ya soporta `"integer"` y `"boolean"`** además de `number`/`string` — si escribís un catálogo de prueba nuevo, ya podés usarlo.
 > Llama a las herramientas con `./callme/bin/python -m ...`, y un script suelto que corra `Interface`/`Chat`/`__main__` necesita `PYTHONPATH=.`.
 > **A `tests/` no se le pasa `flake8` ni `mypy`** — regla suya del 09-01.
 > **Sin docstrings** en ningún archivo de `src/`: ==van al final del proyecto==. No las repongas por tu cuenta.
-> **`data/output/function_calling_results.json` y `logs/` de esta sesión son artefactos de prueba** — bórralos o vuelve a correr antes de fiarte de su contenido.
+> **6 rojos de `pytest` confirmados como ruido de bloques viejos** (detalle en `[[PROJECT]]`, sesión de hoy) — decisión suya: se ignoran, no son del bloque 6.
+> **`logs/` y `data/output/function_calling_results.json` de esta sesión son artefactos de prueba** — bórralos o vuelve a correr antes de fiarte de su contenido.
 > **Auditar una sesión ajena:** `~/.claude/tools/auditar_sesion.py` sobre el `.jsonl` de `~/.claude/projects/<proyecto>/`.

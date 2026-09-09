@@ -27,10 +27,18 @@ class Chat:
         answer: Output
         log_answer: str = ""
         value: Any = ""
+        well_processed: Callable[
+            [Output], bool] = lambda answer: isinstance(
+                answer.output, Dict) and len(answer.output) == 3
         for prompt in self._prompts:
             answer = self._interface.reply(prompt)
+            if answer.log == "Model failed while replying":
+                for i in range(3):
+                    answer = self._interface.reply(prompt)
+                    if well_processed(answer):
+                        break
             if isinstance(answer.output, Dict) and len(answer.output) == 3:
-                self._file_manager.charge_replies(answer.model_dump())
+                self._file_manager.charge_replies(answer.output)
             else:
                 if isinstance(answer.output, Dict):
                     value = next(iter(answer.output.values()))

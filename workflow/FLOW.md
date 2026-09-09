@@ -103,14 +103,28 @@ graph LR
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
 | 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | ✅ **80 verdes 09-03** |
 | 5 | Bucle de generación | ✅ | ✅ **cerrado de nuevo 09-05** — `Output` en `dict` | ✅ **38 verdes** |
-| 6 | `Chat` orquestador | ✅ **requisitos cerrados 09-03** | 🔴 escrita, corre, **2 hallazgos sin resolver 09-07** | ⚪ |
+| 6 | `Chat` orquestador | ✅ **requisitos cerrados 09-03** | 🔵 escrita, corre, **2 hallazgos del 09-07 cerrados 09-08**, **bonus 3 escrito 09-09**, `"integer"` soportado — falta contrato, bonus 6 sin integrar | ⚪ |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
 > [!note] Se actualiza al cerrar cada bloque
 > Este archivo es la vista rápida. La fuente de verdad sigue siendo `[[PROJECT]]`.
 
-> [!bug] ==Bloque 6 — escrito y corriendo, 2 hallazgos reales sin resolver (2026-09-07)==
+> [!success] ==Bloque 6 — soporte `"integer"`, bonus 3, guard de `KeyboardInterrupt` (2026-09-09)==
+> **Soporte de `"integer"`** en `Guardian`/`Interface` — 5 cambios quirúrgicos, ==escritos por el agente a pedido explícito y repetido del estudiante, no por él== (rompe la regla 1 del sistema, con su consentimiento). `mypy --strict`/`flake8` limpios, `_char_ok` con `integer` rechaza el `.`, `_valid_parameters` acepta `4` y rechaza `4.5`.
+> **Bonus 3 (recuperación de errores), escrito por él** en `chat.py`: reintenta hasta 3 veces cuando `answer.log == "Model failed while replying"`, `break` si consigue una respuesta de 3 claves. Se descartó la vía "reintento con softmax" (era un "reintento necio" sobre el `ERROR` de `_valid_parameters`, que quedó demostrado **estructuralmente inalcanzable** desde `reply()` — solo se dispara fabricando datos a mano en un test).
+> **`except KeyboardInterrupt` en `src/__main__.py`**, escrito por él: loguea `"The keyboard has interrupted the generation process"`. Verificado forzando la excepción en el punto de carga del modelo (las señales `SIGINT` reales no llegan de forma fiable a un proceso en background dentro del sandbox del agente).
+> **`demo_menu.py` en la raíz del proyecto** — prototipo del bonus 6 (visualización), con menú interactivo, animación letra por letra y color. **No integrado a `src/` todavía** — queda para la próxima sesión revisar qué entra y cómo.
+> **Rojos de `tests/test_bloque_5.py` (4) y `tests/test_bloque_3.py` (1) confirmados como ruido**, no relacionados con el bloque 6 — decisión suya: bloques antiguos, se ignoran.
+
+> [!success] ==Bloque 6 — los 2 hallazgos del 09-07 cerrados (2026-09-08)==
+> **H1:** `chat.py:33`, `charge_replies(answer.output)` sin anidar. **H2:** el `Ġ` era el par de bytes `196,160` (el propio glifo del vocabulario colado como contenido), parche puntual en `_costume_translater`. `mypy --strict`/`flake8` limpios en `src/`, 11/11 prompts reales correctos.
+> **Efecto colateral resuelto:** tipar `charge_replies` con `ParamValue` creaba import circular con `Interface` — cerrado con `TYPE_CHECKING`.
+> **Dos hallazgos nuevos, sin corregir:** el modelo pierde precisión copiando strings de 36+ caracteres (límite del modelo, no del código, para README) · la hoja de evaluación pide claves `fn_name`/`args`, el proyecto usa `name`/`parameters` (cambio de texto, se aplica antes de entregar).
+> Falta: **el contrato del Bloque 6**, sin escribir.
+> Detalle en `[[PROJECT#Sesión del 2026-09-08 — los dos hallazgos del 09-07 cerrados, dos hallazgos nuevos abiertos]]`.
+
+> [!info]- Bloque 6 — escrito y corriendo, 2 hallazgos reales sin resolver (2026-09-07), histórico
 > `Chat` completo, `src/__main__.py` escrito, los dos con `mypy --strict`/`flake8` limpios. Primera corrida real de punta a punta: 11/11 prompts sin crash.
 > **Hallazgo 1:** `charge_replies(answer.model_dump())` guarda `{"log":..., "output":{...}}` — el subject exige `prompt`/`name`/`parameters` sin anidar. Arreglo identificado, sin aplicar.
 > **Hallazgo 2:** un `Ġ` sin traducir en la salida real, pese a que `_costume_translater` traduce bien el mismo string llamado suelto. Reabre lo cerrado el 09-05 (*"acierto del modelo"*), que nunca se probó de punta a punta. **Prioridad de la próxima sesión.**
