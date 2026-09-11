@@ -1,0 +1,65 @@
+[
+  {
+    "name": "fn_add_numbers",
+    "description": "Add two numbers together and return their sum.",
+    "parameters": {
+      "a": {
+        "type": "number"
+      },
+      "b": {
+        "type": "number"
+      }
+    },
+    "returns": {
+      "type": "number"
+    }
+  },
+  {
+    "name": "fn_reverse_string",
+    "description": "Reverse a string and return the reversed result.",
+    "parameters": {
+      "s": {
+        "type": "string"
+      }
+    },
+    "returns": {
+      "type": "string"
+    }
+  },
+  {
+    "name": "fn_count_items",
+    "description": "Count a quantity of items and record it as an integer.",
+    "parameters": {
+      "quantity": {
+        "type": "integer"
+      }
+    },
+    "returns": {
+      "type": "integer"
+    }
+  },
+  {
+    "name": "fn_confirm_action",
+    "description": "Record whether an action was confirmed as a boolean.",
+    "parameters": {
+      "confirmed": {
+        "type": "boolean"
+      }
+    },
+    "returns": {
+      "type": "boolean"
+    }
+  },
+  {
+    "name": "fn_set_priority_level",
+    "description": "Set the priority level for a task as an integer.",
+    "parameters": {
+      "level": {
+        "type": "integer"
+      }
+    },
+    "returns": {
+      "type": "integer"
+    }
+  }
+]

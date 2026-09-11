@@ -25,7 +25,7 @@ Aquí se anota cualquier idea de mejora al método de trabajo que surja mientras
 
 ## Propuestas
 
-*(vacío — barrido completo el 2026-08-31)*
+- [ ] **Al diseñar un mecanismo, distinguir explícitamente qué parte del pipeline se toca antes de descartar una idea por instinto — no toda entrada es "que el modelo la escriba".** Diseñando el arreglo del loop de comillas+backslash (call me maybe, 2026-09-10), el estudiante no propuso tocar el eco del prompt inyectado en el contexto porque asumió que **solo el modelo** debía escribir ahí: *"yo no metí mano en el prompt porque pensé que tenía que ser el modelo solo quien lo escribiera"*. El eco es texto que **el propio código inyecta** (`json.dumps(prompt)`), nunca lo genera el modelo — enmascararlo no es "escribir por el modelo", es una palanca de diseño distinta a la generación en sí. La distinción que faltó nombrar antes de discutir: **qué lee el modelo** (contexto/prompt) vs. **qué escribe el modelo** (la generación) son dos cosas separadas, y una mejora en la primera no compite con la regla de "el modelo genera solo".
 
 ---
 

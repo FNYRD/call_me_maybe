@@ -4,6 +4,8 @@ from pydantic import validate_call
 import json
 
 DIGITS = "0123456789"
+QUOTE_MARKERS = ["~", "`", "_"]
+BACKSLASH_MARKERS = ["^", "|", "<"]
 
 
 class Guardian:
@@ -21,12 +23,26 @@ class Guardian:
         self._done: bool = True
         self._cache: Dict[Tuple[Optional[str],
                                 Union[str, int], str], List[int]] = {}
+        self.quote_marker: Union[str, None] = None
+        self.backslash_marker: Union[str, None] = None
 
     @validate_call
     def start(self, prompt: str) -> None:
+        self.quote_marker = None
+        self.backslash_marker = None
+        masked_prompt = prompt
+        if '"' in prompt:
+            self.quote_marker = next(
+                c for c in QUOTE_MARKERS if c not in prompt)
+            masked_prompt = masked_prompt.replace('"', self.quote_marker)
+        if "\\" in prompt:
+            self.backslash_marker = next(
+                c for c in BACKSLASH_MARKERS if c not in prompt)
+            masked_prompt = masked_prompt.replace(
+                "\\", self.backslash_marker)
         self._json_str = (
             '{"prompt":' +
-            f"{json.dumps(prompt)}"
+            f"{json.dumps(masked_prompt)}"
             + ', "name": "')
         self._slot = "name"
         self._written = ""
@@ -50,6 +66,18 @@ class Guardian:
             return ","
         return "}"
 
+    @staticmethod
+    def _has_closing_quote(text: str) -> bool:
+        backslashes: int = 0
+        for char in text:
+            if char == "\\":
+                backslashes += 1
+                continue
+            if char == '"' and backslashes % 2 == 0:
+                return True
+            backslashes = 0
+        return False
+
     def _char_ok(self, text: str, candidate2add: str) -> bool:
         match self._slot:
             case "name":
@@ -63,12 +91,15 @@ class Guardian:
                     for function_name in self._functions
                 ) and candidate2add == '"':
                     return True
-            case "number" | "integer":
-                if (self._slot == "number" and text
-                        and all(c in DIGITS for c in text)
+            case "number" | "integer" | "float":
+                digits_part = text[1:] if text.startswith("-") else text
+                if (self._slot in ("number", "float") and digits_part
+                        and all(c in DIGITS for c in digits_part)
                         and candidate2add == "."):
                     return True
-                elif candidate2add in DIGITS and text != "0":
+                elif not text and candidate2add == "-":
+                    return True
+                elif candidate2add in DIGITS and text not in ("0", "-0"):
                     return True
                 elif (candidate2add == self._closing_char()
                       and (text and text[-1] in DIGITS)):
@@ -81,11 +112,12 @@ class Guardian:
                         and candidate2add == self._closing_char()):
                     return True
             case _:
-                if candidate2add == '"' and '"' not in text:
+                closed: bool = self._has_closing_quote(text)
+                if candidate2add == '"' and not closed:
                     return True
-                elif '"' in text and self._closing_char() == candidate2add:
+                elif closed and self._closing_char() == candidate2add:
                     return True
-                elif '"' not in text and 92 != ord(candidate2add) > 31:
+                elif not closed and ord(candidate2add) > 31:
                     return True
         return False
 
@@ -94,9 +126,10 @@ class Guardian:
             return False
         if self._slot == "name":
             return text.endswith('"')
-        if self._slot in ("number", "integer", "boolean"):
+        if self._slot in ("number", "integer", "boolean", "float"):
             return text[-1] == self._closing_char()
-        return '"' in text and text[-1] == self._closing_char()
+        return (self._has_closing_quote(text)
+                and text[-1] == self._closing_char())
 
     def _token_ok(self, token_text: str) -> bool:
         draft: str = self._written
@@ -110,10 +143,10 @@ class Guardian:
 
     def _cache_flags(self) -> int:
         match self._slot:
-            case "number" | "integer":
+            case "number" | "integer" | "float":
                 if not self._written:
                     return 1
-                elif self._written == "0":
+                elif self._written in ("0", "-0"):
                     return 2
                 elif "." in self._written and self._written[-1].isdigit():
                     return 3
@@ -122,7 +155,7 @@ class Guardian:
                 elif self._written[-1].endswith("."):
                     return 5
             case _:
-                if '"' in self._written:
+                if self._has_closing_quote(self._written):
                     return 1
         return 0
 
@@ -157,7 +190,7 @@ class Guardian:
             return
         self._slot = spec.type
         self._written = ""
-        if spec.type not in ("number", "integer", "boolean"):
+        if spec.type not in ("number", "integer", "boolean", "float"):
             self._json_str += '"'
 
     def _close_level(self) -> None:

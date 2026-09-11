@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 import json
 
-type ParamValue = Union[str, float, bool, Dict[str, "ParamValue"]]
+type ParamValue = Union[str, int, float, bool, Dict[str, "ParamValue"]]
 
 
 class Output(BaseModel):
@@ -46,7 +46,8 @@ class Interface:
                 parameters[parameter] = bytearray(
                     self._tokenizer.char_byte[char]
                     for char in leaf).replace(
-                        bytes([196, 160]), bytes([32])).decode("utf-8")
+                        bytes([196, 160]), bytes([32])
+                        ).decode("utf-8").strip()
             if isinstance(leaf, Dict):
                 parameters[parameter] = self._costume_translater(leaf)
         return parameters
@@ -66,7 +67,7 @@ class Interface:
             function_parameters = function
         if function_parameters is not None:
             for key, value in parameters.items():
-                if function_parameters[key].type == "number":
+                if function_parameters[key].type in ("number", "float"):
                     if not (isinstance(value, int)
                             or isinstance(value, float)):
                         return error_return
@@ -128,7 +129,16 @@ class Interface:
             return Output(
                 log="Model entered an loop",
                 output={"prompt": user_prompt})
-        response_formated = json.loads(self._guardian.get_json())
+        raw_json: str = self._guardian.get_json()
+        if self._guardian.quote_marker is not None:
+            raw_json = raw_json.replace(
+                self._guardian.quote_marker, '\\"')
+            self._guardian.quote_marker = None
+        if self._guardian.backslash_marker is not None:
+            raw_json = raw_json.replace(
+                self._guardian.backslash_marker, "\\\\")
+            self._guardian.backslash_marker = None
+        response_formated = json.loads(raw_json)
         if isinstance(response_formated["parameters"], Dict):
             if isinstance(response_formated["name"], str):
                 function_name = response_formated["name"]

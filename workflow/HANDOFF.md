@@ -305,7 +305,89 @@ Debe incluir, como mínimo:
 
 ## 🔄 Contextualización para el siguiente agente
 
-> [!bug] Agente 25 — activo
+> [!success] Agente 27 — activo
+> **Periodo:** 2026-09-10/09-11 → ==**Mecanismo de escapes (comillas+backslash combinados) diseñado, probado y aplicado a `src/`. Dos bugs nuevos encontrados y uno corregido. Suite comparativa contra el compañero construida. README encontrado vacío al revisar el cierre.**== Sesión de cierre — se para acá para escribir README, docstrings y decidir `view.py`.
+>
+> **Qué se hizo:**
+> - ==**Cuatro mecanismos probados con el modelo real para el loop de comillas+backslash**==, retomando el experimento cortado por el estudiante al final del Agente 26: `PostMachine` con `set` (costo por paso ~0%, pero no cierra — mismo loop distinto patrón) · cambiar el delimitador de `"` a `'` (empeoró) · candidatos por regex tipo sufijo (funciona para el caso puntual, no generaliza) · **enmascarar el eco del prompt** (funciona en los 4 casos probados, sin tocar el mecanismo de generación).
+> - ==**Hallazgo preciso sobre el marcador**==: no es "copiar 2 caracteres es difícil" — un escape de 2 caracteres solo funciona; **dos escapes de 2 caracteres combinados en el mismo valor** vuelven a trabar al modelo. Bajar cada uno a 1 carácter (`~`/`^`) alcanza. Conecta con el límite de ~36 caracteres ya documentado el 09-08: cada escape de 2 caracteres cuenta doble contra ese presupuesto.
+> - ==**Diseño final, con él, iterado varias veces sobre qué caracteres usar**==: de `~`/`^` fijos a un **pool dinámico por prompt** (`QUOTE_MARKERS`/`BACKSLASH_MARKERS`), eligiendo el primero que no esté ya en ese prompt — verificado con `grep` que ninguno aparece en datos reales del proyecto. Guardado en dos atributos **públicos** (`quote_marker`/`backslash_marker`, `Union[str, None]`, propuesto por él), reseteados a `None` tras el uso.
+> - ==**Aplicado a `src/guardian.py` (`start()`) y `src/interface.py` (`reply()`, antes de `json.loads`)**==. `flake8`/`mypy --strict` limpios. Verificado con la Suite A completa vía `Interface` real: 9/9 en la primera pasada.
+> - **Bug nuevo encontrado comparando contra la corrección real**: `"The temperature went from -12.5 to 3 degrees"` pierde el signo negativo. Verificado que el whitelist **sí** permite el `-` (token id 12, confirmado contra `get_valid_ids()` real) — es elección del modelo, no bug de código. **Cuatro intentos de arreglo, los cuatro descartados con evidencia** (instrucción de sistema sin efecto, inversión ciega insegura, inversión con excepción por palabra clave con huecos, inyección por orden que rompe `"Subtract 15 from 50"`). Se deja documentado, sin parchear.
+> - **Suite A retocada**: el `boundary_case` de 32 caracteres se retiró (era el límite de longitud del modelo, no de escapes) — queda en 9 prompts.
+> - ==**`tests/test_bloque_6.py` actualizado por el agente ciego, por prompt, no a mano**==: `BOUNDARY_CASE_PROMPTS` pasó de hardcodeado a dinámico (leído de la corrección real en cada corrida). Verificado: 9 passed, 1 skipped.
+> - ==**Suite comparativa nueva, `tests/test_bloque_7.py`, construida por el agente ciego a pedido suyo**==: corre los mismos prompts contra este proyecto y `project_example/` (el compañero), y solo cuenta rojo si el compañero acierta y nosotros fallamos. Resultado: **17/20 nosotros, 14/20 el compañero** — el compañero saca 11/11 en su propio examen pero pierde casi todo en los 9 de estrés que diseñamos.
+> - **Dos bugs nuevos diagnosticados con la Suite comparativa**: un espacio pegado al borde de un `string` (el modelo copia el token `Ġ/` completo, espacio incluido, del prompt) — ==**arreglado con `.strip()` en `_costume_translater`, aplicado**==, verificado sin regresiones (compañero 9/11→10/11, Suite A sin cambios). Y un apóstrofe perdido por el mismo glifo de mojibake ya documentado el 09-05/09-08 — bloquearlo arregla ese caso pero rompe otro (un espacio legítimo en el mismo glifo), ganancia neta cero, **no se aplicó**.
+> - ==**Al preguntarle si alcanzaba con cerrar dejando solo docstrings y Makefile para la próxima sesión, se encontró que `README.md` tiene 0 líneas**== — obligatorio del subject, no un detalle. Se le devolvió la lista completa de lo pendiente antes de cerrar.
+>
+> **Dónde se quedó:** todo lo de `src/` (`guardian.py`, `interface.py`) con el mecanismo aplicado, `flake8`/`mypy --strict` limpios, verificado con las dos suites reales y la comparativa. `tests/stress_data/` en 9 prompts, sin `boundary_case`. `tests/test_bloque_6.py` y `tests/test_bloque_7.py` verificados corriendo contra el `src/` real.
+>
+> **Decisiones tomadas:**
+> - El marcador de escape es un **pool dinámico de 1 carácter por tipo**, no uno fijo — evita colisión con contenido real sin sacrificar la ventaja de "1 carácter, no 2".
+> - El signo negativo perdido **no se parchea** — cuatro vías probadas, las cuatro con un costo que supera el beneficio (ver arriba).
+> - El bloqueo del glifo de mojibake **no se aplica** — gana un caso, pierde otro, sin ganancia neta sobre el `.strip()` solo.
+> - El `boundary_case` de 32 caracteres **se retira de la Suite A**, no se documenta — mezclaba dos límites distintos (escapes vs. longitud) bajo la misma etiqueta.
+>
+> **Callejones sin salida:**
+> - `PostMachine` con `set` (narrowing por sub-cadenas del prompt) — costo resuelto, pero no cierra el loop de todas formas.
+> - Delimitador `'` en vez de `"` — el modelo sigue escribiendo `"` real por costumbre, empeora.
+> - Candidatos por sufijo tras `': '` — funciona para un prompt, no generaliza a "Reverse the string 'hello'" ni similares.
+> - Inyección de números por orden de aparición en el prompt — rompe un caso que ya funcionaba por razonamiento semántico del modelo, no por orden.
+> - Bloquear el backslash real en el whitelist (experimento previo, ya en `HANDOFF` del Agente 26 pero confirmado hoy con más casos) y bloquear el glifo de mojibake — los dos cambian *cuál* prompt falla, no *cuántos*.
+>
+> **Abierto — el más importante primero:**
+> - ==**`README.md` está vacío**== — 9 secciones obligatorias + línea de atribución de 42, en inglés. Es lo primero de la próxima sesión.
+> - Docstrings — ninguna en `src/*.py`, decisión suya de dejarlas al final. El final es ahora.
+> - `Makefile` sin `run`/`debug`/`lint`/`lint-strict` — pedido de nuevo hoy, pese a que el 09-09 se había dicho "ya no es prioridad". Confirmar con él cuál vale.
+> - `src/view.py` sigue sin conectar a `__main__.py` — decisión de "para el final". Si se cierra ahora, hay que decidir si entra o no.
+> - Checklist del subject línea por línea (`[[SYSTEM#FASE 3]]`) — no hecho.
+> - Aprobación final explícita del contrato del Bloque 6 — nunca llegó un "sí, apruebo" después de la última ronda de correcciones.
+> - `tests/error_data/` vs `tests/stress_data/` — sin revisar si se solapan.
+>
+> **Sobre el estudiante:** cazó una inconsistencia aritmética en un reporte agregado (*"pero es +1 con el strip no?"*) antes de que el agente separara qué aportaba cada cambio — extiende su patrón de auditoría a números, no solo a alcance. Anticipó el hueco de su propia propuesta de heurística (inversión de signo) antes de que se probara, y aun así pidió probarla. Preguntó dos veces "¿registraste?" antes de asumir que un hallazgo quedó anotado. Sigue exigiendo evidencia medida antes de aceptar cualquier argumento de diseño, propio o del agente — patrón ya consolidado, ninguna excepción hoy.
+>
+> **Siguiente paso:** escribir el README completo, en inglés, con las 9 secciones — hay material de sobra ya documentado en `[[PROJECT]]` para "Challenges faced" y "Algorithm explanation".
+
+> [!info]- Agente 26 — histórico
+> **Periodo:** 2026-09-10 → ==**`view.py` integrado, 10 bugs reales encontrados y corregidos, contrato del Bloque 6 reescrito a fondo, Suite A diseñada y en tests, Suite B diseñada sin construir**==. Sesión larga, cerrada a petición explícita del estudiante (*"para"*) a mitad de un experimento sin correr — ver `Abierto`.
+>
+> **Qué se hizo:**
+> - **`demo_menu.py` → `src/view.py`**, clase `View`, un método público `run()`, inglés, tipado, `mypy --strict`/`flake8` limpios. ==Escrito por el agente, a pedido explícito suyo== (mismo patrón del 09-09: *"nunca lo hago yo... 100% mecánico"*). **No integrado a `src/__main__.py`** — decisión suya, se deja para el final.
+> - **Suite A diseñada con él, propuesta por propuesta**, en `tests/stress_data/` (9 funciones, 10 prompts, 10 respuestas correctas — 2 marcadas `boundary_case`). Cubre anidación de 1 y 2 niveles, nombres con prefijo compartido, negativos, `"type": "float"`, `boolean`, dos parámetros del mismo tipo con el prompt en orden invertido, y comillas+backslash.
+> - ==**7 bugs reales encontrados diseñando la Suite A, corregidos y verificados con el modelo real:**== negativos estructuralmente imposibles en `Guardian` · `"type": "float"` no soportado (ahora alias exacto de `"number"`) · comillas embebidas rompían la detección de cierre de `string` (nuevo `_has_closing_quote`, cuenta paridad de backslashes) · backslash bloqueado siempre · `ParamValue` sin `int` en el `Union` (pydantic coaccionaba todo entero a `float` silenciosamente) · la salida traía menos de N objetos si un prompt fallaba · sin salida de escape cuando ningún prompt calzaba (`fn_unknown`, inyectado en tiempo de ejecución, verificado con el modelo real eligiéndolo).
+> - **Contrato del Bloque 6 escrito, y reestructurado a fondo.** Primera versión probaba `Chat` construida a mano — ==él lo cortó==: *"el agente no usa `Chat`... la presión del estrés debe venir de `__main__`"*. Reescrito completo en `tests/blackbox_test_bloque_6.md`: R1-R8 ahora describen **el comando `python -m src`**, no la clase. De ahí salieron 2 bugs más en `src/__main__.py`: el `import` pesado (`torch`/`transformers`) no protegía contra `Ctrl+C` (traceback crudo, sin log) y el código de salida era **siempre 0**, aunque fallara. Los dos arreglados.
+> - **Lanzado un agente ciego aparte** a escribir `tests/test_bloque_6.py` contra el contrato — encontró un **10º bug real**: el campo `ERROR` de un objeto fallido repetía el `prompt`, nunca el log real (`answer.output` siempre es `{"prompt": ...}` en cualquier fallo, así que la variable que se usaba para `ERROR` nunca era el mensaje de error). Corregido en `chat.py`, verificado con el mismo fallo que reportó.
+> - **Investigado, no resuelto:** comillas+backslash combinados en el mismo valor `string` hacen que el modelo entre en loop, determinístico. Trazado carácter por carácter contra `Guardian` — el camino correcto **es válido** (verificado alimentándolo a mano), el modelo no lo elige solo. Corrido el mismo prompt contra `project_example/` (proyecto del compañero, mecanismo distinto: extracción de candidatos por regex + elección entre opciones ya formadas) y **le salió perfecto** — no es un bug de código, es el costo de generar el string letra por letra. Confirmado con `grep`: ningún prompt real combina los dos escapes.
+> - **Prototipo de mejora, probado y descartado con evidencia:** reintentar con el segundo mejor logit cuando hay loop — sí cierra, pero el contenido sale peor (`"sheĠsayĠ...ivedC:\ttemp"`). Se estaba diseñando una segunda mejora (`PostMachine`: narrowing del whitelist de `string` contra sub-cadenas del prompt, ~30 líneas) y midiendo su costo real cuando el estudiante cortó la sesión.
+>
+> **Dónde se quedó:** todo lo de `src/` (`chat.py`, `guardian.py`, `interface.py`, `__main__.py`, `view.py`) escrito, `mypy --strict`/`flake8` limpios, verificado con el modelo real caso por caso. `tests/blackbox_test_bloque_6.md` completo, coherente con `src/` a fecha de hoy. `tests/test_bloque_6.py` **en generación por un agente ciego aparte, sin terminar** — trabaja con su propio catálogo en `tests/error_data/`, distinto de `tests/stress_data/`. `tests/correccion.txt` tiene el resumen de lo que cambió en el contrato, para dárselo si su copia quedó vieja. El experimento de timing del `PostMachine` (`experiment_narrowing_timing.py`) quedó **escrito pero sin correr**, en el scratchpad de la sesión, no en el proyecto — se perdió al cerrar.
+>
+> **Decisiones tomadas:**
+> - El sujeto de prueba del Bloque 6 es **el comando**, no `Chat` — `Chat`/`Interface`/`Guardian`/`FileManager` son mecanismo interno, el agente ciego no necesita conocerlos.
+> - `fn_unknown` (0 parámetros) se inyecta en `Chat.__init__`, encima del catálogo real — no vive en ningún archivo.
+> - El límite de comillas+backslash combinados se documenta (`boundary_case` en la respuesta correcta + R8 del contrato), no se persigue un arreglo esta sesión — mejor costo/beneficio que las tres alternativas discutidas.
+> - `expected_output` del archivo de corrección del compañero queda fuera de la Suite B — ninguno de los dos proyectos ejecuta la función elegida, solo `name`+`parameters`.
+>
+> **Callejones sin salida:**
+> - Reintentar con el segundo mejor logit para el loop de comillas+backslash — cierra, pero degrada el contenido. Probado, no solo argumentado.
+> - Mi primer diagnóstico del prompt 8 (que el presupuesto de caracteres se pasaba por el escapado) estaba mal — recalculado con números reales, 35 ≤ 49, no se pasaba. La causa real era otra (el modelo no converge con los dos escapes juntos, no un tema de presupuesto).
+>
+> **Corrección a un dato que dejó mal el Agente 25:** ==`SIGINT` real **sí llega de forma fiable** dentro de este sandbox== — la nota vieja (*"no llega a un proceso en background"*) era sobre mandar la señal a un shell en background aparte. Mandada directo a un `subprocess.Popen` propio (`proc.send_signal(signal.SIGINT)`), llega siempre. Se usó así para verificar los dos `except KeyboardInterrupt` de `__main__.py` con la señal real, no forzada.
+>
+> **Abierto — el más importante primero:**
+> - ==**`tests/test_bloque_6.py` ya existe — 575 líneas, apareció justo al cerrar esta sesión, sin alcanzar a verificarlo.**== El estudiante pidió: verificar que **ejecuta e instancia bien** (no el contenido) — si algo está mal escrito y no permite validar lo que promete, escribir un prompt para que él se lo pase al agente ciego, **nunca corregir el test directamente** ni tocarlo con lo que se sabe de `src/`. Es lo primero de la próxima sesión.
+> - `tests/error_data/` — el agente ciego fabricó su propio catálogo de estrés, separado de `tests/stress_data/` (el de esta sesión). Revisar si se solapan o si hay que reconciliarlos al revisar el test terminado.
+> - **Suite B (diferencial)**, diseñada pero sin un solo archivo escrito: correr `data/input`+`tests/new_data/input` contra tu proyecto y contra `project_example/`, comparar `name`+`parameters` de los dos contra `tests/new_data/correction/...json`, accuracy % de cada uno, revisar a mano donde los dos fallen igual.
+> - El experimento de timing del `PostMachine` (Opción 3 de la mejora de comillas+backslash) — diseño completo, script escrito, **nunca corrido**. Si se retoma, hay que reescribir el script (se perdió en el scratchpad).
+> - `src/view.py` sin integrar a `src/__main__.py` — decisión suya, para el final.
+> - Contrato del Bloque 6: reescrito y coherente con `src/` de hoy, pero **sin un "sí, apruebo todo" explícito** tras la última ronda de correcciones (R5 del `--output`, R6.3/R6.6 del `ERROR`) — confirmar con él antes de darlo por cerrado del todo.
+> - Docstrings (al final del proyecto, decisión suya), README sin revisar, `project_example/compare_escape.py` es un script de diagnóstico suelto en la carpeta del compañero — no es del proyecto, se puede borrar cuando ya no haga falta.
+>
+> **Sobre el estudiante:** detectó dos errores reales leyendo el contrato sin ejecutar nada (el alcance de `Chat` vs `__main__.py`, y `--output` descrito mal) — extiende su patrón ya consolidado de detectar cuándo el agente se sale de su sitio, esta vez sobre un documento. Pidió evidencia medida dos veces antes de aceptar un argumento de diseño (el experimento del segundo mejor logit, y el de timing del `PostMachine`) — el primero salió en contra y lo aceptó sin resistencia. Coordina un agente ciego aparte en paralelo mientras dirige a este — pidió explícitamente que las correcciones de código no las haga el agente ciego, solo el que acompañó la construcción.
+>
+> **Siguiente paso:** esperar el archivo de tests del agente ciego y verificarlo (ejecución, no contenido). Mientras tanto, o si se pide antes, empezar la Suite B.
+
+> [!info]- Agente 25 — histórico
 > **Periodo:** 2026-09-09 → ==**soporte `"integer"`, bonus 3 escrito, guard de `KeyboardInterrupt`, prototipo del bonus 6**==. Los dos hallazgos que dejó el Agente 24 abiertos (`charge_replies` y el `Ġ`) **ya estaban cerrados al empezar esta sesión** — los cerró el Agente 24.5, del 09-08, que nunca actualizó este archivo (solo `PROJECT.md`/`FLOW.md`). Ver ese resumen en `Agente 24 — histórico`, abajo.
 >
 > **Qué se hizo:**

@@ -1,0 +1,55 @@
+[
+  {
+    "prompt": "Schedule a meeting called Planning on Monday at 9",
+    "name": "fn_schedule_meeting",
+    "parameters": {
+      "title": "Planning",
+      "slot": {"day": "Monday", "hour": 9}
+    }
+  },
+  {
+    "prompt": "Get the full details for user 42",
+    "name": "fn_get_user_details",
+    "parameters": {"user_id": 42}
+  },
+  {
+    "prompt": "Create an order for Maria living in Austin, zip 73301",
+    "name": "fn_create_order",
+    "parameters": {
+      "customer": {
+        "name": "Maria",
+        "address": {"city": "Austin", "zip": 73301}
+      }
+    }
+  },
+  {
+    "prompt": "The temperature went from -12.5 to 3 degrees",
+    "name": "fn_calculate_temperature_change",
+    "parameters": {"start": -12.5, "end": 3.0}
+  },
+  {
+    "prompt": "Convert 250.75 dollars at a rate of 0.92",
+    "name": "fn_convert_currency",
+    "parameters": {"amount": 250.75, "rate": 0.92}
+  },
+  {
+    "prompt": "Turn off notifications for user 7",
+    "name": "fn_toggle_notifications",
+    "parameters": {"user_id": 7, "enabled": false}
+  },
+  {
+    "prompt": "Subtract 15 from 50",
+    "name": "fn_calculate_difference",
+    "parameters": {"minuend": 50, "subtrahend": 15}
+  },
+  {
+    "prompt": "Log the message: He said \"welcome\" today",
+    "name": "fn_write_log_entry",
+    "parameters": {"message": "He said \"welcome\" today"}
+  },
+  {
+    "prompt": "Log the message: He said \"hi\" from C:\\tmp",
+    "name": "fn_write_log_entry",
+    "parameters": {"message": "He said \"hi\" from C:\\tmp"}
+  }
+]

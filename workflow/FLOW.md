@@ -103,12 +103,24 @@ graph LR
 | 3 | Construcción del prompt | ✅ | ✅ | ✅ |
 | 4 | Validez de tokens | ✅ | ✅ cache cerrado 09-02 | ✅ **80 verdes 09-03** |
 | 5 | Bucle de generación | ✅ | ✅ **cerrado de nuevo 09-05** — `Output` en `dict` | ✅ **38 verdes** |
-| 6 | `Chat` orquestador | ✅ **requisitos cerrados 09-03** | 🔵 escrita, corre, **2 hallazgos del 09-07 cerrados 09-08**, **bonus 3 escrito 09-09**, `"integer"` soportado — falta contrato, bonus 6 sin integrar | ⚪ |
+| 6 | `Chat` orquestador | ✅ **requisitos cerrados 09-03** | ✅ **mecanismo de escapes aplicado 09-11** (comillas+backslash combinados, `.strip()` en `_costume_translater`) — bonus 6 (`view.py`) escrito sin integrar | ✅ `tests/test_bloque_6.py` dinámico (9 passed, 1 skipped), `tests/test_bloque_7.py` comparativo nuevo contra `project_example/` (nuestro 17/20, compañero 14/20) |
 
 **Estados:** ✅ cerrado · 🔵 en curso · ⚪ pendiente · 🔴 bloqueado
 
 > [!note] Se actualiza al cerrar cada bloque
 > Este archivo es la vista rápida. La fuente de verdad sigue siendo `[[PROJECT]]`.
+
+> [!success] ==Bloque 6 — CERRADO: mecanismo de escapes aplicado, README vacío encontrado al revisar el cierre (2026-09-11)==
+> `Guardian`/`Interface` con el mecanismo de marcadores dinámicos (`quote_marker`/`backslash_marker`) aplicado y verificado — Suite A propia 8/9, examen del compañero 10/11, cada rojo restante es límite documentado del modelo (signo negativo, glifo de mojibake), no bug de código. `.strip()` agregado a `_costume_translater` arregló un bug real (espacio pegado al borde de un `string`).
+> **Suite A retocada:** el `boundary_case` de 32 caracteres se retiró (era límite de longitud, no de escapes) — queda en 9 prompts, ninguno marcado `boundary_case`.
+> **`tests/test_bloque_6.py`** actualizado por el agente ciego (pedido por prompt, no corregido a mano): `BOUNDARY_CASE_PROMPTS` ahora dinámico, leído del archivo de corrección en cada corrida.
+> **Suite nueva, `tests/test_bloque_7.py`:** comparativa contra `project_example/` (el compañero) — pasa si nosotros acertamos o si empatamos en fallo, solo falla si el compañero gana. Resultado: **17/20 nosotros, 14/20 el compañero** — el compañero saca 11/11 en su propio examen pero pierde casi todo en los 9 de estrés que diseñamos (anidación, tipos, dos parámetros del mismo tipo).
+> ==**Al revisar si se podía cerrar el proyecto, se encontró `README.md` vacío (0 líneas)**== — obligatorio del subject, no es un detalle de pulido. Detalle completo en `[[PROJECT#Sesión del 2026-09-10]]`, puntos 8 al 14.
+
+> [!info]- Bloque 6 — contrato reestructurado, 7+3 bugs reales, Suite A diseñada (2026-09-10), histórico
+> `demo_menu.py` → `src/view.py`, clase `View`, sin integrar a `__main__.py` (a propósito). Suite A diseñada propuesta por propuesta con él (`tests/stress_data/`, 9 funciones/10 prompts/10 respuestas), y **cada propuesta destapó un bug real**: negativos imposibles en `Guardian`, `"type": "float"` no soportado, comillas embebidas rompían la detección de cierre, backslash bloqueado siempre, enteros coaccionados a `float` en `ParamValue`, menos de N objetos si un prompt fallaba, sin salida de escape (`fn_unknown` agregado). Los 7, corregidos y verificados con el modelo real.
+> **Contrato reescrito a fondo**: él notó que la primera versión probaba `Chat` a mano, nunca `src/__main__.py` — que es lo único que corre el evaluador. `tests/blackbox_test_bloque_6.md` ahora prueba **el comando**. De ahí salieron 2 bugs más: `Ctrl+C` durante el `import` de `torch` salía sin log, y el código de salida era siempre `0` aunque fallara — los dos arreglados. Un 10º bug lo encontró el **agente ciego** ya escribiendo tests: el campo `ERROR` repetía el prompt en vez del log real.
+> **Sin terminar:** `tests/test_bloque_6.py`, en generación por un agente aparte. Suite B (diferencial contra `project_example/`) diseñada, sin construir. Un experimento de mejora para comillas+backslash combinados quedó a medias — detalle en `[[PROJECT#Sesión del 2026-09-10]]`.
 
 > [!success] ==Bloque 6 — soporte `"integer"`, bonus 3, guard de `KeyboardInterrupt` (2026-09-09)==
 > **Soporte de `"integer"`** en `Guardian`/`Interface` — 5 cambios quirúrgicos, ==escritos por el agente a pedido explícito y repetido del estudiante, no por él== (rompe la regla 1 del sistema, con su consentimiento). `mypy --strict`/`flake8` limpios, `_char_ok` con `integer` rechaza el `.`, `_valid_parameters` acepta `4` y rechaza `4.5`.

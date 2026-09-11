@@ -1,0 +1,17 @@
+[
+  {
+    "prompt": "What is the sum of 2 and 3?"
+  },
+  {
+    "prompt": "Count fifty three apples in the basket"
+  },
+  {
+    "prompt": "Maybe confirm the action, I'm not sure yet"
+  },
+  {
+    "prompt": "Set the priority level to somewhere around high"
+  },
+  {
+    "prompt": "Reverse the string 'hello'"
+  }
+]

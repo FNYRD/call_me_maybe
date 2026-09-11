@@ -1,8 +1,14 @@
 from pydantic import validate_call, FilePath
 from pathlib import Path
 from typing import List, Callable, Dict, Any
-from .filemanager import FileManager
+from .filemanager import FileManager, Function, TypeSpec
 from .interface import Interface, Output
+
+UNKNOWN_FUNCTION = Function(
+    name="fn_unknown",
+    description="Used when the prompt does not match any other function.",
+    parameters={},
+    returns=TypeSpec(type="string"))
 
 
 class Chat:
@@ -16,9 +22,10 @@ class Chat:
                  logits_method: Callable[[List[int]], List[float]]) -> None:
         self._file_manager: FileManager = FileManager(
             functions_path, prompts_path, output_path)
+        functions: List[Function] = (
+            self._file_manager.get_functions() + [UNKNOWN_FUNCTION])
         self._interface: Interface = Interface(
-            self._file_manager.get_functions(),
-            vocab_path, merges_path, tokenizer_path,
+            functions, vocab_path, merges_path, tokenizer_path,
             logits_method)
         self._prompts: List[str] = [
             prompt.prompt for prompt in self._file_manager.get_prompts()]
@@ -46,5 +53,7 @@ class Chat:
                         log_answer = value
                         self._file_manager.charge_logs(
                             answer.log, log_answer, "prompts")
+                        self._file_manager.charge_replies(
+                            {"prompt": prompt, "ERROR": answer.log})
         self._file_manager.write_logs()
         self._file_manager.write_replies()

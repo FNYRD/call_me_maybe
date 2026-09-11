@@ -151,49 +151,44 @@ Si algo falla → avisas antes de ponerte a trabajar.
 
 ## Dónde estamos ahora
 
-> [!bug] Estado — 2026-09-09, 7ª sesión
+> [!bug] Estado — 2026-09-11, 9ª sesión — cerrando, README vacío
 > **Proyecto:** call me maybe — function calling con Qwen3-0.6B y constrained decoding manual
-> **Fase:** 2. **6 bloques**; ==**1, 2, 3, 4 y 5 cerrados**==. El **6 escrito y corriendo**, no cierra: falta contrato, bonus 6 sin integrar
-> **Último hito:** soporte para `"type": "integer"` en el catálogo (5 cambios quirúrgicos) · bonus 3 (recuperación de errores) diseñado y escrito · `except KeyboardInterrupt` en `src/__main__.py`, escrito y verificado · prototipo del bonus 6 (`demo_menu.py`, en la raíz del proyecto, **sin integrar todavía**)
-> **Siguiente:** ==revisar e integrar `demo_menu.py` al proyecto (bonus 6) y escribir la suite de tests del proyecto completo, incluyendo catálogos con `integer`/`float`/otros tipos que él traiga==. Nada de lo de hoy se corrió de punta a punta con `Chat.chatting()` real — solo con `mypy`/`flake8` y llamadas directas. Detalle en `[[PROJECT#Bloque 6 — `Chat` orquestador]]` y `[[HANDOFF#Agente 25 — activo]]`
-> **Abierto:** contrato del Bloque 6 sin escribir · docstrings al final del proyecto · README sin revisar contra `HANDOFF` · el atajo `cmd+escape` no funciona
-> **Descartado el 09-09, ya no es pendiente:** `Makefile` sin `run`/`debug`/`lint`/`lint-strict` — decisión suya, se olvida
-> **Herramientas:** siempre `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. `PYTHONPATH=.` para correr `Interface`/`Chat`/`__main__` sueltos
-> **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18
+> **Fase:** 2 cerrada, arrancando FASE 3. **6 bloques, los 6 cerrados.** El mecanismo de escapes (comillas+backslash) que dejaba el Bloque 6 sin cerrar **ya está aplicado y verificado**.
+> **Último hito:** mecanismo de marcadores dinámicos (`quote_marker`/`backslash_marker`, `Union[str, None]`) en `src/guardian.py`/`src/interface.py`, `.strip()` en `_costume_translater` — Suite A 8/9, examen del compañero 10/11, cada rojo restante documentado como límite del modelo (signo negativo, glifo de mojibake), no bug de código. Suite comparativa nueva (`tests/test_bloque_7.py`) contra `project_example/`: **17/20 nosotros, 14/20 el compañero**.
+> **Siguiente:** ==`README.md` está **vacío** (0 líneas)== — es lo primero. 9 secciones obligatorias + línea de atribución de 42, en inglés. Detalle en `[[PROJECT#Sesión del 2026-09-10]]` (puntos 8-14) y `[[HANDOFF#Agente 27 — activo]]`.
+> **Abierto:** README (vacío) · docstrings (ninguna, decisión suya de dejarlas al final — el final es ahora) · `Makefile` sin `run`/`debug`/`lint`/`lint-strict` (pedido de nuevo, aunque el 09-09 se había dicho "ya no prioridad" — confirmar cuál vale) · `src/view.py` sin conectar a `__main__.py` (decidir si entra al cerrar) · checklist del subject línea por línea, no hecho · aprobación final explícita del contrato del Bloque 6, nunca llegó · `tests/error_data/` vs `tests/stress_data/`, sin revisar solapamiento
+> **Herramientas:** siempre `./callme/bin/python -m mypy` / `-m flake8` / `-m pytest`. `PYTHONPATH=.` para correr `Interface`/`Chat`/`__main__` sueltos. Correr `python -m src` real (no atajos) para probar `src/__main__.py`. Para invocar `project_example/` (el compañero): `PYTHONPATH=project_example` + `CallMeFilesLoader`/`Decoder`, no tiene `python -m src` equivalente.
+> **No re-ofrecer:** el repaso guiado de `pytest` — lo cortó él el 08-18. Cuestionario: solo queda 1 fila 🔴 real en la `Lista de refuerzo`, no se lanzó esta sesión.
 > **Vista rápida de los bloques:** `[[FLOW]]`
 
 ---
 
-## Instrucción para el próximo agente — escrita el 2026-09-09, 7ª sesión
+## Instrucción para el próximo agente — escrita el 2026-09-11, 9ª sesión
 
 > [!important] El orden de la sesión
-> **1 ·** Revisar `demo_menu.py` (raíz del proyecto) con `mypy --strict`/`flake8` y decidir con él **qué mecanismo entra a `src/`** como bonus 6 real, y cómo — hoy es solo un prototipo suelto, nada integrado.
-> **2 ·** Escribir la **suite de tests del proyecto completo** — incluye catálogos de funciones con `"integer"`, `"number"`/`float` y cualquier otro tipo que él traiga, no solo los que ya existían.
-> **3 ·** Antes de dar nada de hoy por cerrado, **correr `Chat.chatting()` de punta a punta**: el soporte de `integer`, el bonus 3 y el `except KeyboardInterrupt` solo se verificaron con `mypy`/`flake8` y pruebas aisladas — ninguno corrió dentro del flujo real completo.
-> **Cuestionario:** no se lanzó esta sesión.
+> **1 ·** Escribir el **README.md completo**, en inglés, con las 9 secciones que exige el subject (`[[HANDOFF#📄 README.md — requisitos]]`) más la línea de atribución de 42 en cursiva al principio. Hay material de sobra ya documentado en `[[PROJECT]]` para "Algorithm explanation", "Design decisions", "Challenges faced" y "Performance analysis" — no hay que inventar nada, hay que redactarlo.
+> **2 ·** Confirmar con él qué hacer con `src/view.py` (sin conectar, decisión de "para el final") y con las **docstrings** (ninguna todavía, mismo tipo de decisión).
+> **3 ·** Correr el checklist del subject línea por línea contra el proyecto real (`[[SYSTEM#FASE 3]]`).
+> **4 ·** Confirmar la aprobación final del contrato del Bloque 6 (`tests/blackbox_test_bloque_6.md`) — nunca hubo un "sí, apruebo" explícito.
+> **Cuestionario:** no se lanzó esta sesión. Solo queda 1 fila 🔴 real en `[[PROJECT#🎯 Lista de refuerzo]]` — insuficiente para armar uno completo sin inventar temas nuevos sin su aprobación.
 
-> [!warning] Rompió la regla 1 tres veces, con su consentimiento explícito
-> Pidió que el agente escribiera código directamente — los 5 cambios de `integer` y la corrección de indentación de `flake8` — con el mismo argumento cada vez: *"esto no me enseña nada, solo me quita tiempo, yo monté todo el proyecto"*. Se sostuvo la regla dos veces antes de ceder la tercera. **No es la nueva norma** — sigue siendo la excepción, a pedir él, no a ofrecer.
-> El bonus 3 y el `except KeyboardInterrupt` sí los escribió él, guiado paso a paso, como de costumbre.
-
-> [!warning] Lo que se aprendió el 09-09, y no se repite
-> **Verificar un mecanismo de recuperación de errores contra dónde puede fallar de verdad, no contra dónde "suena razonable" que falle.** El diseño inicial del bonus 3 (softmax, luego N-ésimo mejor logit) apuntaba al `ERROR` de `_valid_parameters` — que ya estaba documentado como **estructuralmente inalcanzable** desde el 09-04. Se perdieron varias vueltas de diseño antes de notarlo. Antes de diseñar una recuperación, comprobar que el fallo que se quiere recuperar puede ocurrir de verdad.
-> **`kill -INT` a un proceso en background no llega de forma fiable dentro del sandbox del agente** — para probar `KeyboardInterrupt` hay que forzarlo en el código (monkeypatch del punto donde se quiere interrumpir), no mandar la señal real.
-> **La hoja de evaluación real del peer review** (`~/Desktop/Intra Projects Call Me Maybe Edit.pdf`) califica los 9 bonus con **una sola nota 0-5 en conjunto** — no hay rúbrica por bonus. Él la trajo sin que se le pidiera; cambia cómo priorizar esfuerzo entre bonus.
+> [!warning] Cinco mecanismos probados con el modelo real hoy, y por qué solo dos se aplicaron
+> Para el loop de comillas+backslash: `PostMachine` con `set` (no cierra), delimitador `'` (empeora), candidatos por sufijo (no generaliza), enmascarar el eco del prompt con marcadores dinámicos (**funciona, aplicado**). Para el signo negativo perdido: instrucción de sistema (sin efecto), inversión ciega (insegura), inversión con excepción por palabra clave (huecos), inyección por orden (rompe otro caso) — **ninguno se aplicó, queda documentado sin parche**. Para el apóstrofe perdido: bloquear el glifo de mojibake (arregla uno, rompe otro, ganancia neta cero — **no se aplicó**). Solo el enmascarado del eco y el `.strip()` en `_costume_translater` tuvieron ganancia neta real, medida contra las dos suites completas antes de tocar `src/`.
 
 > [!important] Cómo se trabaja con él
 > ==**Sus identificadores, y solo lo que existe hoy en `src/`.**==
 > **Un paso por mensaje.** Una idea, una pregunta. Respuestas cortas.
-> **Cuando dice que no sabe, dale las opciones reales con su coste y una recomendación** — y elige él.
-> **Di con qué certeza afirmas algo**: dato, verificado ejecutando, convención o suposición.
-> **Le llevas la contraria cuando toca**: hoy dos veces (bonus 3 sobre un caso inalcanzable, "el modelo sí puede fallar en contenido") — las dos veces tenía razón él en el fondo, y ayudó a encontrar la vía real (el fallo del SDK, no de contenido).
+> **Antes de aplicar cualquier cambio a `src/`, probarlo en el scratchpad contra las suites completas** — nunca solo el caso puntual que lo motivó. Hoy salvó de aplicar el bloqueo del glifo (ganancia cero) y detectó que la mejora completa venía solo del `.strip()`, no de los dos cambios juntos.
+> **Cazó una inconsistencia aritmética en un resultado agregado** (*"pero es +1 con el strip no?"*) antes de que el agente separara qué aportaba cada cambio — extiende su auditoría habitual a números, no solo a alcance.
+> **Pide evidencia medida antes de aceptar cualquier argumento de diseño**, propio o del agente — sin excepción hoy (4 heurísticas de signo, todas probadas y descartadas con datos antes de aplicarlas).
+> **Pregunta "¿registraste?" antes de asumir que un hallazgo quedó anotado** — dos veces hoy.
 
 > [!bug] Con lo que te vas a tropezar
-> **`demo_menu.py` en la raíz del proyecto** — script suelto, prototipo del bonus 6, no pasó por `mypy`/`flake8` todavía, y usa rutas absolutas al cache de Hugging Face (`~/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/...`) que hay que revisar antes de integrarlo.
-> **`Guardian` ya soporta `"integer"` y `"boolean"`** además de `number`/`string` — si escribís un catálogo de prueba nuevo, ya podés usarlo.
+> **`README.md` está vacío** — 0 líneas, ni la línea de atribución de 42.
+> **`tests/` tiene tres orígenes de datos, no los confundas:** `tests/new_data/` (examen del compañero, no tocar) · `tests/stress_data/` (Suite A, **9 prompts** ahora, sin ningún `boundary_case` — el de 32 caracteres se retiró) · `tests/error_data/` (del agente ciego, catálogo propio — sin revisar si se solapa con `stress_data`).
+> **`tests/test_bloque_6.py`** — `BOUNDARY_CASE_PROMPTS` ya es dinámico (lee la corrección en cada corrida), no hardcodeado. **`tests/test_bloque_7.py`** — suite comparativa nueva contra `project_example/`, verificado corriendo.
+> **`src/view.py`** — clase `View`, `mypy --strict`/`flake8` limpios, **sigue sin conectar a `src/__main__.py`**.
+> **`project_example/`** en la raíz — el proyecto del compañero. Se invoca con `CallMeFilesLoader`+`Decoder`, agregando `project_example/` al `PYTHONPATH` — no tiene un `python -m src` propio invocable igual que el nuestro.
 > Llama a las herramientas con `./callme/bin/python -m ...`, y un script suelto que corra `Interface`/`Chat`/`__main__` necesita `PYTHONPATH=.`.
 > **A `tests/` no se le pasa `flake8` ni `mypy`** — regla suya del 09-01.
-> **Sin docstrings** en ningún archivo de `src/`: ==van al final del proyecto==. No las repongas por tu cuenta.
-> **6 rojos de `pytest` confirmados como ruido de bloques viejos** (detalle en `[[PROJECT]]`, sesión de hoy) — decisión suya: se ignoran, no son del bloque 6.
-> **`logs/` y `data/output/function_calling_results.json` de esta sesión son artefactos de prueba** — bórralos o vuelve a correr antes de fiarte de su contenido.
-> **Auditar una sesión ajena:** `~/.claude/tools/auditar_sesion.py` sobre el `.jsonl` de `~/.claude/projects/<proyecto>/`.
+> **Sin docstrings** en ningún archivo de `src/`: la decisión de dejarlas "al final" está vigente — el final es ahora, confirmar con él si entran esta sesión.

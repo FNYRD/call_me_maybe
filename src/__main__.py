@@ -1,11 +1,7 @@
-import argparse
-from llm_sdk import Small_LLM_Model
-from .chat import Chat
-from typing import Callable
+import sys
+import json
 from pathlib import Path
 from typing import Dict, List
-import json
-import sys
 
 
 def write_logs(reason: str) -> None:
@@ -18,6 +14,19 @@ def write_logs(reason: str) -> None:
          reason})
     with open(log_path, "w", encoding="utf-8") as file:
         json.dump(logs, file, ensure_ascii=False, indent=4)
+
+
+try:
+    import argparse
+    from typing import Callable
+    from llm_sdk import Small_LLM_Model
+    from .chat import Chat
+except KeyboardInterrupt:
+    write_logs("The keyboard has interrupted the program during startup")
+    sys.exit(1)
+except Exception as e:
+    write_logs(f"An error occurred while importing a required module: {e}")
+    sys.exit(1)
 
 
 try:
@@ -53,6 +62,7 @@ except KeyboardInterrupt:
         print(
             f"An unexpected error occurs out of our scope: {e}",
             file=sys.stderr)
+    sys.exit(1)
 except Exception as e:
     try:
         write_logs(str(e))
@@ -60,3 +70,4 @@ except Exception as e:
         print(
             f"An unexpected error occurs out of our scope: {e}",
             file=sys.stderr)
+    sys.exit(1)

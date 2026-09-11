@@ -1,0 +1,35 @@
+[
+    {
+        "prompt": "What is the sum of 2 and 3?",
+        "name": "fn_add_numbers",
+        "parameters": {
+            "a": 2,
+            "b": 3
+        }
+    },
+    {
+        "prompt": "Count fifty three apples in the basket",
+        "name": "fn_count_items",
+        "parameters": {
+            "quantity": 53
+        }
+    },
+    {
+        "prompt": "Maybe confirm the action, I'm not sure yet",
+        "name": "fn_confirm_action",
+        "parameters": {
+            "confirmed": false
+        }
+    },
+    {
+        "prompt": "Set the priority level to somewhere around high",
+        "ERROR": "Model entered an loop"
+    },
+    {
+        "prompt": "Reverse the string 'hello'",
+        "name": "fn_reverse_string",
+        "parameters": {
+            "s": "hello"
+        }
+    }
+]
