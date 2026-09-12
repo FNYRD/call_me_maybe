@@ -1,3 +1,12 @@
+"""Entry point: load inputs, run every prompt, log any failure to start.
+
+Two `try/except` blocks, not one: the first covers the imports
+themselves (a broken venv or a missing SDK never reaches the second
+block's `Chat`), the second covers building and running `Chat`.
+Either failure is written to `logs/logs.json` before exiting non-zero,
+so a crash never leaves the run silent.
+"""
+
 import sys
 import json
 from pathlib import Path
@@ -5,6 +14,12 @@ from typing import Dict, List
 
 
 def write_logs(reason: str) -> None:
+    """Write a startup failure to logs/logs.json under the "files" key.
+
+    Args:
+        reason: Description of what went wrong before the program
+            could start processing prompts.
+    """
     logs: Dict[str, List[Dict[str, str]]] = {
         "prompts": [], "files": []}
     log_path: Path = Path("logs/logs.json")

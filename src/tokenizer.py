@@ -5,9 +5,24 @@ from pydantic import validate_call, FilePath
 
 
 class Tokenizer:
+    """Encodes text to token ids and decodes token ids back to text.
+
+    Reimplements Qwen's byte-level BPE tokenizer from its vocabulary,
+    merge board and pre-tokenizer pattern, without relying on the SDK's
+    own ``encode``/``decode``.
+    """
+
     @validate_call
     def __init__(self, vocab_path: FilePath, merges_path: FilePath,
                  tokenizer_path: FilePath) -> None:
+        """Load the vocabulary, merge board and byte↔char tables.
+
+        Args:
+            vocab_path: Path to ``vocab.json`` (token string to id).
+            merges_path: Path to ``merges.txt`` (BPE merge priorities).
+            tokenizer_path: Path to ``tokenizer.json`` (special tokens
+                and the pre-tokenizer regex pattern).
+        """
         self._special_ids: Dict[str, int] = {}
         self._vocab: Dict[str, int] = self._load_vocab(vocab_path)
         self._merge_board: Dict[Tuple[str, str],
@@ -34,6 +49,19 @@ class Tokenizer:
             char: byte for byte, char in self._byte_char.items()}
 
     def _load_tokenizer(self, tokenizer_path: FilePath) -> str:
+        """Read tokenizer.json and set the special tokens as a side effect.
+
+        Args:
+            tokenizer_path: Path to the tokenizer file.
+
+        Returns:
+            The pre-tokenizer regex pattern, as a string.
+
+        Raises:
+            KeyError: The file is missing an expected key.
+            FileNotFoundError: ``tokenizer_path`` doesn't exist.
+            ValueError: The JSON is corrupt, or the pattern is empty.
+        """
         pattern: str = ""
         tokenizer_file: Dict[Any, Any] = {}
         try:
@@ -61,6 +89,14 @@ class Tokenizer:
             raise ValueError("Tokenizer's file empty")
 
     def get_special_id(self, pattern: str) -> int:
+        """Look up the id of a special token.
+
+        Args:
+            pattern: The special token's literal string.
+
+        Returns:
+            Its id, or ``0`` if ``pattern`` isn't a special token.
+        """
         if pattern in self._special_ids:
             return self._special_ids[pattern]
         else:
@@ -68,6 +104,18 @@ class Tokenizer:
 
     @staticmethod
     def _load_vocab(vocab_path: FilePath) -> Dict[str, int]:
+        """Read vocab.json into a token string to id mapping.
+
+        Args:
+            vocab_path: Path to the vocabulary file.
+
+        Returns:
+            The vocabulary as loaded from the file.
+
+        Raises:
+            FileNotFoundError: ``vocab_path`` doesn't exist.
+            ValueError: The JSON is corrupt, or the vocabulary is empty.
+        """
         vocab: Dict[str, int] = {}
         try:
             with open(vocab_path, "r", encoding="utf-8") as file:
@@ -85,6 +133,23 @@ class Tokenizer:
 
     @staticmethod
     def _load_mergeboard(merges_path: FilePath) -> Dict[Tuple[str, str], int]:
+        """Read merges.txt into a merge priority table.
+
+        Each line's position (after the header) is the priority used
+        during BPE: the lower the line number, the earlier that pair
+        merges.
+
+        Args:
+            merges_path: Path to the merges file.
+
+        Returns:
+            A mapping from a ``(left, right)`` token pair to its merge
+            priority (its line number in the file).
+
+        Raises:
+            FileNotFoundError: ``merges_path`` doesn't exist.
+            ValueError: The merge board ends up empty.
+        """
         merge_board: Dict[Tuple[str, str], int] = {}
         try:
             with open(merges_path, "r", encoding="utf-8") as file:
@@ -106,12 +171,31 @@ class Tokenizer:
             raise ValueError("Merge board is empty")
 
     def get_vocab(self) -> Dict[str, int]:
+        """Return the vocabulary loaded at construction, token to id."""
         return self._vocab
 
     def get_reversed_vocab(self) -> Dict[int, str]:
+        """Return the vocabulary loaded at construction, id to token."""
         return self._reversed_vocab
 
     def encode(self, text: str) -> List[int]:
+        """Turn text into the token ids Qwen would produce for it.
+
+        Splits ``text`` on special tokens, then applies byte-level BPE
+        to each remaining chunk: bytes become visible characters via
+        the byte↔char table, and adjacent pairs merge in priority
+        order (lowest ``merges.txt`` line first) until no pair in the
+        merge board is left.
+
+        Args:
+            text: The text to encode.
+
+        Returns:
+            The sequence of token ids for ``text``.
+
+        Raises:
+            ValueError: A merged piece isn't a token in the vocabulary.
+        """
         id: int = 0
         token_ids: List[int] = []
         pattern_bytes: List[int] = []
@@ -160,6 +244,23 @@ class Tokenizer:
         return token_ids
 
     def decode(self, token_ids: List[int]) -> str:
+        """Turn token ids back into text.
+
+        Special token ids decode to nothing. Ordinary ids resolve
+        through the reversed vocabulary to their visible-character
+        form, then that whole string is translated back to raw bytes
+        via the byte↔char table and decoded as UTF-8.
+
+        Args:
+            token_ids: The sequence of token ids to decode.
+
+        Returns:
+            The decoded text, or ``""`` if ``token_ids`` is empty.
+
+        Raises:
+            ValueError: A token id isn't in the vocabulary or the
+                special tokens.
+        """
         text: str = ""
         bytearr: bytearray = bytearray()
         if len(token_ids) <= 0:

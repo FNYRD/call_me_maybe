@@ -2,7 +2,7 @@
 (el companero), corriendo los mismos prompts y comparando name+parameters
 contra la correccion real de cada catalogo.
 
-No modifica tests/test_bloque_6.py — es un archivo aparte. Reusa el mismo
+No modifica tests/test_bloque_1.py — es un archivo aparte. Reusa el mismo
 criterio de contenido (anidacion, prefijo compartido, tipos, comillas) pero
 en version comparativa: mi proyecto acierta -> pasa; empate en fallo -> pasa;
 yo fallo y el companero acierta -> unico caso que cuenta como rojo.
@@ -11,12 +11,13 @@ data/input (oficial del subject) queda fuera: no tiene correccion real.
 """
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PYTHON = str(PROJECT_ROOT / "callme" / "bin" / "python")
+PYTHON = sys.executable
 FIXED_LOGS_PATH = PROJECT_ROOT / "logs" / "logs.json"
 RUNNER_SCRIPT = Path(__file__).resolve().parent / "_project_example_runner.py"
 
@@ -30,7 +31,7 @@ COMPANION_CORRECTIONS = PROJECT_ROOT / "tests" / "new_data" / "correction" / "fu
 
 
 def run_own_project(functions: Path, prompts: Path, output: Path, timeout: float = 180):
-    """Corre mi comando real (python -m src) — mismo mecanismo que test_bloque_6."""
+    """Corre mi comando real (python -m src) — mismo mecanismo que test_bloque_1."""
     if FIXED_LOGS_PATH.exists():
         FIXED_LOGS_PATH.unlink()
     args = [

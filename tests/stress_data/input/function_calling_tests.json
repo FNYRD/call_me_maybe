@@ -1,11 +1,32 @@
 [
-  {"prompt": "Schedule a meeting called Planning on Monday at 9"},
-  {"prompt": "Get the full details for user 42"},
-  {"prompt": "Create an order for Maria living in Austin, zip 73301"},
-  {"prompt": "The temperature went from -12.5 to 3 degrees"},
-  {"prompt": "Convert 250.75 dollars at a rate of 0.92"},
-  {"prompt": "Turn off notifications for user 7"},
-  {"prompt": "Subtract 15 from 50"},
-  {"prompt": "Log the message: He said \"welcome\" today"},
-  {"prompt": "Log the message: He said \"hi\" from C:\\tmp"}
+  {
+    "prompt": "Schedule a meeting called Planning on Monday at 9"
+  },
+  {
+    "prompt": "Get the full details for user 42"
+  },
+  {
+    "prompt": "Create an order for Maria living in Austin, zip 73301"
+  },
+  {
+    "prompt": "The temperature went from -12.5 to 3 degrees"
+  },
+  {
+    "prompt": "Convert 250.75 dollars at a rate of 0.92"
+  },
+  {
+    "prompt": "Turn off notifications for user 7"
+  },
+  {
+    "prompt": "Subtract 15 from 50"
+  },
+  {
+    "prompt": "Log the message: He said \"welcome\" today"
+  },
+  {
+    "prompt": "Log the message: He said \"hi\" from C:\\tmp"
+  },
+  {
+    "prompt": "Substitute the word 'cat' with 'dog' in 'The cat sat on the mat with another cat'"
+  }
 ]

@@ -1,6 +1,6 @@
 """Conftest compartido de tests/. Hoy solo sirve al resumen agregado de
-test_bloque_7.py (cuantos prompts acerto cada proyecto) — no toca nada de
-test_bloque_6.py."""
+test_bloque_2.py (cuantos prompts acerto cada proyecto) — no toca nada de
+test_bloque_1.py."""
 import pytest
 
 
@@ -27,7 +27,7 @@ def resumen_comparativo() -> _ResumenComparativo:
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     if _RESUMEN_COMPARATIVO.total == 0:
         return
-    terminalreporter.write_sep("=", "Resumen comparativo test_bloque_7")
+    terminalreporter.write_sep("=", "Resumen comparativo test_bloque_2")
     terminalreporter.write_line(f"Prompts evaluados: {_RESUMEN_COMPARATIVO.total}")
     terminalreporter.write_line(
         f"Mi proyecto acerto: {_RESUMEN_COMPARATIVO.mio_correcto}/{_RESUMEN_COMPARATIVO.total}"

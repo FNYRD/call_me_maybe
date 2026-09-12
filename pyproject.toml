@@ -21,5 +21,26 @@ call-me-maybe = "call_me_maybe:main"
 requires = ["uv_build>=0.12.6,<0.13.0"]
 build-backend = "uv_build"
 
+[dependency-groups]
+dev = [
+    "flake8>=7.3.0",
+    "Flake8-pyproject>=1.2.3",
+    "mypy>=2.3.1",
+    "pytest>=8.0.0",
+]
+
+[tool.flake8]
+exclude = [".venv", "tests", "llm_sdk", "build"]
+max-line-length = 79
+
 [tool.mypy]
 mypy_path = "llm_sdk"
+exclude = "^(tests/|llm_sdk/)"
+
+[[tool.mypy.overrides]]
+module = "llm_sdk.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "regex.*"
+ignore_missing_imports = true

@@ -3,28 +3,48 @@
     "name": "fn_schedule_meeting",
     "description": "Schedule a meeting with a title and a nested time slot.",
     "parameters": {
-      "title": {"type": "string"},
+      "title": {
+        "type": "string"
+      },
       "slot": {
         "type": "object",
         "properties": {
-          "day": {"type": "string"},
-          "hour": {"type": "integer"}
+          "day": {
+            "type": "string"
+          },
+          "hour": {
+            "type": "integer"
+          }
         }
       }
     },
-    "returns": {"type": "boolean"}
+    "returns": {
+      "type": "boolean"
+    }
   },
   {
     "name": "fn_get_user",
     "description": "Get the username for a given user id.",
-    "parameters": {"user_id": {"type": "integer"}},
-    "returns": {"type": "string"}
+    "parameters": {
+      "user_id": {
+        "type": "integer"
+      }
+    },
+    "returns": {
+      "type": "string"
+    }
   },
   {
     "name": "fn_get_user_details",
     "description": "Get the full profile details for a given user id.",
-    "parameters": {"user_id": {"type": "integer"}},
-    "returns": {"type": "string"}
+    "parameters": {
+      "user_id": {
+        "type": "integer"
+      }
+    },
+    "returns": {
+      "type": "string"
+    }
   },
   {
     "name": "fn_create_order",
@@ -33,61 +53,115 @@
       "customer": {
         "type": "object",
         "properties": {
-          "name": {"type": "string"},
+          "name": {
+            "type": "string"
+          },
           "address": {
             "type": "object",
             "properties": {
-              "city": {"type": "string"},
-              "zip": {"type": "integer"}
+              "city": {
+                "type": "string"
+              },
+              "zip": {
+                "type": "integer"
+              }
             }
           }
         }
       }
     },
-    "returns": {"type": "boolean"}
+    "returns": {
+      "type": "boolean"
+    }
   },
   {
     "name": "fn_calculate_temperature_change",
     "description": "Calculate the difference between two temperatures in Celsius.",
     "parameters": {
-      "start": {"type": "number"},
-      "end": {"type": "number"}
+      "start": {
+        "type": "number"
+      },
+      "end": {
+        "type": "number"
+      }
     },
-    "returns": {"type": "number"}
+    "returns": {
+      "type": "number"
+    }
   },
   {
     "name": "fn_convert_currency",
     "description": "Convert an amount of money using a given exchange rate.",
     "parameters": {
-      "amount": {"type": "float"},
-      "rate": {"type": "float"}
+      "amount": {
+        "type": "float"
+      },
+      "rate": {
+        "type": "float"
+      }
     },
-    "returns": {"type": "float"}
+    "returns": {
+      "type": "float"
+    }
   },
   {
     "name": "fn_toggle_notifications",
     "description": "Enable or disable notifications for a user.",
     "parameters": {
-      "user_id": {"type": "integer"},
-      "enabled": {"type": "boolean"}
+      "user_id": {
+        "type": "integer"
+      },
+      "enabled": {
+        "type": "boolean"
+      }
     },
-    "returns": {"type": "boolean"}
+    "returns": {
+      "type": "boolean"
+    }
   },
   {
     "name": "fn_calculate_difference",
     "description": "Calculate the result of subtracting the second number from the first.",
     "parameters": {
-      "minuend": {"type": "number"},
-      "subtrahend": {"type": "number"}
+      "minuend": {
+        "type": "number"
+      },
+      "subtrahend": {
+        "type": "number"
+      }
     },
-    "returns": {"type": "number"}
+    "returns": {
+      "type": "number"
+    }
   },
   {
     "name": "fn_write_log_entry",
     "description": "Write a raw log message exactly as given, including any special characters.",
     "parameters": {
-      "message": {"type": "string"}
+      "message": {
+        "type": "string"
+      }
     },
-    "returns": {"type": "boolean"}
+    "returns": {
+      "type": "boolean"
+    }
+  },
+  {
+    "name": "fn_substitute_string_with_regex",
+    "description": "Replace all occurrences matching a regex pattern in a string.",
+    "parameters": {
+      "source_string": {
+        "type": "string"
+      },
+      "regex": {
+        "type": "string"
+      },
+      "replacement": {
+        "type": "string"
+      }
+    },
+    "returns": {
+      "type": "string"
+    }
   }
 ]

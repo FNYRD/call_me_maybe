@@ -12,14 +12,36 @@ TEMPLATE_QWEN: str = (
 
 
 class PromptBuilder:
+    """Builds the string that gets tokenized and fed to the model.
+
+    Wraps a user prompt in Qwen's chat template, with the function
+    catalog serialized into the system section.
+    """
+
     @validate_call
     def __init__(self, functions: List[Function]) -> None:
+        """Serialize the function catalog once, for reuse across prompts.
+
+        Args:
+            functions: The catalog to advertise to the model in every
+                prompt built afterwards.
+        """
         self._functions: List[Function] = functions
         self._functions_template: str = TypeAdapter(
             List[Function]).dump_json(
                 self._functions, exclude_none=True).decode("utf-8")
 
     def get_prompt(self, prompt: str) -> str:
+        """Wrap a user prompt in Qwen's chat template.
+
+        Args:
+            prompt: The user's natural-language prompt.
+
+        Returns:
+            The full string ready to be tokenized: the function
+            catalog in the system section, ``prompt`` in the user
+            section.
+        """
         return TEMPLATE_QWEN.format(
             FUNCTION=self._functions_template,
             PREGUNTA=prompt)

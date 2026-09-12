@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PROJECT_EXAMPLE_DIR = PROJECT_ROOT / "project_example"
+PROJECT_EXAMPLE_DIR = PROJECT_ROOT / "tests" / "project_example"
 sys.path.insert(0, str(PROJECT_EXAMPLE_DIR))
 
 from src.callme_files_loader import CallMeFilesLoader, CallMeFunction  # noqa: E402

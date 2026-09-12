@@ -4,6 +4,7 @@ import random
 import shutil
 import threading
 import time
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -32,10 +33,33 @@ LINE_COLORS = [CYAN, YELLOW]
 
 
 class View:
+    """Interactive terminal demo of the real generation pipeline.
+
+    Bonus 6: a menu-driven, animated walkthrough that runs the actual
+    ``Tokenizer``/``Guardian`` machinery (and, when asked, the real
+    model) and shows each step live — token by token generation, the
+    byte↔char disguise, and the final translation back to text.
+    """
+
     @validate_call
     def __init__(self, vocab_path: FilePath, merges_path: FilePath,
                  tokenizer_path: FilePath, functions_path: FilePath,
                  prompts_path: FilePath, title: str, author: str) -> None:
+        """Load the tokenizer, catalog and prompts, and size the header.
+
+        The model itself is loaded lazily, the first time generation
+        is picked from ``run``'s menu.
+
+        Args:
+            vocab_path: Path to ``vocab.json``, passed to ``Tokenizer``.
+            merges_path: Path to ``merges.txt``, passed to ``Tokenizer``.
+            tokenizer_path: Path to ``tokenizer.json``, passed to
+                ``Tokenizer``.
+            functions_path: Path to ``functions_definition.json``.
+            prompts_path: Path to ``function_calling_tests.json``.
+            title: Text shown in the animated header's box.
+            author: Text shown under the header's box.
+        """
         self._tokenizer: Tokenizer = Tokenizer(
             vocab_path, merges_path, tokenizer_path)
         self._functions: List[Function] = self._load_functions(
@@ -57,12 +81,28 @@ class View:
 
     @staticmethod
     def _load_functions(functions_path: FilePath) -> List[Function]:
+        """Load and validate the function catalog for the demo.
+
+        Args:
+            functions_path: Path to ``functions_definition.json``.
+
+        Returns:
+            The validated catalog.
+        """
         with open(functions_path, "r", encoding="utf-8") as file:
             return TypeAdapter(List[Function]).validate_python(
                 json.load(file))
 
     @staticmethod
     def _load_prompts(prompts_path: FilePath) -> List[Prompt]:
+        """Load and validate the prompt list offered in the demo's menu.
+
+        Args:
+            prompts_path: Path to ``function_calling_tests.json``.
+
+        Returns:
+            The validated prompts.
+        """
         with open(prompts_path, "r", encoding="utf-8") as file:
             return TypeAdapter(List[Prompt]).validate_python(
                 json.load(file))
@@ -70,6 +110,14 @@ class View:
     @staticmethod
     def _write_slowly(
             text: str, color: str = "", delay: float = CHAR_DELAY) -> None:
+        """Print text one character at a time, with a pause between each.
+
+        Args:
+            text: The text to type out.
+            color: An ANSI color code wrapped around every character,
+                or none for plain output.
+            delay: Seconds to sleep after each character.
+        """
         for char in text:
             sys.stdout.write(f"{color}{char}{RESET}" if color else char)
             sys.stdout.flush()
@@ -77,6 +125,16 @@ class View:
         print()
 
     def _highlight_disguise(self, text: str) -> str:
+        """Color in red every character that disguises a non-printable byte.
+
+        Args:
+            text: Text made of the tokenizer's visible-character
+                disguises (see ``Tokenizer.char_byte``).
+
+        Returns:
+            ``text`` with each character whose underlying byte falls
+            outside the printable ASCII range wrapped in red.
+        """
         output: str = ""
         for char in text:
             byte: int = self._tokenizer.char_byte[char]
@@ -87,6 +145,15 @@ class View:
         return output
 
     def _colorize_generation(self, text: str) -> str:
+        """Color newly generated text for the live view.
+
+        Args:
+            text: A slice of the JSON just written by the guardian.
+
+        Returns:
+            ``text`` with each character in red if it disguises a
+            non-printable byte, cyan otherwise.
+        """
         output: str = ""
         for char in text:
             byte: Optional[int] = self._tokenizer.char_byte.get(char)
@@ -97,6 +164,18 @@ class View:
         return output
 
     def _box_lines(self, perimeter_position: int) -> Tuple[str, str, str]:
+        """Build one animation frame's title box, with its moving dot.
+
+        Args:
+            perimeter_position: How far the dot has traveled around
+                ``self._box_perimeter`` this frame.
+
+        Returns:
+            The box's top border, its (static) side dot, and its
+            bottom border, each as a printable string — the moving dot
+            is placed on the top or bottom border, plus its mirror
+            image on the opposite side of the perimeter.
+        """
         top: List[str] = list("╔" + "═" * self._box_width + "╗")
         bottom: List[str] = list("╚" + "═" * self._box_width + "╝")
         side_dot: str = f"{CYAN}●{RESET}"
@@ -111,11 +190,27 @@ class View:
         return "".join(top), side_dot, "".join(bottom)
 
     def _bounce_line(self, position: int, color_index: int) -> str:
+        """Build one animation frame's author line, with its bouncing dot.
+
+        Args:
+            position: Where along the line the dot sits this frame.
+            color_index: Which color of ``LINE_COLORS`` the dot uses
+                this frame.
+
+        Returns:
+            A dashed line of ``self._line_width`` characters, with a
+            colored dot at ``position``.
+        """
         line: List[str] = ["─"] * self._line_width
         line[position] = f"{LINE_COLORS[color_index]}●{RESET}"
         return "".join(line)
 
     def _draw_header(self) -> None:
+        """Print the static (non-animated) title box, author and separator.
+
+        Centered on the current terminal width. Used for menu screens,
+        where the header doesn't need to move.
+        """
         width: int = shutil.get_terminal_size().columns
         pad: str = " " * max(0, (width - (self._box_width + 2)) // 2)
         middle: str = ("║" + self._box_interior + "║").center(width)
@@ -130,6 +225,18 @@ class View:
     def _frame_header(
             self, perimeter_position: int, line_position: int,
             color_index: int) -> str:
+        """Build one animated header frame as an in-place ANSI redraw.
+
+        Args:
+            perimeter_position: Passed to ``_box_lines``.
+            line_position: Passed to ``_bounce_line``.
+            color_index: Passed to ``_bounce_line``.
+
+        Returns:
+            An ANSI string that saves the cursor, redraws the header
+            (box, author, bouncing line) at the top of the screen
+            without touching the rest of it, and restores the cursor.
+        """
         width: int = shutil.get_terminal_size().columns
         pad: str = " " * max(0, (width - (self._box_width + 2)) // 2)
         line_pad: str = " " * max(0, (width - self._line_width) // 2)
@@ -148,6 +255,14 @@ class View:
         )
 
     def _animate_header(self, stop: threading.Event) -> None:
+        """Keep redrawing the animated header until told to stop.
+
+        Meant to run on its own thread while the main thread blocks on
+        something else (e.g. ``input``), driven by ``_frame_header``.
+
+        Args:
+            stop: Set by the caller to end the animation loop.
+        """
         perimeter_position: int = 0
         line_position: int = 0
         direction: int = 1
@@ -165,6 +280,15 @@ class View:
             time.sleep(LED_DELAY)
 
     def _animated_input(self, prompt: str) -> str:
+        """Read a line of input while the header animates in the background.
+
+        Args:
+            prompt: The prompt string shown to the user, as in
+                ``input``.
+
+        Returns:
+            The line the user typed.
+        """
         stop: threading.Event = threading.Event()
         thread: threading.Thread = threading.Thread(
             target=self._animate_header, args=(stop,), daemon=True)
@@ -178,9 +302,22 @@ class View:
 
     @staticmethod
     def _clear_screen() -> None:
+        """Clear the terminal and move the cursor to the top-left."""
         sys.stdout.write("\033[2J\033[H")
 
     def _translate_strings(self, parameters: Dict[str, Any]) -> None:
+        """Print each string leaf's disguised form next to its real text.
+
+        For every string value, decodes it through the same byte↔char
+        table the real ``Interface`` uses (disguise → real bytes →
+        UTF-8, with the vocabulary's space-glyph mojibake folded back
+        into a real space) and types it out next to the disguised
+        original. Recurses into nested objects.
+
+        Args:
+            parameters: The generated ``"parameters"`` object to
+                display, disguised strings included.
+        """
         for key, value in parameters.items():
             if isinstance(value, str):
                 raw: bytearray = bytearray(
@@ -197,6 +334,24 @@ class View:
                 self._translate_strings(value)
 
     def _generate(self, user_prompt: str, guardian: Guardian) -> None:
+        """Run one real generation for ``user_prompt``, printed live.
+
+        Drives the same constrained-decoding loop as
+        ``Interface.reply`` — retokenize, mask logits to the
+        guardian's whitelist, greedily pick a token, feed it back —
+        but against the real, already-loaded model, printing each
+        newly generated piece as it's produced and pausing ``PAUSE``
+        seconds between tokens. Once done, prints the final JSON's
+        string parameters translated back to real text.
+
+        Args:
+            user_prompt: The prompt chosen from the demo's menu.
+            guardian: A fresh ``Guardian`` to drive this session with.
+
+        Raises:
+            ValueError: The model hasn't been loaded yet (``run``
+                hasn't gone through option 1).
+        """
         get_logits: Optional[Callable[[List[int]], List[float]]] = (
             self._get_logits)
         if get_logits is None:
@@ -238,6 +393,11 @@ class View:
             self._translate_strings(result["parameters"])
 
     def _generation_menu(self) -> None:
+        """Let the user pick a loaded prompt and watch it generate live.
+
+        Loops the prompt list until ``"0"`` is chosen. Each valid pick
+        gets a fresh ``Guardian`` and runs through ``_generate``.
+        """
         while True:
             self._clear_screen()
             self._draw_header()
@@ -260,11 +420,28 @@ class View:
     @staticmethod
     def _step(number: int, title: str, value: object,
               pause: float = PAUSE) -> None:
+        """Print one numbered step of the tokenizer walkthrough and pause.
+
+        Args:
+            number: The step's number, shown before ``title``.
+            title: What this step demonstrates.
+            value: The value to show for this step, printed via
+                ``repr``.
+            pause: Seconds to sleep after printing.
+        """
         print(f"\n{CYAN}{number}.{RESET} {title}")
         print(f"   {value!r}")
         time.sleep(pause)
 
     def _tokenizer_process(self) -> None:
+        """Walk a user-typed text through the real tokenizer, step by step.
+
+        Doesn't call the model — the chosen ids for step 6 are a
+        stand-in "the model returns the same sequence back", with
+        random logits for display in step 5. Every other step (byte
+        encoding, the visible-character disguise, the real ``encode``,
+        the real ``decode``) runs the actual ``Tokenizer``.
+        """
         self._clear_screen()
         self._draw_header()
         print(f"\n{BLUE}View generation and translation process{RESET}")
@@ -313,6 +490,12 @@ class View:
         input("\n(enter to go back to the menu)")
 
     def run(self) -> None:
+        """Show the top-level menu until the user chooses to exit.
+
+        Lazily loads the real ``Small_LLM_Model`` the first time
+        option 1 (generate a response) is picked; option 2 runs the
+        tokenizer-only walkthrough, which never needs the model.
+        """
         while True:
             self._clear_screen()
             self._draw_header()
@@ -334,3 +517,14 @@ class View:
             else:
                 print(f"{RED}Invalid option.{RESET}")
                 time.sleep(PAUSE)
+
+
+if __name__ == "__main__":
+    _model: Small_LLM_Model = Small_LLM_Model()
+    View(
+        Path(_model.get_path_to_vocab_file()),
+        Path(_model.get_path_to_merges_file()),
+        Path(_model.get_path_to_tokenizer_file()),
+        Path("data/input/functions_definition.json"),
+        Path("data/input/function_calling_tests.json"),
+        "CALL ME MAYBE", "Jesus Rosales").run()
